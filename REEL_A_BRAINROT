@@ -1,12 +1,6 @@
---[[
-    BLADEX HUB — Reel A Brainrot
-    Presiona Left Alt para abrir / cerrar
-]]
-
 -- Protección única ejecución
 local CoreGui = game:GetService("CoreGui")
 if CoreGui:FindFirstChild("BLADEX_HUB") then
-    -- Si existe pero no hay UI visible, limpiar y reiniciar
     CoreGui:FindFirstChild("BLADEX_HUB"):Destroy()
     task.wait(0.2)
 end
@@ -14,7 +8,6 @@ local Marker = Instance.new("Folder")
 Marker.Name = "BLADEX_HUB"
 Marker.Parent = CoreGui
 
--- SERVICIOS Y VARIABLES
 local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
 local TweenService      = game:GetService("TweenService")
@@ -32,7 +25,6 @@ local Activo      = false
 local AntiAFKConn = nil
 local autoSubmitOn = false
 
--- Hash set para búsqueda O(1) en lugar de iterar lista
 local BRAINROT_SET = {
     ["lionelo"]=true,["catuselli"]=true,["mammothini"]=true,["tirilikal"]=true,
     ["gato de"]=true,["octinitoi"]=true,["cookie"]=true,["cooki"]=true,
@@ -49,7 +41,6 @@ for k in pairs(BRAINROT_SET) do BRAINROT_KEYS[#BRAINROT_KEYS+1] = k end
 
 local function EsBrainrot(name)
     local n = name:lower()
-    -- Excepción: Lucky Blocks y Divine Lucky Block nunca son brainrot
     if n:find("lucky block") or n:find("luckyblock") or n:find("divine lucky") then return false end
     if BRAINROT_SET[n] then return true end
     for i = 1, #BRAINROT_KEYS do
@@ -163,11 +154,8 @@ local RH
 task.spawn(function() RH = ReplicatedStorage:WaitForChild("RemoteHandler", 15) end)
 local function getR(n) return RH and RH:FindFirstChild(n) end
 
--- Cache de arr/map para el seller — se reconstruye solo cuando RARS cambia
 local _sellCache = { arr = {}, map = {}, dirty = true }
 local function invalidarSellCache() _sellCache.dirty = true end
--- Llamar invalidarSellCache() cada vez que se cambie una rareza en la UI
--- (ya manejado automáticamente via dirty flag)
 
 local function doSell()
     if selling then return end
@@ -175,7 +163,6 @@ local function doSell()
     local sm = getR("SellMultiple")
     if not sm then selling = false return end
 
-    -- Reconstruir cache solo si cambió
     if _sellCache.dirty then
         local arr, map = {}, {}
         for i = 1, #RARS do
@@ -644,9 +631,7 @@ end
 local function procesarLabel(label)
     if not label:IsA("TextLabel") then return end
     if not debeOcultar(label.Text) then return end
-    -- Ignorar si este elemento ya existía antes de activar el hider
     if descPreExistentes[label] then return end
-    -- Solo ocultar frames cuyo nombre empiece con "brainrot"
     local p = label.Parent
     if p and p.Name:lower():match("^brainrot") then
         ocultarFrame(p)
@@ -664,7 +649,6 @@ end
 
 local function suscribirGui(gui, esNueva)
     if not gui:IsA("ScreenGui") or shConns[gui] then return end
-    -- Para GUIs nuevas: escanear contenido actual + escuchar nuevos
     if esNueva then
         task.wait(0.1)
         for _, obj in ipairs(gui:GetDescendants()) do
@@ -678,18 +662,15 @@ local function suscribirGui(gui, esNueva)
 end
 
 local function startSecretHider()
-    -- Snapshot de todos los descendientes actuales → no se tocarán
     descPreExistentes = {}
     for _, gui in ipairs(playerGui:GetChildren()) do
         if gui:IsA("ScreenGui") then
             for _, desc in ipairs(gui:GetDescendants()) do
                 descPreExistentes[desc] = true
             end
-            -- Suscribir para escuchar elementos NUEVOS en esta GUI
             suscribirGui(gui, false)
         end
     end
-    -- Escuchar GUIs completamente nuevas
     shGuiConn = playerGui.ChildAdded:Connect(function(gui)
         if not secretHiderOn then return end
         suscribirGui(gui, true)
@@ -746,18 +727,14 @@ local function startAutoFish()
     task.spawn(function()
         print("[AutoPesca] TURBO activo!")
         while autoFishOn and _fishRunning do
-            -- 1. Lanzar cana
             pcall(function() fishing:FireServer("Started") end)
             task.wait(0.05)
-            -- 2. Atrapar con power maximo
             if catched then pcall(function() catched:FireServer(FISH_POWER) end) end
             pcall(function() fishing:FireServer("Caught", FISH_POWER) end)
             task.wait(0.05)
-            -- 3. Terminar pesca
             pcall(function() fishing:FireServer("Finished") end)
             pcall(function() fishing:FireServer("End") end)
             task.wait(0.05)
-            -- 4. Reiniciar inmediatamente
         end
         _fishRunning = false
         print("[AutoPesca] Detenido")
@@ -868,9 +845,7 @@ local function stopCollectLoop()
     _lastCollect = 0
 end
 
--- ══════════════════════════════════════════════
 -- AUTO FISH POWER (power10 / power5 / power1)
--- ══════════════════════════════════════════════
 local autoPowerOn = false
 local powerLoop   = nil
 local POWERS = { "power10", "power5", "power1" }
@@ -897,9 +872,7 @@ local function stopPowerLoop()
     if powerLoop then task.cancel(powerLoop); powerLoop = nil end
 end
 
--- ══════════════════════════════════════════════
 -- AUTO BASE LEVEL
--- ══════════════════════════════════════════════
 local autoBaseLevelOn = false
 local baseLevelLoop   = nil
 
@@ -919,9 +892,7 @@ local function stopBaseLevelLoop()
     if baseLevelLoop then task.cancel(baseLevelLoop); baseLevelLoop = nil end
 end
 
--- ══════════════════════════════════════════════
 -- AUTO FISH CATCH (carry1)
--- ══════════════════════════════════════════════
 local autoCatchOn = false
 local catchLoop   = nil
 
@@ -941,9 +912,7 @@ local function stopCatchLoop()
     if catchLoop then task.cancel(catchLoop); catchLoop = nil end
 end
 
--- ══════════════════════════════════════════════
 -- AUTO FISHING ROD (compra varillas 1-15)
--- ══════════════════════════════════════════════
 local autoRodOn = false
 local rodLoop   = nil
 local RODS = {
@@ -974,9 +943,7 @@ local function stopRodLoop()
     if rodLoop then task.cancel(rodLoop); rodLoop = nil end
 end
 
--- ══════════════════════════════════════════════
 -- AUTO ROD MUTATION (mutaciones 1-7)
--- ══════════════════════════════════════════════
 local autoMutationOn = false
 local mutationLoop   = nil
 local MUTATIONS = {
@@ -1006,9 +973,7 @@ local function stopMutationLoop()
     if mutationLoop then task.cancel(mutationLoop); mutationLoop = nil end
 end
 
--- ══════════════════════════════════════════════
 -- AUTO REBIRTH
--- ══════════════════════════════════════════════
 local autoRebirthOn = false
 local rebirthLoop   = nil
 
@@ -1042,9 +1007,7 @@ local function stopRebirthLoop()
     if rebirthLoop then task.cancel(rebirthLoop); rebirthLoop = nil end
 end
 
--- ══════════════════════════════════════════════
 -- AUTO UPGRADE BRAINROT (workspace Bases)
--- ══════════════════════════════════════════════
 local autoUpgBrainrotOn = false
 local upgBrainrotLoop   = nil
 
@@ -1127,12 +1090,9 @@ Notifier.new({
     Icon = Compkiller.Logo
 })
 
--- UI — TABS
 Window:DrawCategory({ Name = "Main" })
 
--- ══════════════════════════════════════════════
--- TAB: AUTO SCRIPT
--- ══════════════════════════════════════════════
+-- AUTO SCRIPT
 local AutoScriptTab = Window:DrawTab({
     Name = "Auto Farm",
     Icon = "rocket",
@@ -1255,178 +1215,7 @@ AutoScriptRight:AddToggle({
     end,
 })
 
--- ══════════════════════════════════════════════
--- TAB: DUPE
--- ══════════════════════════════════════════════
-local DupeTab = Window:DrawTab({
-    Name           = "Dupe",
-    Icon           = "copy",
-    EnableScrolling = true,
-})
-
--- ── LÓGICA DUPE ────────────────────────────────
-local _Remote    = game:GetService("ReplicatedStorage").RemoteHandler.Plot
-
--- Estados y loops
-local dupeStates = {
-    AutoBase = false,
-    Base1=false, Base2=false, Base3=false,
-    Base4=false, Base5=false, Base6=false,
-}
-local dupeLoops = {}
-
--- Detectar brainrot del personaje actual
-local function _getDupeBrainrot()
-    local charFolder = workspace:FindFirstChild(LP.Name)
-    if charFolder then
-        for _, v in pairs(charFolder:GetDescendants()) do
-            if string.find(v.Name, "Brainrot") then
-                return v.Name
-            end
-        end
-    end
-    -- Fallback: buscar en backpack
-    local bp = LP:FindFirstChildOfClass("Backpack")
-    if bp then
-        for _, t in pairs(bp:GetChildren()) do
-            if string.find(t.Name, "Brainrot") then
-                return t.Name
-            end
-        end
-    end
-    return "Brainrot1:Normal:1:1:0"
-end
-
--- Ver si un plot ya tiene brainrot
-local function _hasBrainrot(plotFolder)
-    for _, v in pairs(plotFolder:GetChildren()) do
-        if string.find(v.Name, "Brainrot") then return true end
-    end
-    return false
-end
-
--- Detección mejorada de la base propia del jugador
-local function _getMyBase()
-    local myName = LP.Name
-    local myId   = tostring(LP.UserId)
-    local Bases  = workspace:FindFirstChild("Bases")
-    if not Bases then return nil end
-
-    for _, base in pairs(Bases:GetChildren()) do
-        local objects = base:FindFirstChild("Objects")
-        if not objects then continue end
-
-        -- Método 1: OwnerBoard con TextLabel con el nombre
-        local ownerBoard = objects:FindFirstChild("OwnerBoard")
-        if ownerBoard then
-            for _, desc in pairs(ownerBoard:GetDescendants()) do
-                if desc:IsA("TextLabel") and (desc.Text == myName or desc.Text == myId) then
-                    return objects
-                end
-            end
-        end
-
-        -- Método 2: IntValue / StringValue con UserId o Name directamente en la base
-        for _, child in pairs(base:GetChildren()) do
-            if (child:IsA("StringValue") or child:IsA("IntValue")) then
-                local val = tostring(child.Value)
-                if val == myId or val == myName then
-                    return objects
-                end
-            end
-        end
-
-        -- Método 3: Atributo Owner en la base
-        local attrOwner = base:GetAttribute("Owner") or base:GetAttribute("OwnerId")
-        if attrOwner and (tostring(attrOwner) == myId or tostring(attrOwner) == myName) then
-            return objects
-        end
-    end
-    return nil
-end
-
--- Loop genérico de dupe
-local function _startDupe(key, getBaseFn)
-    if dupeLoops[key] then return end
-    dupeLoops[key] = task.spawn(function()
-        local ITEM = _getDupeBrainrot()
-        local Base = getBaseFn()
-        if not Base then
-            warn("[DUPE] ❌ Base no encontrada para: " .. key)
-            dupeStates[key] = false
-            dupeLoops[key]  = nil
-            return
-        end
-        print("[DUPE] ✅ " .. key .. " → usando: " .. ITEM)
-
-        local threads = {}
-        for i = 1, 30 do
-            threads[i] = task.spawn(function()
-                while dupeStates[key] do
-                    local p = "Plot" .. i
-                    local f = Base:FindFirstChild(p)
-                    if f and not _hasBrainrot(f) then
-                        pcall(function() _Remote:FireServer("Add", p, ITEM) end)
-                    end
-                    task.wait(0.05)
-                end
-            end)
-        end
-
-        while dupeStates[key] do task.wait(0.5) end
-        for _, t in pairs(threads) do pcall(task.cancel, t) end
-        dupeLoops[key] = nil
-    end)
-end
-
-local function _stopDupe(key)
-    dupeStates[key] = false
-    if dupeLoops[key] then
-        task.cancel(dupeLoops[key])
-        dupeLoops[key] = nil
-    end
-end
-
--- ── UI DUPE ────────────────────────────────────
-local DupeLeft  = DupeTab:DrawSection({ Name = "Auto Base", Position = "left",  Minimized = false })
-local DupeRight = DupeTab:DrawSection({ Name = "Bases Fijas", Position = "right", Minimized = false })
-
--- Auto Base (detecta la base del jugador con múltiples métodos)
-DupeLeft:AddToggle({
-    Name    = "Auto Base",
-    Flag    = "dupe_autobase",
-    Default = false,
-    Callback = function(v)
-        dupeStates.AutoBase = v
-        if v then _startDupe("AutoBase", _getMyBase)
-        else      _stopDupe("AutoBase") end
-    end,
-})
-
--- Bases fijas 1-6
-for _, baseName in ipairs({ "Base1","Base2","Base3","Base4","Base5","Base6" }) do
-    local key = baseName
-    DupeRight:AddToggle({
-        Name    = key,
-        Flag    = "dupe_" .. key:lower(),
-        Default = false,
-        Callback = function(v)
-            dupeStates[key] = v
-            if v then
-                _startDupe(key, function()
-                    local b = workspace.Bases:FindFirstChild(key)
-                    return b and b:FindFirstChild("Objects") or nil
-                end)
-            else
-                _stopDupe(key)
-            end
-        end,
-    })
-end
-
--- ══════════════════════════════════════════════
--- TAB: REEL A BRAINROT (Seller + Hider)
--- ══════════════════════════════════════════════
+-- REEL A BRAINROT (Seller + Hider)
 local PescaTab = Window:DrawTab({
     Name = "Reel A Brainrot",
     Icon = "anchor",
