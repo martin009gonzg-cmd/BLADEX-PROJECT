@@ -1,7 +1,7 @@
 --[[
     		Compkiller Interface
 
-    Author: 4lpaca
+    Author: BLADEX
     License: MIT
     Github: https://github.com/4lpaca-pin/CompKiller
     Original: compkiller.net
@@ -357,7 +357,7 @@ local CurrentCamera: Camera? = cloneref(workspace.CurrentCamera);
 
 local Compkiller = {
 	Version = '2.6',
-	Logo = "rbxassetid://119584400393596",
+	Logo = "rbxassetid://125064196202041",
 	Windows = {},
 	Scale = {
 		Window = UDim2.new(0, 485,0, 565),
@@ -1429,6 +1429,25 @@ end;
 
 function Compkiller:CustomIconHighlight()
 	Compkiller.CustomHighlightMode = true;
+end;
+
+function Compkiller:RainbowHighlight(Speed)
+	Speed = Speed or 3
+	Compkiller.CustomHighlightMode = true;
+	Compkiller._RainbowActive = true;
+	task.spawn(function()
+		local hue = 0
+		while Compkiller._RainbowActive do
+			hue = (hue + (Speed / 100)) % 1
+			local color = Color3.fromHSV(hue, 1, 1)
+			Compkiller:ChangeHighlightColor(color)
+			task.wait(0.05)
+		end
+	end)
+end;
+
+function Compkiller:StopRainbow()
+	Compkiller._RainbowActive = false;
 end;
 
 function Compkiller:_SetNilP(Ins: Instance , Parent: Instance)
