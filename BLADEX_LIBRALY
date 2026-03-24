@@ -373,8 +373,8 @@ local Compkiller = {
 };
 
 Compkiller.Colors = {
-	Highlight = Color3.fromRGB(90, 110, 160),
-	Toggle = Color3.fromRGB(80, 70, 220),
+	Highlight = Color3.fromRGB(195, 192, 215), -- Plata metálica (Ojo de Horus)
+	Toggle = Color3.fromRGB(195, 192, 215),    -- Plata metálica (Ojo de Horus)
 	Risky = Color3.fromRGB(251, 255, 39),
 	BGDBColor = Color3.fromRGB(22, 24, 29),
 	BlockColor = Color3.fromRGB(28, 29, 34),
@@ -6166,8 +6166,8 @@ function Compkiller:SetTheme(name)
 		};
 	elseif name == "Default" then
 		Compkiller.Colors = {
-			Highlight = Color3.fromRGB(90, 110, 160),
-			Toggle = Color3.fromRGB(80, 70, 220),
+			Highlight = Color3.fromRGB(195, 192, 215), -- Plata metálica (Ojo de Horus)
+			Toggle = Color3.fromRGB(195, 192, 215),    -- Plata metálica (Ojo de Horus)
 			Risky = Color3.fromRGB(251, 255, 39),
 			BGDBColor = Color3.fromRGB(22, 24, 29),
 			BlockColor = Color3.fromRGB(28, 29, 34),
@@ -10292,7 +10292,7 @@ function Compkiller:Loader(IconId,Duration)
 	Loader.Name = Compkiller:_RandomString()
 	Loader.Parent = CompKiller
 	Loader.AnchorPoint = Vector2.new(0.5, 0.5)
-	Loader.BackgroundColor3 = Color3.fromRGB(10, 8, 30)
+	Loader.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
 	Loader.BackgroundTransparency = 1
 	Loader.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Loader.BorderSizePixel = 0
@@ -10318,7 +10318,7 @@ function Compkiller:Loader(IconId,Duration)
 	Vignette.BorderSizePixel = 0
 	Vignette.Size = UDim2.new(1, 0, 1, 0)
 	Vignette.Image = Compkiller:CacheImage("rbxassetid://18720640102")
-	Vignette.ImageColor3 = Color3.fromRGB(80, 70, 220)
+	Vignette.ImageColor3 = Color3.fromRGB(195, 192, 215) -- Plata metálica (Ojo de Horus)
 	Vignette.ImageTransparency = 1
 	Vignette.AnchorPoint = Vector2.new(0.5,0.5)
 	Vignette.Position = UDim2.fromScale(0.5,0.5)
