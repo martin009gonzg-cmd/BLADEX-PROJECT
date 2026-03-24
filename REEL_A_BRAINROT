@@ -1417,6 +1417,155 @@ end
 
 Window:DrawCategory({ Name = "Misc" })
 
+-- ══════════════════════════════════════════════
+-- TAB: DUPE
+-- ══════════════════════════════════════════════
+local DupeTab = Window:DrawTab({
+    Name           = "Dupe",
+    Icon           = "copy",
+    EnableScrolling = true,
+})
+
+-- ── LÓGICA DUPE ────────────────────────────────
+local Remote     = game:GetService("ReplicatedStorage").RemoteHandler.Plot
+local Workspace  = game:GetService("Workspace")
+
+-- Estados individuales
+local dupeStates = {
+    AutoBase = false,
+    Base1 = false, Base2 = false, Base3 = false,
+    Base4 = false, Base5 = false, Base6 = false,
+}
+local dupeLoops = {}
+
+-- Obtener el nombre del brainrot del personaje
+local function getBrainrot()
+    local charFolder = Workspace:FindFirstChild(LP.Name)
+    if charFolder then
+        for _, v in pairs(charFolder:GetDescendants()) do
+            if string.find(v.Name, "Brainrot") then
+                return v.Name
+            end
+        end
+    end
+    return "Brainrot1:Normal:1:1:0"
+end
+
+-- Ver si un plot ya tiene brainrot
+local function hasBrainrot(plotFolder)
+    for _, v in pairs(plotFolder:GetChildren()) do
+        if string.find(v.Name, "Brainrot") then return true end
+    end
+    return false
+end
+
+-- Obtener la base propia del jugador
+local function getPlayerBase()
+    for _, base in pairs(Workspace.Bases:GetChildren()) do
+        local objects = base:FindFirstChild("Objects")
+        if objects then
+            local ownerBoard = objects:FindFirstChild("OwnerBoard")
+            if ownerBoard then
+                local board = ownerBoard:FindFirstChild("Board")
+                if board then
+                    local surfaceGui = board:FindFirstChild("SurfaceGui")
+                    if surfaceGui then
+                        for _, guiObj in pairs(surfaceGui:GetDescendants()) do
+                            if guiObj:IsA("TextLabel") and guiObj.Text == LP.Name then
+                                return objects
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- Iniciar loop de dupe para una base específica
+local function startDupe(key, getBaseFn)
+    if dupeLoops[key] then return end
+    dupeLoops[key] = task.spawn(function()
+        local ITEM = getBrainrot()
+        local Base = getBaseFn()
+        if not Base then
+            warn("[DUPE] Base no encontrada para: " .. key)
+            dupeStates[key] = false
+            return
+        end
+        local threads = {}
+        for i = 1, 30 do
+            threads[i] = task.spawn(function()
+                while dupeStates[key] do
+                    local p = "Plot" .. i
+                    local f = Base:FindFirstChild(p)
+                    if f and not hasBrainrot(f) then
+                        pcall(function() Remote:FireServer("Add", p, ITEM) end)
+                    end
+                    task.wait(0.05)
+                end
+            end)
+        end
+        -- Esperar a que se desactive
+        while dupeStates[key] do task.wait(0.5) end
+        for _, t in pairs(threads) do
+            pcall(task.cancel, t)
+        end
+        dupeLoops[key] = nil
+    end)
+end
+
+local function stopDupe(key)
+    dupeStates[key] = false
+    if dupeLoops[key] then
+        task.cancel(dupeLoops[key])
+        dupeLoops[key] = nil
+    end
+end
+
+-- ── UI DUPE ────────────────────────────────────
+local DupeLeft  = DupeTab:DrawSection({ Name = "Auto Base", Position = "left",  Minimized = false })
+local DupeRight = DupeTab:DrawSection({ Name = "Bases Fijas", Position = "right", Minimized = false })
+
+-- Auto Base (detecta la base del jugador automáticamente)
+DupeLeft:AddToggle({
+    Name    = "Auto Base",
+    Flag    = "dupe_autobase",
+    Default = false,
+    Callback = function(v)
+        dupeStates.AutoBase = v
+        if v then
+            startDupe("AutoBase", getPlayerBase)
+        else
+            stopDupe("AutoBase")
+        end
+    end,
+})
+
+-- Bases fijas 1-6
+local BASES_FIJAS = { "Base1", "Base2", "Base3", "Base4", "Base5", "Base6" }
+
+for _, baseName in ipairs(BASES_FIJAS) do
+    local key = baseName
+    DupeRight:AddToggle({
+        Name    = baseName,
+        Flag    = "dupe_" .. key:lower(),
+        Default = false,
+        Callback = function(v)
+            dupeStates[key] = v
+            if v then
+                startDupe(key, function()
+                    local b = Workspace.Bases:FindFirstChild(key)
+                    return b and b:FindFirstChild("Objects") or nil
+                end)
+            else
+                stopDupe(key)
+            end
+        end,
+    })
+end
+
 local AjustesTab = Window:DrawTab({
     Icon = "settings-3",
     Name = "Ajustes",
