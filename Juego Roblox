@@ -1,0 +1,324 @@
+--[[
+    BLADEX HUB — Brainrot Auto V5
+    Presiona Left Alt para abrir / cerrar
+    Mejora/Recolecta en orden 30 → 1
+]]
+
+-- ══════════════════════════════════════════════
+-- SERVICIOS
+-- ══════════════════════════════════════════════
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players           = game:GetService("Players")
+local LP                = Players.LocalPlayer
+
+-- ══════════════════════════════════════════════
+-- REMOTOS (Knit)
+-- ══════════════════════════════════════════════
+local knit = ReplicatedStorage.Packages._Index
+    :FindFirstChild("sleitnick_knit@1.7.0").knit.Services
+
+local rf = {
+    Brainrot   = knit.ContainerService.RF.UpgradeBrainrot,
+    WorkUpdate = knit.ContainerService.RE.WorkUpdate,
+    Container  = knit.ContainerService.RF.BuyContainer,
+    Rebirth    = knit.RebirthService.RF.Rebirth,
+    Speed      = knit.UpgradesService.RF.Upgrade,
+    Skin       = knit.SkinService.RF.BuySkin,
+}
+
+-- ══════════════════════════════════════════════
+-- ESTADOS
+-- ══════════════════════════════════════════════
+local autoCollectOn   = false
+local autoUpgradesOn  = false
+local autoContainerOn = false
+local autoRebirthOn   = false
+local autoSpeedOn     = false
+local autoSkinsOn     = false
+
+-- Loops
+local collectLoop   = nil
+local upgradeLoop   = nil
+local containerLoop = nil
+local rebirthLoop   = nil
+local speedLoop     = nil
+local skinLoop      = nil
+
+-- ══════════════════════════════════════════════
+-- LÓGICA — AUTO RECOGER (30 → 1)
+-- ══════════════════════════════════════════════
+local function startCollectLoop()
+    if collectLoop then return end
+    collectLoop = task.spawn(function()
+        while autoCollectOn do
+            for i = 30, 1, -1 do
+                if not autoCollectOn then break end
+                pcall(function() rf.WorkUpdate:FireServer(tostring(i)) end)
+                task.wait(0.03)
+            end
+            task.wait(0.3)
+        end
+        collectLoop = nil
+    end)
+end
+local function stopCollectLoop()
+    autoCollectOn = false
+    if collectLoop then task.cancel(collectLoop); collectLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LÓGICA — AUTO MEJORAR (30 → 1)
+-- ══════════════════════════════════════════════
+local function startUpgradeLoop()
+    if upgradeLoop then return end
+    upgradeLoop = task.spawn(function()
+        while autoUpgradesOn do
+            for i = 30, 1, -1 do
+                if not autoUpgradesOn then break end
+                pcall(function() rf.Brainrot:InvokeServer(tostring(i)) end)
+                task.wait(0.05)
+            end
+            task.wait(0.5)
+        end
+        upgradeLoop = nil
+    end)
+end
+local function stopUpgradeLoop()
+    autoUpgradesOn = false
+    if upgradeLoop then task.cancel(upgradeLoop); upgradeLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LÓGICA — AUTO CONTAINER
+-- ══════════════════════════════════════════════
+local function startContainerLoop()
+    if containerLoop then return end
+    containerLoop = task.spawn(function()
+        while autoContainerOn do
+            pcall(function() rf.Container:InvokeServer() end)
+            task.wait(1)
+        end
+        containerLoop = nil
+    end)
+end
+local function stopContainerLoop()
+    autoContainerOn = false
+    if containerLoop then task.cancel(containerLoop); containerLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LÓGICA — AUTO REBIRTH
+-- ══════════════════════════════════════════════
+local function startRebirthLoop()
+    if rebirthLoop then return end
+    rebirthLoop = task.spawn(function()
+        while autoRebirthOn do
+            pcall(function() rf.Rebirth:InvokeServer() end)
+            task.wait(5)
+        end
+        rebirthLoop = nil
+    end)
+end
+local function stopRebirthLoop()
+    autoRebirthOn = false
+    if rebirthLoop then task.cancel(rebirthLoop); rebirthLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LÓGICA — AUTO VELOCIDAD
+-- ══════════════════════════════════════════════
+local function startSpeedLoop()
+    if speedLoop then return end
+    speedLoop = task.spawn(function()
+        while autoSpeedOn do
+            pcall(function() rf.Speed:InvokeServer("MovementSpeed", 1) end)
+            task.wait(2)
+        end
+        speedLoop = nil
+    end)
+end
+local function stopSpeedLoop()
+    autoSpeedOn = false
+    if speedLoop then task.cancel(speedLoop); speedLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LÓGICA — AUTO SKINS
+-- ══════════════════════════════════════════════
+local function startSkinLoop()
+    if skinLoop then return end
+    skinLoop = task.spawn(function()
+        while autoSkinsOn do
+            pcall(function() rf.Skin:InvokeServer("fairy_luckyblock") end)
+            task.wait(3)
+        end
+        skinLoop = nil
+    end)
+end
+local function stopSkinLoop()
+    autoSkinsOn = false
+    if skinLoop then task.cancel(skinLoop); skinLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LIBRERÍA — cargada externamente por el loader
+-- ══════════════════════════════════════════════
+local Compkiller = getgenv().Compkiller
+if not Compkiller then
+    warn("[BLADEX] Compkiller no encontrado. Ejecuta el loader primero.")
+    return
+end
+
+local Notifier = Compkiller.newNotify()
+
+-- Color plata metálica (Ojo de Horus) — sincronizado con la librería
+Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
+
+local ConfigManager = Compkiller:ConfigManager({
+    Directory = "BLADEX-HUB",
+    Config    = "BLADEX-BrainrotV5",
+})
+
+Compkiller:Loader(Compkiller.Logo, 2.5).yield()
+
+local Window = Compkiller.new({
+    Name     = "BLADEX HUB",
+    Keybind  = "LeftAlt",
+    Logo     = Compkiller.Logo,
+    Scale    = UDim2.new(0, 460, 0, 320),
+    TextSize = 15,
+})
+
+Notifier.new({
+    Title    = "BLADEX HUB",
+    Content  = "Brainrot Auto V5 cargado!",
+    Duration = 5,
+    Icon     = Compkiller.Logo,
+})
+
+-- ══════════════════════════════════════════════
+-- UI — TABS
+-- ══════════════════════════════════════════════
+Window:DrawCategory({ Name = "Main" })
+
+-- ══════════════════════════════════════════════
+-- TAB: AUTO FARM
+-- ══════════════════════════════════════════════
+local FarmTab = Window:DrawTab({
+    Name           = "Auto Farm",
+    Icon           = "rocket",
+    EnableScrolling = true,
+})
+
+local FarmLeft = FarmTab:DrawSection({ Name = "Farm Principal", Position = "left", Minimized = false })
+
+FarmLeft:AddToggle({
+    Name     = "Auto Recoger (30-1)",
+    Flag     = "auto_collect",
+    Default  = false,
+    Callback = function(v)
+        autoCollectOn = v
+        if v then startCollectLoop() else stopCollectLoop() end
+    end,
+})
+
+FarmLeft:AddToggle({
+    Name     = "Auto Mejorar (30-1)",
+    Flag     = "auto_upgrades",
+    Default  = false,
+    Callback = function(v)
+        autoUpgradesOn = v
+        if v then startUpgradeLoop() else stopUpgradeLoop() end
+    end,
+})
+
+FarmLeft:AddToggle({
+    Name     = "Auto Comprar Container",
+    Flag     = "auto_container",
+    Default  = false,
+    Callback = function(v)
+        autoContainerOn = v
+        if v then startContainerLoop() else stopContainerLoop() end
+    end,
+})
+
+local FarmRight = FarmTab:DrawSection({ Name = "Extras", Position = "right", Minimized = false })
+
+FarmRight:AddToggle({
+    Name     = "Auto Rebirth",
+    Flag     = "auto_rebirth",
+    Default  = false,
+    Callback = function(v)
+        autoRebirthOn = v
+        if v then startRebirthLoop() else stopRebirthLoop() end
+    end,
+})
+
+FarmRight:AddToggle({
+    Name     = "Auto Velocidad",
+    Flag     = "auto_speed",
+    Default  = false,
+    Callback = function(v)
+        autoSpeedOn = v
+        if v then startSpeedLoop() else stopSpeedLoop() end
+    end,
+})
+
+FarmRight:AddToggle({
+    Name     = "Auto Comprar Skins",
+    Flag     = "auto_skins",
+    Default  = false,
+    Callback = function(v)
+        autoSkinsOn = v
+        if v then startSkinLoop() else stopSkinLoop() end
+    end,
+})
+
+-- ══════════════════════════════════════════════
+-- TAB: AJUSTES
+-- ══════════════════════════════════════════════
+Window:DrawCategory({ Name = "Misc" })
+
+local AjustesTab = Window:DrawTab({
+    Icon           = "settings-3",
+    Name           = "Ajustes",
+    Type           = "Single",
+    EnableScrolling = true,
+})
+
+local AjustesSection = AjustesTab:DrawSection({ Name = "UI Settings", Minimized = true })
+
+AjustesSection:AddToggle({
+    Name     = "Always Show Frame",
+    Default  = false,
+    Callback = function(v) Window.AlwayShowTab = v end,
+})
+
+AjustesSection:AddColorPicker({
+    Name    = "Highlight",
+    Default = Compkiller.Colors.Highlight,
+    Callback = function(v)
+        Compkiller.Colors.Highlight = v
+        Compkiller:RefreshCurrentColor()
+    end,
+})
+
+AjustesSection:AddDropdown({
+    Name     = "Select Theme",
+    Default  = "Default",
+    Values   = { "Default", "Dark Green", "Dark Blue", "Purple Rose", "Skeet" },
+    Callback = function(v) Compkiller:SetTheme(v) end,
+})
+
+Window:DrawConfig({
+    Name   = "Config",
+    Icon   = "folder",
+    Config = ConfigManager,
+}):Init()
+
+-- Reconectar personaje
+LP.CharacterAdded:Connect(function(c)
+    -- por si alguna lógica futura necesita el personaje
+end)
+
+print("[BLADEX HUB] Brainrot Auto V5 cargado!")
