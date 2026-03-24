@@ -1099,7 +1099,12 @@ if not Compkiller then
     return
 end
 
+Compkiller:RainbowHighlight(3)
+
 local Notifier = Compkiller.newNotify()
+
+-- ✅ Color de animación: Plata metálica (Ojo de Horus) — sincronizado con la librería
+Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
 local ConfigManager = Compkiller:ConfigManager({
     Directory = "BLADEX-HUB",
     Config = "BLADEX-Configs"
