@@ -1099,18 +1099,20 @@ if not Compkiller then
     return
 end
 
+Compkiller:RainbowHighlight(3)
+
 local Notifier = Compkiller.newNotify()
 local ConfigManager = Compkiller:ConfigManager({
     Directory = "BLADEX-HUB",
     Config = "BLADEX-Configs"
 })
 
-Compkiller:Loader("rbxassetid://119584400393596", 2.5).yield()
+Compkiller:Loader(Compkiller.Logo, 2.5).yield()
 
 local Window = Compkiller.new({
     Name = "BLADEX HUB",
     Keybind = "LeftAlt",
-    Logo = "rbxassetid://119584400393596",
+    Logo = Compkiller.Logo,
     Scale = UDim2.new(0, 460, 0, 320),
     TextSize = 15,
 })
@@ -1119,7 +1121,7 @@ Notifier.new({
     Title = "BLADEX HUB",
     Content = "Reel A Brainrot cargado!",
     Duration = 5,
-    Icon = "rbxassetid://119584400393596"
+    Icon = Compkiller.Logo
 })
 
 -- UI — TABS
