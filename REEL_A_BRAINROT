@@ -1099,8 +1099,6 @@ if not Compkiller then
     return
 end
 
-Compkiller:RainbowHighlight(3)
-
 local Notifier = Compkiller.newNotify()
 local ConfigManager = Compkiller:ConfigManager({
     Directory = "BLADEX-HUB",
