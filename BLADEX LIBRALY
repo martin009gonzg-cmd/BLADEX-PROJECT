@@ -10635,6 +10635,18 @@ end;
 
 Compkiller.NilFolder.Name = "Nil-Instances";
 
+function Compkiller:RainbowHighlight(element, speed)
+	speed = speed or 0.05
+	task.spawn(function()
+		local h = 0
+		while element and element.Parent do
+			h = (h + speed) % 1
+			element.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+			task.wait(0.03)
+		end
+	end)
+end
+
 
 
 return Compkiller;
