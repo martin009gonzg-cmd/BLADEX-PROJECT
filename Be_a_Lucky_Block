@@ -23,6 +23,16 @@ local LP = Players.LocalPlayer
 local knit = ReplicatedStorage.Packages._Index
     :FindFirstChild("sleitnick_knit@1.7.0").knit.Services
 
+-- Buscar remoto GetReward en los servicios de Knit
+local GetRewardRemote = nil
+for _, service in pairs(knit:GetChildren()) do
+    local rf = service:FindFirstChild("RF")
+    if rf and rf:FindFirstChild("GetReward") then
+        GetRewardRemote = rf.GetReward
+        break
+    end
+end
+
 local rf = {
     Brainrot   = knit.ContainerService.RF.UpgradeBrainrot,
     WorkUpdate = knit.ContainerService.RE.WorkUpdate,
@@ -32,6 +42,7 @@ local rf = {
     Speed      = knit.UpgradesService.RF.Upgrade,
     Skin       = knit.SkinService.RF.BuySkin,
     EquipSkin  = knit.SkinService.RF.EquipSkin,
+    GetReward  = GetRewardRemote,  -- Puede ser nil si no se encontró
 }
 
 -- ════════════════════════════════════════════════════════════════
@@ -70,8 +81,9 @@ local LB_CONFIG = {
 -- 4. FUNCIONES AUXILIARES
 -- ════════════════════════════════════════════════════════════════
 local function safeInvoke(remote, ...)
+    if not remote then return false, "Remoto no disponible" end
     local ok, res = pcall(remote.InvokeServer, remote, ...)
-    return ok and res or nil
+    return ok, res
 end
 
 local function teleportTo(cf, label)
@@ -410,6 +422,7 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
+-- Sección izquierda: Auto Farm
 local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
 
 LeftSection:AddToggle({
@@ -447,6 +460,7 @@ LeftSection:AddToggle({
     Callback = function(v) _G.AutoPlaceBest = v end,
 })
 
+-- Sección derecha: Skins
 local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
 
 local selectedSkin = "default"
@@ -476,6 +490,7 @@ RightSection:AddButton({
     end,
 })
 
+-- Sección completa: Lucky Block Config
 local LbConfigSection = MainTab:DrawSection({ Name = "Lucky Block Config", Position = "full", Minimized = false })
 LbConfigSection:AddToggle({
     Name     = "Auto Lucky Block Farm",
@@ -488,6 +503,40 @@ LbConfigSection:AddToggle({
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v) _G.AutoSkins = v end,
+})
+
+-- NUEVA SECCIÓN: Recompensas Especiales
+local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = false })
+RewardSection:AddButton({
+    Name = "Auto Reclamar Bloque Espiritual",
+    Callback = function()
+        if not rf.GetReward then
+            Notifier.new({
+                Title    = "BLADEX HUB",
+                Content  = "Remoto GetReward no encontrado. No se puede reclamar.",
+                Duration = 5,
+                Icon     = Compkiller.Logo,
+            })
+            return
+        end
+        local ok, result = safeInvoke(rf.GetReward)
+        if ok then
+            Notifier.new({
+                Title    = "BLADEX HUB",
+                Content  = "¡Reclamo enviado con éxito!",
+                Duration = 5,
+                Icon     = Compkiller.Logo,
+            })
+        else
+            warn("[BLADEX] Error al reclamar: " .. tostring(result))
+            Notifier.new({
+                Title    = "BLADEX HUB",
+                Content  = "Error al reclamar: " .. tostring(result),
+                Duration = 5,
+                Icon     = Compkiller.Logo,
+            })
+        end
+    end,
 })
 
 -- Tab de ajustes
