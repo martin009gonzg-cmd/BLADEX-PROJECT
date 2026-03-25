@@ -424,9 +424,38 @@ FarmLeft:AddButton({
     end,
 })
 
-local FarmRight = FarmTab:DrawSection({ Name = "Extras", Position = "right", Minimized = false })
+FarmLeft:AddButton({
+    Name     = "Speed Max (x100)",
+    Callback = function()
+        pcall(function() rf.Speed:InvokeServer("MovementSpeed", 100) end)
+    end,
+})
 
-FarmRight:AddToggle({
+-- ══════════════════════════════════════════════
+-- TAB: BeALuckyBlock (con opciones movidas)
+-- ══════════════════════════════════════════════
+local LbTab = Window:DrawTab({
+    Name            = "BeALuckyBlock",
+    Icon            = "box",
+    EnableScrolling = true,
+})
+
+local LbSectionLeft = LbTab:DrawSection({ Name = "Auto Farm Base14", Position = "left", Minimized = false })
+
+LbSectionLeft:AddToggle({
+    Name     = "Auto BeALuckyBlock Farm",
+    Flag     = "lb_farm",
+    Default  = false,
+    Callback = function(v)
+        lbFarmOn = v
+        if v then startLbFarmLoop() else stopLbFarmLoop() end
+    end,
+})
+
+-- Sección de Extras movida a BeALuckyBlock
+local LbSectionExtras = LbTab:DrawSection({ Name = "Extras", Position = "left", Minimized = false })
+
+LbSectionExtras:AddToggle({
     Name     = "Auto Rebirth",
     Flag     = "auto_rebirth",
     Default  = false,
@@ -436,7 +465,7 @@ FarmRight:AddToggle({
     end,
 })
 
-FarmRight:AddToggle({
+LbSectionExtras:AddToggle({
     Name     = "Auto Comprar Velocidad",
     Flag     = "auto_speed",
     Default  = false,
@@ -446,41 +475,13 @@ FarmRight:AddToggle({
     end,
 })
 
-FarmRight:AddToggle({
+LbSectionExtras:AddToggle({
     Name     = "Auto Comprar Lucky Blocks",
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v)
         autoSkinsOn = v
         if v then startSkinLoop() else stopSkinLoop() end
-    end,
-})
-
-FarmRight:AddButton({
-    Name     = "Speed Max (x100)",
-    Callback = function()
-        pcall(function() rf.Speed:InvokeServer("MovementSpeed", 100) end)
-    end,
-})
-
--- ══════════════════════════════════════════════
--- TAB: BeALuckyBlock FARM
--- ══════════════════════════════════════════════
-local LbTab = Window:DrawTab({
-    Name            = "BeALuckyBlock",
-    Icon            = "box",
-    EnableScrolling = true,
-})
-
-local LbSection = LbTab:DrawSection({ Name = "Auto Farm Base14", Position = "left", Minimized = false })
-
-LbSection:AddToggle({
-    Name     = "Auto BeALuckyBlock Farm",
-    Flag     = "lb_farm",
-    Default  = false,
-    Callback = function(v)
-        lbFarmOn = v
-        if v then startLbFarmLoop() else stopLbFarmLoop() end
     end,
 })
 
