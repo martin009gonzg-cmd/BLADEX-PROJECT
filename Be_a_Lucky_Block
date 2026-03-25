@@ -1,4 +1,4 @@
--- Suponiendo que Compkiller ya está cargado en getgenv().Compkiller
+- Suponiendo que Compkiller ya está cargado en getgenv().Compkiller
 local Compkiller = getgenv().Compkiller
 local Window = Compkiller.new({ Name = "Mi Hub", Keybind = "LeftAlt" })
 
