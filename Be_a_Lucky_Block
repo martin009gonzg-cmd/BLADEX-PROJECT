@@ -1,16 +1,21 @@
 --[[
-    BLADEX HUB — Brainrot Auto V5 (Modificado)
+    BLADEX HUB — Brainrot Auto V5
     Presiona Left Alt para abrir / cerrar
+    Mejora/Recolecta en orden 30 -> 1
 ]]
 
+-- ══════════════════════════════════════════════
+-- SERVICIOS
+-- ══════════════════════════════════════════════
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players           = game:GetService("Players")
 local LP                = Players.LocalPlayer
 
 -- ══════════════════════════════════════════════
--- REMOTOS
+-- REMOTOS — Brainrot (Knit)
 -- ══════════════════════════════════════════════
-local knit = ReplicatedStorage.Packages._Index:FindFirstChild("sleitnick_knit@1.7.0").knit.Services
+local knit = ReplicatedStorage.Packages._Index
+    :FindFirstChild("sleitnick_knit@1.7.0").knit.Services
 
 local rf = {
     Brainrot   = knit.ContainerService.RF.UpgradeBrainrot,
@@ -23,162 +28,552 @@ local rf = {
     EquipSkin  = knit.SkinService.RF.EquipSkin,
 }
 
-local lbRF = knit.RunningService.RF
-local lbRemotes = {
-    StartRun       = lbRF:WaitForChild("StartRun", 10),
-    EndMove        = lbRF:WaitForChild("EndMove", 10),
-    OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10),
-    Collected      = lbRF:WaitForChild("Collected", 10),
-    UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame", 10),
+-- ══════════════════════════════════════════════
+-- REMOTOS — Lucky Block (RunningService)
+-- ══════════════════════════════════════════════
+local LB_CONFIG = {
+    DELAYS = {
+        AFTER_TELEPORT   = 0.8,
+        AFTER_ACTION     = 0.6,
+        AFTER_OPEN_BLOCK = 0.9,
+        BETWEEN_STEPS    = 0.5,
+        CYCLE_END        = 1.0,
+        RESPAWN_WAIT     = 3.0,
+    },
+    COORDS = {
+        CAMINADORA = CFrame.new(710.440674,  38.81287,   -2124.65723),
+        BASE       = CFrame.new(730.310547,  38.8128662, -2152.41089),
+    },
+    MAX_RETRIES = 3,
 }
 
+local lbRF = ReplicatedStorage.Packages._Index
+    :FindFirstChild("sleitnick_knit@1.7.0")
+    .knit.Services.RunningService.RF
+
+local StartRun       = lbRF:WaitForChild("StartRun",       10)
+local EndMove        = lbRF:WaitForChild("EndMove",        10)
+local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
+local Collected      = lbRF:WaitForChild("Collected",      10)
+local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
+
 -- ══════════════════════════════════════════════
--- LÓGICA DE TOCAR (Touch Logic)
+-- ESTADOS — Brainrot
 -- ══════════════════════════════════════════════
-local function performTouchFarm(enabledVar)
-    for _, v in pairs(game.Workspace:GetDescendants()) do
-        if not _G[enabledVar] then break end
-        if v:IsA("BasePart") and v.Transparency < 1 then
-            if v:FindFirstChildOfClass("BillboardGui") or v:FindFirstChildOfClass("SurfaceGui") then
-                local char = LP.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    firetouchinterest(char.HumanoidRootPart, v, 0) 
-                    task.wait()
-                    firetouchinterest(char.HumanoidRootPart, v, 1) 
+local autoCollectOn   = false   -- auto money (nueva lógica física)
+local autoUpgradesOn  = false
+local autoContainerOn = false
+local autoRebirthOn   = false
+local autoSpeedOn     = false
+local autoSkinsOn     = false
+local autoPlaceBestOn = false   -- nuevo: auto colocar brainrots
+
+local collectLoop   = nil
+local upgradeLoop   = nil
+local containerLoop = nil
+local rebirthLoop   = nil
+local speedLoop     = nil
+local skinLoop      = nil
+local placeBestLoop = nil
+
+-- ══════════════════════════════════════════════
+-- ESTADO — Lucky Block
+-- ══════════════════════════════════════════════
+local lbFarmOn    = false
+local lbFarmLoop  = nil
+local lbCycles    = 0
+
+-- ══════════════════════════════════════════════
+-- LOGICA — AUTO RECOGER (NUEVA: FISICA)
+-- ══════════════════════════════════════════════
+local function startCollectLoop()
+    if collectLoop then return end
+    collectLoop = task.spawn(function()
+        _G.AutoCashPhysical = true
+        while autoCollectOn do
+            for _, v in pairs(workspace:GetDescendants()) do
+                if not autoCollectOn then break end
+                -- Busca partes con interfaces de texto (indicador de dinero)
+                if v:IsA("BasePart") and v.Transparency < 1 then
+                    if v:FindFirstChildOfClass("BillboardGui") or v:FindFirstChildOfClass("SurfaceGui") then
+                        local char = LP.Character
+                        if char and char:FindFirstChild("HumanoidRootPart") then
+                            firetouchinterest(char.HumanoidRootPart, v, 0)
+                            task.wait()
+                            firetouchinterest(char.HumanoidRootPart, v, 1)
+                        end
+                    end
+                end
+            end
+            task.wait(0.1)
+        end
+        _G.AutoCashPhysical = false
+        collectLoop = nil
+    end)
+end
+
+local function stopCollectLoop()
+    autoCollectOn = false
+    _G.AutoCashPhysical = false
+    if collectLoop then task.cancel(collectLoop); collectLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LOGICA — AUTO MEJORAR (30 -> 1)
+-- ══════════════════════════════════════════════
+local function startUpgradeLoop()
+    if upgradeLoop then return end
+    upgradeLoop = task.spawn(function()
+        while autoUpgradesOn do
+            for i = 30, 1, -1 do
+                if not autoUpgradesOn then break end
+                pcall(function() rf.Brainrot:InvokeServer(tostring(i)) end)
+                task.wait(0.05)
+            end
+            task.wait(0.5)
+        end
+        upgradeLoop = nil
+    end)
+end
+local function stopUpgradeLoop()
+    autoUpgradesOn = false
+    if upgradeLoop then task.cancel(upgradeLoop); upgradeLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LOGICA — AUTO CONTAINER
+-- ══════════════════════════════════════════════
+local function startContainerLoop()
+    if containerLoop then return end
+    containerLoop = task.spawn(function()
+        while autoContainerOn do
+            pcall(function() rf.Container:InvokeServer() end)
+            task.wait(1)
+        end
+        containerLoop = nil
+    end)
+end
+local function stopContainerLoop()
+    autoContainerOn = false
+    if containerLoop then task.cancel(containerLoop); containerLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LOGICA — AUTO REBIRTH
+-- ══════════════════════════════════════════════
+local function startRebirthLoop()
+    if rebirthLoop then return end
+    rebirthLoop = task.spawn(function()
+        while autoRebirthOn do
+            pcall(function() rf.Rebirth:InvokeServer() end)
+            task.wait(5)
+        end
+        rebirthLoop = nil
+    end)
+end
+local function stopRebirthLoop()
+    autoRebirthOn = false
+    if rebirthLoop then task.cancel(rebirthLoop); rebirthLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LOGICA — AUTO VELOCIDAD
+-- ══════════════════════════════════════════════
+local function startSpeedLoop()
+    if speedLoop then return end
+    speedLoop = task.spawn(function()
+        while autoSpeedOn do
+            pcall(function() rf.Speed:InvokeServer("MovementSpeed", 1) end)
+            task.wait(2)
+        end
+        speedLoop = nil
+    end)
+end
+local function stopSpeedLoop()
+    autoSpeedOn = false
+    if speedLoop then task.cancel(speedLoop); speedLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LOGICA — AUTO COLOCAR BRAINROTS (PlaceBest)
+-- ══════════════════════════════════════════════
+local function startPlaceBestLoop()
+    if placeBestLoop then return end
+    placeBestLoop = task.spawn(function()
+        getgenv().AutoBest = true
+        while autoPlaceBestOn do
+            pcall(function() rf.PlaceBest:InvokeServer() end)
+            task.wait(3)
+        end
+        getgenv().AutoBest = false
+        placeBestLoop = nil
+    end)
+end
+local function stopPlaceBestLoop()
+    autoPlaceBestOn = false
+    getgenv().AutoBest = false
+    if placeBestLoop then task.cancel(placeBestLoop); placeBestLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LOGICA — AUTO SKINS (todas en orden)
+-- ══════════════════════════════════════════════
+local SKIN_LIST = {
+    "fairy_luckyblock",
+    "freezy_luckyblock",
+    "lava_luckyblock",
+    "gliched_luckyblock",
+    "void_luckyblock",
+    "cyborg_luckyblock",
+    "divine_luckyblock",
+    "inferno_luckyblock",
+}
+
+local function startSkinLoop()
+    if skinLoop then return end
+    skinLoop = task.spawn(function()
+        while autoSkinsOn do
+            for _, skinId in ipairs(SKIN_LIST) do
+                if not autoSkinsOn then break end
+                pcall(function() rf.Skin:InvokeServer(skinId) end)
+                task.wait(3)
+            end
+        end
+        skinLoop = nil
+    end)
+end
+local function stopSkinLoop()
+    autoSkinsOn = false
+    if skinLoop then task.cancel(skinLoop); skinLoop = nil end
+end
+
+-- ══════════════════════════════════════════════
+-- LOGICA — LUCKY BLOCK AUTOFARM
+-- ══════════════════════════════════════════════
+local function lbTeleport(cf, label)
+    for attempt = 1, LB_CONFIG.MAX_RETRIES do
+        local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = cf
+            task.wait(LB_CONFIG.DELAYS.AFTER_TELEPORT)
+            if (hrp.CFrame.Position - cf.Position).Magnitude < 5 then return true end
+        end
+        warn("[LB] Teleport " .. label .. " fallo intento " .. attempt)
+        task.wait(0.5)
+    end
+    return false
+end
+
+local function lbSafeInvoke(remote, label, ...)
+    local args = {...}
+    for attempt = 1, LB_CONFIG.MAX_RETRIES do
+        local ok, res = pcall(function()
+            return remote:InvokeServer(unpack(args))
+        end)
+        if ok then return res end
+        warn("[LB][" .. label .. "] Error intento " .. attempt .. ": " .. tostring(res))
+        task.wait(0.2 * attempt)
+    end
+end
+
+local function getLuckyBlockId()
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return "10708364552" end
+    local closest, closestDist = nil, math.huge
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name:lower():find("lucky", 1, true) then
+            local pos
+            if obj:IsA("Model") then
+                local ok, p = pcall(function() return obj:GetPivot().Position end)
+                pos = ok and p
+            elseif obj:IsA("BasePart") then
+                pos = obj.Position
+            end
+            if pos then
+                local dist = (hrp.Position - pos).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closest = obj
                 end
             end
         end
     end
+    if closest then
+        return tostring(
+            closest:GetAttribute("Id") or
+            closest:GetAttribute("ID") or
+            closest:GetAttribute("BlockId") or
+            closest.Name
+        )
+    end
+    return "10708364552"
+end
+
+local function lbWaitForCharacter()
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local hum  = char:WaitForChild("Humanoid", 10)
+    if hum and hum.Health <= 0 then
+        char = LP.CharacterAdded:Wait()
+        task.wait(LB_CONFIG.DELAYS.RESPAWN_WAIT)
+    end
+    return char, char:WaitForChild("HumanoidRootPart")
+end
+
+local function lbFarmCycle()
+    local _, hrp = lbWaitForCharacter()
+
+    lbTeleport(LB_CONFIG.COORDS.CAMINADORA, "Caminadora")
+    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
+
+    lbSafeInvoke(StartRun, "StartRun")
+    task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
+    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
+
+    lbSafeInvoke(EndMove, "EndMove")
+    task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
+    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
+
+    lbSafeInvoke(OpenLuckyBlock, "OpenLuckyBlock", "base14")
+    task.wait(LB_CONFIG.DELAYS.AFTER_OPEN_BLOCK)
+    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
+
+    local blockId = getLuckyBlockId()
+    lbSafeInvoke(Collected, "Collected", blockId)
+    task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
+    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
+
+    lbSafeInvoke(UpdateCFrame, "UpdateCFrame", hrp.CFrame)
+    task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
+    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
+
+    lbTeleport(LB_CONFIG.COORDS.BASE, "Base")
+    task.wait(LB_CONFIG.DELAYS.CYCLE_END)
+
+    lbCycles = lbCycles + 1
+    print("[LB Farm] Ciclo " .. lbCycles .. " completo")
+end
+
+local function startLbFarmLoop()
+    if lbFarmLoop then return end
+    lbFarmLoop = task.spawn(function()
+        while lbFarmOn do
+            local ok, err = pcall(lbFarmCycle)
+            if not ok then
+                warn("[LB Farm] Error: " .. tostring(err))
+                task.wait(2)
+            end
+        end
+        lbFarmLoop = nil
+    end)
+end
+
+local function stopLbFarmLoop()
+    lbFarmOn = false
+    if lbFarmLoop then task.cancel(lbFarmLoop); lbFarmLoop = nil end
 end
 
 -- ══════════════════════════════════════════════
--- INTERFAZ (UI)
+-- LIBRERIA — cargada externamente por el loader
 -- ══════════════════════════════════════════════
 local Compkiller = getgenv().Compkiller
+if not Compkiller then
+    warn("[BLADEX] Compkiller no encontrado. Ejecuta el loader primero.")
+    return
+end
+
+local Notifier = Compkiller.newNotify()
+
+Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
+
+local ConfigManager = Compkiller:ConfigManager({
+    Directory = "BLADEX-HUB",
+    Config    = "BLADEX-BrainrotV5",
+})
+
+Compkiller:Loader(Compkiller.Logo, 2.5).yield()
+
 local Window = Compkiller.new({
     Name     = "BLADEX HUB",
     Keybind  = "LeftAlt",
+    Logo     = Compkiller.Logo,
     Scale    = UDim2.new(0, 460, 0, 320),
+    TextSize = 15,
 })
 
+Notifier.new({
+    Title    = "BLADEX HUB",
+    Content  = "BeaLuckyBlock cargado!",
+    Duration = 5,
+    Icon     = Compkiller.Logo,
+})
+
+-- ══════════════════════════════════════════════
+-- UI — TABS
+-- ══════════════════════════════════════════════
 Window:DrawCategory({ Name = "Main" })
 
-local MainTab = Window:DrawTab({
+-- ══════════════════════════════════════════════
+-- TAB: BEA LUCKY BLOCK (contiene todos los toggles)
+-- ══════════════════════════════════════════════
+local LbTab = Window:DrawTab({
     Name            = "BeaLuckyBlock",
     Icon            = "box",
     EnableScrolling = true,
 })
 
--- SECCIÓN IZQUIERDA: AUTO FARM
-local FarmSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left" })
+-- Sección izquierda: Auto Farm (con toggles originales + nuevo)
+local LbLeft = LbTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
 
--- Auto Money (Nueva Lógica)
-FarmSection:AddToggle({
+LbLeft:AddToggle({
     Name     = "auto money",
+    Flag     = "auto_collect",
     Default  = false,
     Callback = function(v)
-        _G.AutoCashPhysical = v
-        if v then
-            task.spawn(function()
-                while _G.AutoCashPhysical do
-                    performTouchFarm("AutoCashPhysical")
-                    task.wait(0.1)
-                end
-            end)
-        end
+        autoCollectOn = v
+        if v then startCollectLoop() else stopCollectLoop() end
     end,
 })
 
--- Upgrade Brainrots (Nueva Lógica)
-FarmSection:AddToggle({
+LbLeft:AddToggle({
     Name     = "upgrade brainrots",
+    Flag     = "auto_upgrades",
     Default  = false,
     Callback = function(v)
-        _G.AutoUpgradeTouch = v
-        if v then
-            task.spawn(function()
-                while _G.AutoUpgradeTouch do
-                    performTouchFarm("AutoUpgradeTouch")
-                    task.wait(0.1)
-                end
-            end)
-        end
+        autoUpgradesOn = v
+        if v then startUpgradeLoop() else stopUpgradeLoop() end
     end,
 })
 
--- Auto Comprar Velocidad (Nueva Lógica)
-FarmSection:AddToggle({
+LbLeft:AddToggle({
     Name     = "auto comprar velocidad",
+    Flag     = "auto_speed",
     Default  = false,
     Callback = function(v)
-        _G.AutoSpeedTouch = v
-        if v then
-            task.spawn(function()
-                while _G.AutoSpeedTouch do
-                    performTouchFarm("AutoSpeedTouch")
-                    task.wait(0.1)
-                end
-            end)
-        end
+        autoSpeedOn = v
+        if v then startSpeedLoop() else stopSpeedLoop() end
     end,
 })
 
--- Auto Colocar Brainrots (Nueva Lógica AutoBest)
-FarmSection:AddToggle({
-    Name     = "auto colocar brainrots",
-    Default  = false,
-    Callback = function(v)
-        getgenv().AutoBest = v
-        if v then
-            task.spawn(function()
-                while getgenv().AutoBest do
-                    pcall(function() rf.PlaceBest:InvokeServer() end)
-                    task.wait(3)
-                end
-            end)
-        end
-    end,
-})
-
-FarmSection:AddToggle({
+LbLeft:AddToggle({
     Name     = "Auto Rebirth",
+    Flag     = "auto_rebirth",
     Default  = false,
     Callback = function(v)
-        _G.AutoRebirth = v
-        task.spawn(function()
-            while _G.AutoRebirth do
-                pcall(function() rf.Rebirth:InvokeServer() end)
-                task.wait(5)
-            end
+        autoRebirthOn = v
+        if v then startRebirthLoop() else stopRebirthLoop() end
+    end,
+})
+
+-- Nuevo toggle: auto colocar brainrots
+LbLeft:AddToggle({
+    Name     = "auto colocar brainrots",
+    Flag     = "auto_placebest",
+    Default  = false,
+    Callback = function(v)
+        autoPlaceBestOn = v
+        if v then startPlaceBestLoop() else stopPlaceBestLoop() end
+    end,
+})
+
+-- Sección derecha: Skins
+local LbRight = LbTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
+
+local selectedSkin = "default"
+
+LbRight:AddDropdown({
+    Name    = "Seleccionar Skin",
+    Flag    = "skin_equip",
+    Default = "default",
+    Values  = {
+        "default",
+        "fairy_luckyblock",
+        "freezy_luckyblock",
+        "lava_luckyblock",
+        "gliched_luckyblock",
+        "void_luckyblock",
+        "cyborg_luckyblock",
+        "divine_luckyblock",
+        "inferno_luckyblock",
+    },
+    Callback = function(v)
+        selectedSkin = v
+    end,
+})
+
+LbRight:AddButton({
+    Name     = "Equipar Skin",
+    Callback = function()
+        pcall(function()
+            rf.EquipSkin:InvokeServer(selectedSkin)
         end)
     end,
 })
 
--- SECCIÓN DERECHA: LUCKY BLOCK & SKINS
-local RightSection = MainTab:DrawSection({ Name = "Lucky Block & Skins", Position = "right" })
-
--- Movido de la pestaña anterior
-RightSection:AddToggle({
+-- Nueva sección (full width): Lucky Block Config (movida desde la pestaña anterior)
+local LbLuckySection = LbTab:DrawSection({ Name = "Lucky Block Config", Position = "full", Minimized = false })
+LbLuckySection:AddToggle({
     Name     = "Auto Lucky Block Farm",
+    Flag     = "lb_farm",
     Default  = false,
     Callback = function(v)
-        -- Aquí iría tu función lbFarmCycle existente
-        _G.LBFarm = v
+        lbFarmOn = v
+        if v then startLbFarmLoop() else stopLbFarmLoop() end
+    end,
+})
+LbLuckySection:AddToggle({
+    Name     = "Auto comprar lucky blocks",
+    Flag     = "auto_skins",
+    Default  = false,
+    Callback = function(v)
+        autoSkinsOn = v
+        if v then startSkinLoop() else stopSkinLoop() end
     end,
 })
 
-local selectedSkin = "default"
-RightSection:AddDropdown({
-    Name    = "Seleccionar Skin",
-    Values  = {"default", "fairy_luckyblock", "freezy_luckyblock", "lava_luckyblock", "gliched_luckyblock", "void_luckyblock", "divine_luckyblock", "inferno_luckyblock"},
-    Callback = function(v) selectedSkin = v end,
-})
-
-RightSection:AddButton({
-    Name     = "Equipar Skin",
-    Callback = function() pcall(function() rf.EquipSkin:InvokeServer(selectedSkin) end) end,
-})
-
--- Configuración final
+-- ══════════════════════════════════════════════
+-- TAB: AJUSTES (sin cambios)
+-- ══════════════════════════════════════════════
 Window:DrawCategory({ Name = "Misc" })
--- (Resto de configuración de Ajustes y ConfigManager igual que tu original)
+
+local AjustesTab = Window:DrawTab({
+    Icon            = "settings-3",
+    Name            = "Ajustes",
+    Type            = "Single",
+    EnableScrolling = true,
+})
+
+local AjustesSection = AjustesTab:DrawSection({ Name = "UI Settings", Minimized = true })
+
+AjustesSection:AddToggle({
+    Name     = "Always Show Frame",
+    Default  = false,
+    Callback = function(v) Window.AlwayShowTab = v end,
+})
+
+AjustesSection:AddColorPicker({
+    Name     = "Highlight",
+    Default  = Compkiller.Colors.Highlight,
+    Callback = function(v)
+        Compkiller.Colors.Highlight = v
+        Compkiller:RefreshCurrentColor()
+    end,
+})
+
+AjustesSection:AddDropdown({
+    Name     = "Select Theme",
+    Default  = "Default",
+    Values   = { "Default", "Dark Green", "Dark Blue", "Purple Rose", "Skeet" },
+    Callback = function(v) Compkiller:SetTheme(v) end,
+})
+
+Window:DrawConfig({
+    Name   = "Config",
+    Icon   = "folder",
+    Config = ConfigManager,
+}):Init()
+
+LP.CharacterAdded:Connect(function(c)
+    -- por si alguna logica futura necesita el personaje
+end)
+
+print("[BLADEX HUB] BeaLuckyBlock cargado!")
