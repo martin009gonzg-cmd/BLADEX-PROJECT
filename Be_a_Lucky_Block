@@ -126,7 +126,7 @@ local function stopUpgradeLoop()
 end
 
 -- ══════════════════════════════════════════════
--- LOGICA — AUTO MEJORAR BASE (Container)
+-- LOGICA — AUTO MEJORAR BASE
 -- ══════════════════════════════════════════════
 local function startContainerLoop()
     if containerLoop then return end
@@ -180,7 +180,7 @@ local function stopSpeedLoop()
 end
 
 -- ══════════════════════════════════════════════
--- LOGICA — AUTO COMPRAR LUCKY BLOCKS DE LA SUERTE (Skins)
+-- LOGICA — AUTO COMPRAR LUCKY BLOCKS
 -- ══════════════════════════════════════════════
 local SKIN_LIST = {
     "fairy_luckyblock",
@@ -398,7 +398,7 @@ FarmLeft:AddToggle({
 })
 
 FarmLeft:AddToggle({
-    Name     = "Auto Mejorar (upgrade brainrots)",
+    Name     = "Auto Mejorar",
     Flag     = "auto_upgrades",
     Default  = false,
     Callback = function(v)
@@ -447,7 +447,7 @@ FarmRight:AddToggle({
 })
 
 FarmRight:AddToggle({
-    Name     = "Auto Comprar Lucky Blocks de la Suerte",
+    Name     = "Auto Comprar Lucky Blocks",
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v)
