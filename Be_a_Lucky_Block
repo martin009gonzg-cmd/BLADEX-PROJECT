@@ -55,20 +55,21 @@ local Collected      = lbRF:WaitForChild("Collected",      10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 
 -- ════════════════════════════════════════════════════════════════
--- 3. CONFIGURACIÓN LUCKY BLOCK
+-- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS ACTUALIZADOS)
 -- ════════════════════════════════════════════════════════════════
 local LB_CONFIG = {
     DELAYS = {
-        AFTER_TELEPORT   = 0.8,
-        AFTER_ACTION     = 0.6,
-        AFTER_OPEN_BLOCK = 0.9,
-        BETWEEN_STEPS    = 0.5,
-        CYCLE_END        = 1.0,
+        AFTER_TELEPORT   = 0.6,   -- reducido de 0.8
+        AFTER_ACTION     = 0.4,   -- reducido de 0.6
+        AFTER_OPEN_BLOCK = 0.7,   -- reducido de 0.9
+        BETWEEN_STEPS    = 0.3,   -- reducido de 0.5
+        CYCLE_END        = 0.8,   -- reducido de 1.0
         RESPAWN_WAIT     = 3.0,
     },
     COORDS = {
-        CAMINADORA = CFrame.new(710.440674,  38.81287,   -2124.65723),
-        BASE       = CFrame.new(730.310547,  38.8128662, -2152.41089),
+        -- Nuevas coordenadas proporcionadas
+        CAMINADORA = CFrame.new(-507.90, 38.45, -2125.72),
+        BASE       = CFrame.new(734.56,  38.81,  -2152.04),
     },
     MAX_RETRIES = 3,
 }
@@ -169,12 +170,48 @@ local function startCollectLoop()
     end)
 end
 
--- Loop de mejora de brainrots (ráfaga)
-local upgradeRunning = false
+-- Loop de mejora de brainrots (ráfaga) con UI hiding integrado
+local upgradeLoopThread = nil
+local uiHidingConnection = nil
+local palabrasClave = {
+    ["brainrot"] = true,
+    ["dinero"] = true,
+    ["máximo"] = true
+}
+
+local function procesarObj(obj)
+    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+        local txt = obj.Text:lower()
+        for palabra in pairs(palabrasClave) do
+            if txt:find(palabra) then
+                obj:Destroy()
+                break
+            end
+        end
+    end
+end
+
+local function startUIHiding()
+    if uiHidingConnection then return end
+    local playerGui = LP:WaitForChild("PlayerGui")
+    -- Limpieza inicial
+    for _, v in ipairs(playerGui:GetDescendants()) do
+        procesarObj(v)
+    end
+    uiHidingConnection = playerGui.DescendantAdded:Connect(procesarObj)
+end
+
+local function stopUIHiding()
+    if uiHidingConnection then
+        uiHidingConnection:Disconnect()
+        uiHidingConnection = nil
+    end
+end
+
 local function startUpgradeLoop()
-    if upgradeRunning then return end
-    upgradeRunning = true
-    task.spawn(function()
+    if upgradeLoopThread then return end
+    startUIHiding()
+    upgradeLoopThread = task.spawn(function()
         while _G.AutoUpgrades do
             for i = 30, 1, -1 do
                 if not _G.AutoUpgrades then break end
@@ -185,8 +222,18 @@ local function startUpgradeLoop()
             end
             task.wait(0.3)
         end
-        upgradeRunning = false
+        upgradeLoopThread = nil
+        stopUIHiding()
     end)
+end
+
+local function stopUpgradeLoop()
+    _G.AutoUpgrades = false
+    if upgradeLoopThread then
+        task.cancel(upgradeLoopThread)
+        upgradeLoopThread = nil
+    end
+    stopUIHiding()
 end
 
 -- Auto container (existente)
@@ -337,111 +384,7 @@ local function startLbFarmLoop()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 5.9 FUNCIÓN PARA OCULTAR ELEMENTOS UI AL ACTIVAR UPGRADE BRAINROTS
--- ════════════════════════════════════════════════════════════════
-local uiHidingConnection = nil
-local palabrasClave = {
-    ["brainrot"] = true,
-    ["dinero"] = true,
-    ["máximo"] = true
-}
-
-local function procesarObj(obj)
-    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-        local txt = obj.Text:lower()
-        for palabra in pairs(palabrasClave) do
-            if txt:find(palabra) then
-                obj:Destroy()
-                break
-            end
-        end
-    end
-end
-
-local function startUIHiding()
-    if uiHidingConnection then return end
-    local playerGui = LP:WaitForChild("PlayerGui")
-    -- Limpieza inicial
-    for _, v in ipairs(playerGui:GetDescendants()) do
-        procesarObj(v)
-    end
-    -- Conectar al evento de nuevos descendientes
-    uiHidingConnection = playerGui.DescendantAdded:Connect(procesarObj)
-end
-
-local function stopUIHiding()
-    if uiHidingConnection then
-        uiHidingConnection:Disconnect()
-        uiHidingConnection = nil
-    end
-end
-
--- Modificamos el callback del toggle Upgrade Brainrots para también activar/desactivar el ocultado de UI
--- Pero primero debemos ajustar el control de variables globales para que también llame a estas funciones.
--- En lugar de modificar el bucle de monitoreo, podemos sobrescribir el callback del toggle para que además de cambiar _G.AutoUpgrades, inicie/detenga el ocultado.
--- Sin embargo, el bucle de monitoreo ya maneja startUpgradeLoop/stopUpgradeLoop según el valor de _G.AutoUpgrades.
--- Podemos hacer que startUpgradeLoop también inicie el ocultado y stopUpgradeLoop lo detenga.
-
--- Modificamos las funciones startUpgradeLoop y stopUpgradeLoop (las que ya existen) para incluir el manejo del UI hiding.
--- Pero cuidado: esas funciones son llamadas por el bucle de monitoreo. Añadiremos el inicio/parada allí.
-
--- Originalmente:
--- local upgradeRunning = false
--- local function startUpgradeLoop()
---     if upgradeRunning then return end
---     upgradeRunning = true
---     task.spawn(function() ... end)
--- end
--- local function stopUpgradeLoop() ... end (no está definida explícitamente, pero se maneja con upgradeRunning = false)
-
--- Vamos a reemplazar las funciones startUpgradeLoop y agregar una stopUpgradeLoop que también detenga el UI hiding.
--- Para mantener consistencia, crearemos una función startUpgradeLoop que inicie el loop y también inicie el UI hiding, y una función stopUpgradeLoop que detenga ambos.
-
--- Reescribimos las funciones de upgrade:
-
-local upgradeLoopThread = nil
-local function startUpgradeLoop()
-    if upgradeLoopThread then return end
-    -- Iniciar ocultado de UI
-    startUIHiding()
-    upgradeLoopThread = task.spawn(function()
-        while _G.AutoUpgrades do
-            for i = 30, 1, -1 do
-                if not _G.AutoUpgrades then break end
-                task.spawn(function()
-                    safeInvoke(rf.Brainrot, tostring(i))
-                end)
-                task.wait(0.02)
-            end
-            task.wait(0.3)
-        end
-        upgradeLoopThread = nil
-        -- Cuando termina el loop, detener ocultado de UI
-        stopUIHiding()
-    end)
-end
-
-local function stopUpgradeLoop()
-    _G.AutoUpgrades = false
-    if upgradeLoopThread then
-        task.cancel(upgradeLoopThread)
-        upgradeLoopThread = nil
-    end
-    stopUIHiding()
-end
-
--- Ahora necesitamos modificar el bucle de monitoreo para que use estas funciones en lugar de las anteriores.
--- Pero en el bucle de monitoreo actual, se usa upgradeRunning como bandera. Cambiaremos para usar upgradeLoopThread.
--- También debemos ajustar el código del bucle de monitoreo para que llame a startUpgradeLoop cuando _G.AutoUpgrades se active y stopUpgradeLoop cuando se desactive.
-
--- En el bloque de control de variables globales, reemplazamos:
--- if _G.AutoUpgrades and not lastState.AutoUpgrades then startUpgradeLoop()
--- elseif not _G.AutoUpgrades and lastState.AutoUpgrades then stopUpgradeLoop()
-
--- Haremos esa modificación más adelante.
-
--- ════════════════════════════════════════════════════════════════
--- 6. CONTROL DE VARIABLES GLOBALES Y MONITOREO (ajustado)
+-- 6. CONTROL DE VARIABLES GLOBALES Y MONITOREO
 -- ════════════════════════════════════════════════════════════════
 _G.AutoCollect      = _G.AutoCollect      or false
 _G.AutoUpgrades     = _G.AutoUpgrades     or false
@@ -560,13 +503,13 @@ LbSection:AddToggle({
 })
 
 LbSection:AddToggle({
-    Name     = "auto comprar Lucky Block",  -- Nombre actualizado
+    Name     = "auto comprar Lucky Block",
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v) _G.AutoSkins = v end,
 })
 
--- Sección Auto Farm (minimizada al inicio) con nuevo orden y nombres
+-- Sección Auto Farm (minimizada al inicio) con el orden solicitado
 local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = true })
 
 LeftSection:AddToggle({
