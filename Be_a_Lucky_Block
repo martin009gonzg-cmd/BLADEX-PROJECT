@@ -1,4 +1,4 @@
--- Script completo con carga automática de la librería Compkiller
+-- Script completo con carga robusta de la librería Compkiller
 -- Activar/desactivar funciones mediante variables globales _G.AutoXXX
 
 -- ════════════════════════════════════════════════════════════════
@@ -6,7 +6,9 @@
 -- ════════════════════════════════════════════════════════════════
 local library_url = "https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/BLADEX_LIBRALY"
 
-if not getgenv().Compkiller then
+local Compkiller = getgenv().Compkiller
+
+if not Compkiller then
     local request = (syn and syn.request) or (http and http.request) or request or (fluxus and fluxus.request) or function(url)
         return game:HttpGet(url)
     end
@@ -15,8 +17,14 @@ if not getgenv().Compkiller then
     if code and code ~= "" then
         local func, err = loadstring(code)
         if func then
-            func()
-            print("[BLADEX] Librería Compkiller cargada")
+            local ok, result = pcall(func)
+            if ok then
+                Compkiller = result or getgenv().Compkiller
+                print("[BLADEX] Librería Compkiller cargada")
+            else
+                warn("[BLADEX] Error al ejecutar librería: " .. tostring(result))
+                return
+            end
         else
             warn("[BLADEX] Error al cargar librería: " .. tostring(err))
             return
@@ -25,9 +33,14 @@ if not getgenv().Compkiller then
         warn("[BLADEX] No se pudo descargar la librería")
         return
     end
+    -- Esperar un ciclo para asegurar inicialización
+    task.wait(0.1)
 end
 
-local Compkiller = getgenv().Compkiller
+-- Asegurar que la variable existe
+if not Compkiller then
+    error("❌ No se pudo cargar la librería Compkiller")
+end
 
 -- ════════════════════════════════════════════════════════════════
 -- 1. SERVICIOS Y REMOTOS
@@ -438,7 +451,7 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
--- NUEVA SECCIÓN: Farm Lucky Blocks (izquierda, arriba de Auto Farm)
+-- Sección Farm Lucky Blocks (izquierda, arriba)
 local LbSection = MainTab:DrawSection({ Name = "Farm Lucky Blocks", Position = "left", Minimized = false })
 
 LbSection:AddToggle({
@@ -455,7 +468,7 @@ LbSection:AddToggle({
     Callback = function(v) _G.AutoSkins = v end,
 })
 
--- Sección izquierda: Auto Farm (resto de toggles)
+-- Sección Auto Farm (resto de toggles)
 local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
 
 LeftSection:AddToggle({
@@ -493,7 +506,7 @@ LeftSection:AddToggle({
     Callback = function(v) _G.AutoPlaceBest = v end,
 })
 
--- Sección derecha: Skins
+-- Sección Skins (derecha)
 local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
 
 local selectedSkin = "default"
@@ -523,7 +536,7 @@ RightSection:AddButton({
     end,
 })
 
--- Sección completa: Recompensas Especiales
+-- Sección Recompensas Especiales (ancho completo)
 local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = false })
 RewardSection:AddButton({
     Name = "Auto Reclamar Bloque Espiritual",
