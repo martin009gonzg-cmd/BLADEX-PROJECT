@@ -366,7 +366,7 @@ local Window = Compkiller.new({
 
 Notifier.new({
     Title    = "BLADEX HUB",
-    Content  = "Brainrot Auto V5 cargado!",
+    Content  = "BeaLuckyBlock cargado!",
     Duration = 5,
     Icon     = Compkiller.Logo,
 })
@@ -380,17 +380,16 @@ Window:DrawCategory({ Name = "Main" })
 -- TAB: BEA LUCKY BLOCK (contiene todas las funciones de farm)
 -- ══════════════════════════════════════════════
 local LbTab = Window:DrawTab({
-    Name            = "Bea Lucky Block",
+    Name            = "BeaLuckyBlock",
     Icon            = "box",
     EnableScrolling = true,
 })
 
--- Sección izquierda: todos los toggles de farm (incluye los que estaban en auto farm)
+-- Sección izquierda: todos los toggles de farm
 local LbLeft = LbTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
 
--- Toggles del farm normal (movidos desde auto farm)
 LbLeft:AddToggle({
-    Name     = "Auto Recoger (30-1)",
+    Name     = "auto money",
     Flag     = "auto_collect",
     Default  = false,
     Callback = function(v)
@@ -429,7 +428,6 @@ LbLeft:AddToggle({
     end,
 })
 
--- Toggles específicos de Lucky Block
 LbLeft:AddToggle({
     Name     = "Auto Lucky Block Farm",
     Flag     = "lb_farm",
@@ -450,15 +448,7 @@ LbLeft:AddToggle({
     end,
 })
 
--- Botón de velocidad máxima
-LbLeft:AddButton({
-    Name     = "Speed Max (x100)",
-    Callback = function()
-        pcall(function() rf.Speed:InvokeServer("MovementSpeed", 100) end)
-    end,
-})
-
--- Sección derecha: skins (dropdown + equipar)
+-- Sección derecha: skins
 local LbRight = LbTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
 
 local selectedSkin = "default"
@@ -538,4 +528,4 @@ LP.CharacterAdded:Connect(function(c)
     -- por si alguna logica futura necesita el personaje
 end)
 
-print("[BLADEX HUB] Brainrot Auto V5 cargado!")
+print("[BLADEX HUB] BeaLuckyBlock cargado!")
