@@ -422,7 +422,7 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
--- Sección izquierda: Auto Farm
+-- Sección izquierda: Auto Farm + Lucky Block Config
 local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
 
 LeftSection:AddToggle({
@@ -460,6 +460,21 @@ LeftSection:AddToggle({
     Callback = function(v) _G.AutoPlaceBest = v end,
 })
 
+-- Añadimos los toggles de Lucky Block en la misma sección izquierda
+LeftSection:AddToggle({
+    Name     = "Auto Lucky Block Farm",
+    Flag     = "lb_farm",
+    Default  = false,
+    Callback = function(v) _G.AutoLBFarm = v end,
+})
+
+LeftSection:AddToggle({
+    Name     = "Auto comprar lucky blocks",
+    Flag     = "auto_skins",
+    Default  = false,
+    Callback = function(v) _G.AutoSkins = v end,
+})
+
 -- Sección derecha: Skins
 local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
 
@@ -490,22 +505,7 @@ RightSection:AddButton({
     end,
 })
 
--- Sección completa: Lucky Block Config
-local LbConfigSection = MainTab:DrawSection({ Name = "Lucky Block Config", Position = "full", Minimized = false })
-LbConfigSection:AddToggle({
-    Name     = "Auto Lucky Block Farm",
-    Flag     = "lb_farm",
-    Default  = false,
-    Callback = function(v) _G.AutoLBFarm = v end,
-})
-LbConfigSection:AddToggle({
-    Name     = "Auto comprar lucky blocks",
-    Flag     = "auto_skins",
-    Default  = false,
-    Callback = function(v) _G.AutoSkins = v end,
-})
-
--- NUEVA SECCIÓN: Recompensas Especiales
+-- Sección completa: Recompensas Especiales (se mantiene abajo)
 local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = false })
 RewardSection:AddButton({
     Name = "Auto Reclamar Bloque Espiritual",
