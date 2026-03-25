@@ -385,7 +385,7 @@ local FarmTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
-local FarmLeft = FarmTab:DrawSection({ Name = "Farm Principal", Position = "left", Minimized = false })
+local FarmLeft = FarmTab:DrawSection({ Name = "Farm Principal", Position = "left", Minimized = true })
 
 FarmLeft:AddToggle({
     Name     = "Auto Recoger (30-1)",
@@ -432,7 +432,7 @@ FarmLeft:AddButton({
 })
 
 -- ══════════════════════════════════════════════
--- TAB: BeALuckyBlock (con opciones movidas)
+-- TAB: BeALuckyBlock
 -- ══════════════════════════════════════════════
 local LbTab = Window:DrawTab({
     Name            = "BeALuckyBlock",
@@ -440,9 +440,10 @@ local LbTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
-local LbSectionLeft = LbTab:DrawSection({ Name = "Auto Farm Base14", Position = "left", Minimized = false })
+-- Sección izquierda: Auto Farm y Extras
+local LbLeft = LbTab:DrawSection({ Name = "Auto Farm Base14", Position = "left", Minimized = true })
 
-LbSectionLeft:AddToggle({
+LbLeft:AddToggle({
     Name     = "Auto BeALuckyBlock Farm",
     Flag     = "lb_farm",
     Default  = false,
@@ -452,10 +453,7 @@ LbSectionLeft:AddToggle({
     end,
 })
 
--- Sección de Extras movida a BeALuckyBlock
-local LbSectionExtras = LbTab:DrawSection({ Name = "Extras", Position = "left", Minimized = false })
-
-LbSectionExtras:AddToggle({
+LbLeft:AddToggle({
     Name     = "Auto Rebirth",
     Flag     = "auto_rebirth",
     Default  = false,
@@ -465,7 +463,7 @@ LbSectionExtras:AddToggle({
     end,
 })
 
-LbSectionExtras:AddToggle({
+LbLeft:AddToggle({
     Name     = "Auto Comprar Velocidad",
     Flag     = "auto_speed",
     Default  = false,
@@ -475,7 +473,7 @@ LbSectionExtras:AddToggle({
     end,
 })
 
-LbSectionExtras:AddToggle({
+LbLeft:AddToggle({
     Name     = "Auto Comprar Lucky Blocks",
     Flag     = "auto_skins",
     Default  = false,
@@ -485,7 +483,8 @@ LbSectionExtras:AddToggle({
     end,
 })
 
-local LbRight = LbTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
+-- Sección derecha: Skins
+local LbRight = LbTab:DrawSection({ Name = "Skins", Position = "right", Minimized = true })
 
 local selectedSkin = "default"
 
