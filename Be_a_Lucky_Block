@@ -104,7 +104,7 @@ local function stopCollectLoop()
 end
 
 -- ══════════════════════════════════════════════
--- LOGICA — AUTO MEJORAR (30 -> 1)
+-- LOGICA — AUTO MEJORAR (upgrade brainrots)
 -- ══════════════════════════════════════════════
 local function startUpgradeLoop()
     if upgradeLoop then return end
@@ -126,7 +126,7 @@ local function stopUpgradeLoop()
 end
 
 -- ══════════════════════════════════════════════
--- LOGICA — AUTO CONTAINER
+-- LOGICA — AUTO MEJORAR BASE (Container)
 -- ══════════════════════════════════════════════
 local function startContainerLoop()
     if containerLoop then return end
@@ -162,7 +162,7 @@ local function stopRebirthLoop()
 end
 
 -- ══════════════════════════════════════════════
--- LOGICA — AUTO VELOCIDAD
+-- LOGICA — AUTO COMPRAR VELOCIDAD
 -- ══════════════════════════════════════════════
 local function startSpeedLoop()
     if speedLoop then return end
@@ -180,7 +180,7 @@ local function stopSpeedLoop()
 end
 
 -- ══════════════════════════════════════════════
--- LOGICA — AUTO SKINS (todas en orden)
+-- LOGICA — AUTO COMPRAR LUCKY BLOCKS DE LA SUERTE (Skins)
 -- ══════════════════════════════════════════════
 local SKIN_LIST = {
     "fairy_luckyblock",
@@ -212,7 +212,7 @@ local function stopSkinLoop()
 end
 
 -- ══════════════════════════════════════════════
--- LOGICA — LUCKY BLOCK AUTOFARM
+-- LOGICA — BeALuckyBlock AUTOFARM
 -- ══════════════════════════════════════════════
 local function lbTeleport(cf, label)
     for attempt = 1, LB_CONFIG.MAX_RETRIES do
@@ -314,7 +314,7 @@ local function lbFarmCycle()
     task.wait(LB_CONFIG.DELAYS.CYCLE_END)
 
     lbCycles = lbCycles + 1
-    print("[LB Farm] Ciclo " .. lbCycles .. " completo")
+    print("[BeALuckyBlock Farm] Ciclo " .. lbCycles .. " completo")
 end
 
 local function startLbFarmLoop()
@@ -323,7 +323,7 @@ local function startLbFarmLoop()
         while lbFarmOn do
             local ok, err = pcall(lbFarmCycle)
             if not ok then
-                warn("[LB Farm] Error: " .. tostring(err))
+                warn("[BeALuckyBlock Farm] Error: " .. tostring(err))
                 task.wait(2)
             end
         end
@@ -398,7 +398,7 @@ FarmLeft:AddToggle({
 })
 
 FarmLeft:AddToggle({
-    Name     = "Auto Mejorar (30-1)",
+    Name     = "Auto Mejorar (upgrade brainrots)",
     Flag     = "auto_upgrades",
     Default  = false,
     Callback = function(v)
@@ -408,7 +408,7 @@ FarmLeft:AddToggle({
 })
 
 FarmLeft:AddToggle({
-    Name     = "Auto Comprar Container",
+    Name     = "Auto Mejorar Base",
     Flag     = "auto_container",
     Default  = false,
     Callback = function(v)
@@ -437,7 +437,7 @@ FarmRight:AddToggle({
 })
 
 FarmRight:AddToggle({
-    Name     = "Auto Velocidad",
+    Name     = "Auto Comprar Velocidad",
     Flag     = "auto_speed",
     Default  = false,
     Callback = function(v)
@@ -447,7 +447,7 @@ FarmRight:AddToggle({
 })
 
 FarmRight:AddToggle({
-    Name     = "Auto Comprar Skins",
+    Name     = "Auto Comprar Lucky Blocks de la Suerte",
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v)
@@ -464,10 +464,10 @@ FarmRight:AddButton({
 })
 
 -- ══════════════════════════════════════════════
--- TAB: LUCKY BLOCK FARM
+-- TAB: BeALuckyBlock FARM
 -- ══════════════════════════════════════════════
 local LbTab = Window:DrawTab({
-    Name            = "Lucky Block",
+    Name            = "BeALuckyBlock",
     Icon            = "box",
     EnableScrolling = true,
 })
@@ -475,7 +475,7 @@ local LbTab = Window:DrawTab({
 local LbSection = LbTab:DrawSection({ Name = "Auto Farm Base14", Position = "left", Minimized = false })
 
 LbSection:AddToggle({
-    Name     = "Auto Lucky Block Farm",
+    Name     = "Auto BeALuckyBlock Farm",
     Flag     = "lb_farm",
     Default  = false,
     Callback = function(v)
