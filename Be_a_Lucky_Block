@@ -377,17 +377,19 @@ Notifier.new({
 Window:DrawCategory({ Name = "Main" })
 
 -- ══════════════════════════════════════════════
--- TAB: auto farm (recoger, upgrade, velocidad, rebirth)
+-- TAB: BEA LUCKY BLOCK (contiene todas las funciones de farm)
 -- ══════════════════════════════════════════════
-local AutoFarmTab = Window:DrawTab({
-    Name            = "auto farm",
-    Icon            = "rocket",
+local LbTab = Window:DrawTab({
+    Name            = "Bea Lucky Block",
+    Icon            = "box",
     EnableScrolling = true,
 })
 
-local FarmSection = AutoFarmTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
+-- Sección izquierda: todos los toggles de farm (incluye los que estaban en auto farm)
+local LbLeft = LbTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
 
-FarmSection:AddToggle({
+-- Toggles del farm normal (movidos desde auto farm)
+LbLeft:AddToggle({
     Name     = "Auto Recoger (30-1)",
     Flag     = "auto_collect",
     Default  = false,
@@ -397,7 +399,7 @@ FarmSection:AddToggle({
     end,
 })
 
-FarmSection:AddToggle({
+LbLeft:AddToggle({
     Name     = "upgrade brainrots",
     Flag     = "auto_upgrades",
     Default  = false,
@@ -407,7 +409,7 @@ FarmSection:AddToggle({
     end,
 })
 
-FarmSection:AddToggle({
+LbLeft:AddToggle({
     Name     = "auto comprar velocidad",
     Flag     = "auto_speed",
     Default  = false,
@@ -417,7 +419,7 @@ FarmSection:AddToggle({
     end,
 })
 
-FarmSection:AddToggle({
+LbLeft:AddToggle({
     Name     = "Auto Rebirth",
     Flag     = "auto_rebirth",
     Default  = false,
@@ -427,25 +429,7 @@ FarmSection:AddToggle({
     end,
 })
 
-FarmSection:AddButton({
-    Name     = "Speed Max (x100)",
-    Callback = function()
-        pcall(function() rf.Speed:InvokeServer("MovementSpeed", 100) end)
-    end,
-})
-
--- ══════════════════════════════════════════════
--- TAB: auto Lucky Block (farm + skins)
--- ══════════════════════════════════════════════
-local LbTab = Window:DrawTab({
-    Name            = "auto Lucky Block",
-    Icon            = "box",
-    EnableScrolling = true,
-})
-
--- Sección izquierda: toggles de Lucky Block
-local LbLeft = LbTab:DrawSection({ Name = "Auto Farm Lucky Block", Position = "left", Minimized = false })
-
+-- Toggles específicos de Lucky Block
 LbLeft:AddToggle({
     Name     = "Auto Lucky Block Farm",
     Flag     = "lb_farm",
@@ -466,7 +450,15 @@ LbLeft:AddToggle({
     end,
 })
 
--- Sección derecha: skins (equipar)
+-- Botón de velocidad máxima
+LbLeft:AddButton({
+    Name     = "Speed Max (x100)",
+    Callback = function()
+        pcall(function() rf.Speed:InvokeServer("MovementSpeed", 100) end)
+    end,
+})
+
+-- Sección derecha: skins (dropdown + equipar)
 local LbRight = LbTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
 
 local selectedSkin = "default"
