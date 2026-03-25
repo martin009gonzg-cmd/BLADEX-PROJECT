@@ -1,46 +1,14 @@
--- Script completo con carga robusta de la librería Compkiller
+-- Script solo lógica + UI (asume Compkiller ya cargada globalmente)
 -- Activar/desactivar funciones mediante variables globales _G.AutoXXX
 
 -- ════════════════════════════════════════════════════════════════
--- 0. CARGA DE LA LIBRERÍA UI (desde la URL proporcionada)
+-- 0. VERIFICAR LIBRERÍA COMPKILLER (debe estar precargada)
 -- ════════════════════════════════════════════════════════════════
-local library_url = "https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/BLADEX_LIBRALY"
+if not getgenv().Compkiller then
+    error("❌ Compkiller no está cargada. Asegúrate de cargar la librería antes de este script.")
+end
 
 local Compkiller = getgenv().Compkiller
-
-if not Compkiller then
-    local request = (syn and syn.request) or (http and http.request) or request or (fluxus and fluxus.request) or function(url)
-        return game:HttpGet(url)
-    end
-    local response = request({ Url = library_url, Method = "GET" })
-    local code = type(response) == "table" and response.Body or response
-    if code and code ~= "" then
-        local func, err = loadstring(code)
-        if func then
-            local ok, result = pcall(func)
-            if ok then
-                Compkiller = result or getgenv().Compkiller
-                print("[BLADEX] Librería Compkiller cargada")
-            else
-                warn("[BLADEX] Error al ejecutar librería: " .. tostring(result))
-                return
-            end
-        else
-            warn("[BLADEX] Error al cargar librería: " .. tostring(err))
-            return
-        end
-    else
-        warn("[BLADEX] No se pudo descargar la librería")
-        return
-    end
-    -- Esperar un ciclo para asegurar inicialización
-    task.wait(0.1)
-end
-
--- Asegurar que la variable existe
-if not Compkiller then
-    error("❌ No se pudo cargar la librería Compkiller")
-end
 
 -- ════════════════════════════════════════════════════════════════
 -- 1. SERVICIOS Y REMOTOS
@@ -52,7 +20,6 @@ local LP = Players.LocalPlayer
 local knit = ReplicatedStorage.Packages._Index
     :FindFirstChild("sleitnick_knit@1.7.0").knit.Services
 
--- Buscar remoto GetReward en los servicios de Knit
 local GetRewardRemote = nil
 for _, service in pairs(knit:GetChildren()) do
     local rf = service:FindFirstChild("RF")
@@ -175,7 +142,6 @@ end
 -- 5. LOOPS DE AUTOMATIZACIÓN
 -- ════════════════════════════════════════════════════════════════
 
--- 5.1 Auto dinero (firetouchinterest)
 local collectRunning = false
 local function startCollectLoop()
     if collectRunning then return end
@@ -203,7 +169,6 @@ local function startCollectLoop()
     end)
 end
 
--- 5.2 Auto mejora brainrots (30 -> 1) - VERSIÓN RÁFAGA OPTIMIZADA
 local upgradeRunning = false
 local function startUpgradeLoop()
     if upgradeRunning then return end
@@ -223,7 +188,6 @@ local function startUpgradeLoop()
     end)
 end
 
--- 5.3 Auto container
 local containerRunning = false
 local function startContainerLoop()
     if containerRunning then return end
@@ -237,7 +201,19 @@ local function startContainerLoop()
     end)
 end
 
--- 5.4 Auto rebirth
+local mejorarBaseRunning = false
+local function startMejorarBaseLoop()
+    if mejorarBaseRunning then return end
+    mejorarBaseRunning = true
+    task.spawn(function()
+        while _G.AutoMejorarBase do
+            safeInvoke(rf.Container)
+            task.wait(1)
+        end
+        mejorarBaseRunning = false
+    end)
+end
+
 local rebirthRunning = false
 local function startRebirthLoop()
     if rebirthRunning then return end
@@ -251,7 +227,6 @@ local function startRebirthLoop()
     end)
 end
 
--- 5.5 Auto velocidad
 local speedRunning = false
 local function startSpeedLoop()
     if speedRunning then return end
@@ -265,7 +240,6 @@ local function startSpeedLoop()
     end)
 end
 
--- 5.6 Auto colocar brainrots (PlaceBest)
 local placeBestRunning = false
 local function startPlaceBestLoop()
     if placeBestRunning then return end
@@ -281,7 +255,6 @@ local function startPlaceBestLoop()
     end)
 end
 
--- 5.7 Auto comprar skins
 local SKIN_LIST = {
     "fairy_luckyblock",
     "freezy_luckyblock",
@@ -308,7 +281,6 @@ local function startSkinLoop()
     end)
 end
 
--- 5.8 Lucky Block farm
 local lbRunning = false
 local function lbFarmCycle()
     local _, hrp = waitForCharacter()
@@ -359,14 +331,15 @@ end
 -- ════════════════════════════════════════════════════════════════
 -- 6. CONTROL DE VARIABLES GLOBALES Y MONITOREO
 -- ════════════════════════════════════════════════════════════════
-_G.AutoCollect   = _G.AutoCollect   or false
-_G.AutoUpgrades  = _G.AutoUpgrades  or false
-_G.AutoContainer = _G.AutoContainer or false
-_G.AutoRebirth   = _G.AutoRebirth   or false
-_G.AutoSpeed     = _G.AutoSpeed     or false
-_G.AutoPlaceBest = _G.AutoPlaceBest or false
-_G.AutoSkins     = _G.AutoSkins     or false
-_G.AutoLBFarm    = _G.AutoLBFarm    or false
+_G.AutoCollect      = _G.AutoCollect      or false
+_G.AutoUpgrades     = _G.AutoUpgrades     or false
+_G.AutoContainer    = _G.AutoContainer    or false
+_G.AutoMejorarBase  = _G.AutoMejorarBase  or false
+_G.AutoRebirth      = _G.AutoRebirth      or false
+_G.AutoSpeed        = _G.AutoSpeed        or false
+_G.AutoPlaceBest    = _G.AutoPlaceBest    or false
+_G.AutoSkins        = _G.AutoSkins        or false
+_G.AutoLBFarm       = _G.AutoLBFarm       or false
 
 task.spawn(function()
     local lastState = {}
@@ -380,6 +353,9 @@ task.spawn(function()
 
         if _G.AutoContainer and not lastState.AutoContainer then startContainerLoop()
         elseif not _G.AutoContainer and lastState.AutoContainer then containerRunning = false end
+
+        if _G.AutoMejorarBase and not lastState.AutoMejorarBase then startMejorarBaseLoop()
+        elseif not _G.AutoMejorarBase and lastState.AutoMejorarBase then mejorarBaseRunning = false end
 
         if _G.AutoRebirth and not lastState.AutoRebirth then startRebirthLoop()
         elseif not _G.AutoRebirth and lastState.AutoRebirth then rebirthRunning = false end
@@ -398,14 +374,15 @@ task.spawn(function()
         elseif not _G.AutoLBFarm and lastState.AutoLBFarm then lbRunning = false end
 
         lastState = {
-            AutoCollect   = _G.AutoCollect,
-            AutoUpgrades  = _G.AutoUpgrades,
-            AutoContainer = _G.AutoContainer,
-            AutoRebirth   = _G.AutoRebirth,
-            AutoSpeed     = _G.AutoSpeed,
-            AutoPlaceBest = _G.AutoPlaceBest,
-            AutoSkins     = _G.AutoSkins,
-            AutoLBFarm    = _G.AutoLBFarm,
+            AutoCollect      = _G.AutoCollect,
+            AutoUpgrades     = _G.AutoUpgrades,
+            AutoContainer    = _G.AutoContainer,
+            AutoMejorarBase  = _G.AutoMejorarBase,
+            AutoRebirth      = _G.AutoRebirth,
+            AutoSpeed        = _G.AutoSpeed,
+            AutoPlaceBest    = _G.AutoPlaceBest,
+            AutoSkins        = _G.AutoSkins,
+            AutoLBFarm       = _G.AutoLBFarm,
         }
         task.wait(1)
     end
@@ -451,35 +428,35 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
--- Sección Farm Lucky Blocks (izquierda, arriba)
-local LbSection = MainTab:DrawSection({ Name = "Farm Lucky Blocks", Position = "left", Minimized = false })
+-- Sección Farm Lucky Blocks (minimizada al inicio)
+local LbSection = MainTab:DrawSection({ Name = "Farm Lucky Blocks", Position = "left", Minimized = true })
 
 LbSection:AddToggle({
-    Name     = "Auto Lucky Block Farm",
+    Name     = "auto farm ciber",
     Flag     = "lb_farm",
     Default  = false,
     Callback = function(v) _G.AutoLBFarm = v end,
 })
 
 LbSection:AddToggle({
-    Name     = "Auto comprar lucky blocks",
+    Name     = "auto comprar bloques de la suerte",
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v) _G.AutoSkins = v end,
 })
 
--- Sección Auto Farm (resto de toggles)
-local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
+-- Sección Auto Farm (minimizada al inicio)
+local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = true })
 
 LeftSection:AddToggle({
-    Name     = "auto money",
+    Name     = "collect cash",
     Flag     = "auto_collect",
     Default  = false,
     Callback = function(v) _G.AutoCollect = v end,
 })
 
 LeftSection:AddToggle({
-    Name     = "upgrade brainrots (ráfaga)",
+    Name     = "upgrade brainrots",
     Flag     = "auto_upgrades",
     Default  = false,
     Callback = function(v) _G.AutoUpgrades = v end,
@@ -506,8 +483,15 @@ LeftSection:AddToggle({
     Callback = function(v) _G.AutoPlaceBest = v end,
 })
 
--- Sección Skins (derecha)
-local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
+LeftSection:AddToggle({
+    Name     = "auto mejorar base",
+    Flag     = "auto_mejorar_base",
+    Default  = false,
+    Callback = function(v) _G.AutoMejorarBase = v end,
+})
+
+-- Sección Skins (minimizada al inicio)
+local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = true })
 
 local selectedSkin = "default"
 
@@ -536,8 +520,8 @@ RightSection:AddButton({
     end,
 })
 
--- Sección Recompensas Especiales (ancho completo)
-local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = false })
+-- Sección Recompensas Especiales (minimizada al inicio)
+local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = true })
 RewardSection:AddButton({
     Name = "Auto Reclamar Bloque Espiritual",
     Callback = function()
@@ -606,4 +590,4 @@ Window:DrawConfig({
     Config = ConfigManager,
 }):Init()
 
-print("[BLADEX HUB] Script cargado correctamente")
+print("[BLADEX HUB] Script cargado correctamente. Librería Compkiller debe estar precargada en getgenv().Compkiller")
