@@ -377,18 +377,19 @@ Notifier.new({
 Window:DrawCategory({ Name = "Main" })
 
 -- ══════════════════════════════════════════════
--- TAB: AUTO FARM (Brainrot)
+-- TAB: BeALuckyBlock (Unificada con opciones de farm principal)
 -- ══════════════════════════════════════════════
-local FarmTab = Window:DrawTab({
-    Name            = "Auto Farm",
-    Icon            = "rocket",
+local LbTab = Window:DrawTab({
+    Name            = "BeALuckyBlock",
+    Icon            = "box",
     EnableScrolling = true,
 })
 
-local FarmLeft = FarmTab:DrawSection({ Name = "Farm Principal", Position = "left", Minimized = true })
+-- Sección izquierda: Auto Farm Principal + Lucky Block
+local LbLeft = LbTab:DrawSection({ Name = "Farm Principal", Position = "left", Minimized = true })
 
-FarmLeft:AddToggle({
-    Name     = "Auto Recoger (30-1)",
+LbLeft:AddToggle({
+    Name     = "AutoRecoger(30-1)",
     Flag     = "auto_collect",
     Default  = false,
     Callback = function(v)
@@ -397,8 +398,8 @@ FarmLeft:AddToggle({
     end,
 })
 
-FarmLeft:AddToggle({
-    Name     = "Auto Mejorar",
+LbLeft:AddToggle({
+    Name     = "AutoMejorar",
     Flag     = "auto_upgrades",
     Default  = false,
     Callback = function(v)
@@ -407,7 +408,7 @@ FarmLeft:AddToggle({
     end,
 })
 
-FarmLeft:AddToggle({
+LbLeft:AddToggle({
     Name     = "Auto Mejorar Base",
     Flag     = "auto_container",
     Default  = false,
@@ -416,18 +417,6 @@ FarmLeft:AddToggle({
         if v then startContainerLoop() else stopContainerLoop() end
     end,
 })
-
--- ══════════════════════════════════════════════
--- TAB: BeALuckyBlock
--- ══════════════════════════════════════════════
-local LbTab = Window:DrawTab({
-    Name            = "BeALuckyBlock",
-    Icon            = "box",
-    EnableScrolling = true,
-})
-
--- Sección izquierda: Auto Farm y Extras
-local LbLeft = LbTab:DrawSection({ Name = "Auto Farm Base14", Position = "left", Minimized = true })
 
 LbLeft:AddToggle({
     Name     = "Auto BeALuckyBlock Farm",
@@ -477,7 +466,7 @@ LbLeft:AddButton({
 })
 
 LbLeft:AddButton({
-    Name     = "Speed Max (x100)",
+    Name     = "Speed Max(x100)",
     Callback = function()
         pcall(function() rf.Speed:InvokeServer("MovementSpeed", 100) end)
     end,
