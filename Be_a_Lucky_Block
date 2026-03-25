@@ -41,7 +41,7 @@ local autoSkinsOn     = false
 local collectLoop, upgradeLoop, containerLoop, rebirthLoop, speedLoop, skinLoop
 
 -- ══════════════════════════════════════════════
--- LOGICAS BRAINROT
+-- LOGICAS
 -- ══════════════════════════════════════════════
 local function startCollectLoop()
     if collectLoop then return end
@@ -140,9 +140,7 @@ local Window = Compkiller.new({
 
 Window:DrawCategory({ Name = "Main" })
 
--- ══════════════════════════════════════════════
--- TAB: BeALuckyBlock (TODO CENTRALIZADO)
--- ══════════════════════════════════════════════
+-- TAB PRINCIPAL
 local LbTab = Window:DrawTab({
     Name = "BeALuckyBlock",
     Icon = "box",
@@ -155,7 +153,6 @@ local LbLeft = LbTab:DrawSection({
     Minimized = true
 })
 
--- 🔥 NUEVO: Brainrot aquí
 LbLeft:AddToggle({
     Name = "Auto Recoger (30-1)",
     Callback = function(v)
@@ -180,7 +177,6 @@ LbLeft:AddToggle({
     end
 })
 
--- LuckyBlock
 LbLeft:AddToggle({
     Name = "Auto Rebirth",
     Callback = function(v)
@@ -211,15 +207,3 @@ LbLeft:AddButton({
         rf.PlaceBest:InvokeServer()
     end
 })
-
--- ══════════════════════════════════════════════
--- AJUSTES
--- ══════════════════════════════════════════════
-Window:DrawCategory({ Name = "Misc" })
-
-local AjustesTab = Window:DrawTab({
-    Name = "Ajustes",
-    Type = "Single",
-})
-
-AjustesTab:DrawSection({ Name = "UI Settings" })
