@@ -1,8 +1,17 @@
--- Script solo lógica: auto farm, mejoras, rebirth, skins, lucky blocks
+-- Script solo lógica + UI (asume Compkiller ya cargada globalmente)
 -- Activar/desactivar funciones mediante variables globales _G.AutoXXX
 -- Ejemplo: _G.AutoCollect = true  --> activa auto dinero
---          _G.AutoUpgrades = true --> activa mejora brainrots (30->1)
+--          _G.AutoUpgrades = true --> activa mejora brainrots (30->1) modo ráfaga
 --          etc.
+
+-- ════════════════════════════════════════════════════════════════
+-- 0. VERIFICAR LIBRERÍA COMPKILLER (debe estar precargada)
+-- ════════════════════════════════════════════════════════════════
+if not getgenv().Compkiller then
+    error("❌ Compkiller no está cargada. Asegúrate de cargar la librería antes de este script.")
+end
+
+local Compkiller = getgenv().Compkiller
 
 -- ════════════════════════════════════════════════════════════════
 -- 1. SERVICIOS Y REMOTOS
@@ -153,7 +162,7 @@ local function startCollectLoop()
     end)
 end
 
--- 5.2 Auto mejora brainrots (30 -> 1)
+-- 5.2 Auto mejora brainrots (30 -> 1) - VERSIÓN RÁFAGA OPTIMIZADA
 local upgradeRunning = false
 local function startUpgradeLoop()
     if upgradeRunning then return end
@@ -162,10 +171,12 @@ local function startUpgradeLoop()
         while _G.AutoUpgrades do
             for i = 30, 1, -1 do
                 if not _G.AutoUpgrades then break end
-                safeInvoke(rf.Brainrot, tostring(i))
-                task.wait(0.05)
+                task.spawn(function()
+                    safeInvoke(rf.Brainrot, tostring(i))
+                end)
+                task.wait(0.02)
             end
-            task.wait(0.5)
+            task.wait(0.3)
         end
         upgradeRunning = false
     end)
@@ -307,7 +318,6 @@ end
 -- ════════════════════════════════════════════════════════════════
 -- 6. CONTROL DE VARIABLES GLOBALES Y MONITOREO
 -- ════════════════════════════════════════════════════════════════
--- Inicializar variables globales (por defecto todas desactivadas)
 _G.AutoCollect   = _G.AutoCollect   or false
 _G.AutoUpgrades  = _G.AutoUpgrades  or false
 _G.AutoContainer = _G.AutoContainer or false
@@ -317,45 +327,35 @@ _G.AutoPlaceBest = _G.AutoPlaceBest or false
 _G.AutoSkins     = _G.AutoSkins     or false
 _G.AutoLBFarm    = _G.AutoLBFarm    or false
 
--- Bucle que monitorea cambios en las variables y arranca/detiene loops
 task.spawn(function()
     local lastState = {}
     while true do
-        -- Auto dinero
         if _G.AutoCollect and not lastState.AutoCollect then startCollectLoop()
         elseif not _G.AutoCollect and lastState.AutoCollect then
             _G.AutoCashPhysical = false; collectRunning = false end
 
-        -- Auto mejoras
         if _G.AutoUpgrades and not lastState.AutoUpgrades then startUpgradeLoop()
         elseif not _G.AutoUpgrades and lastState.AutoUpgrades then upgradeRunning = false end
 
-        -- Auto container
         if _G.AutoContainer and not lastState.AutoContainer then startContainerLoop()
         elseif not _G.AutoContainer and lastState.AutoContainer then containerRunning = false end
 
-        -- Auto rebirth
         if _G.AutoRebirth and not lastState.AutoRebirth then startRebirthLoop()
         elseif not _G.AutoRebirth and lastState.AutoRebirth then rebirthRunning = false end
 
-        -- Auto velocidad
         if _G.AutoSpeed and not lastState.AutoSpeed then startSpeedLoop()
         elseif not _G.AutoSpeed and lastState.AutoSpeed then speedRunning = false end
 
-        -- Auto colocar brainrots
         if _G.AutoPlaceBest and not lastState.AutoPlaceBest then startPlaceBestLoop()
         elseif not _G.AutoPlaceBest and lastState.AutoPlaceBest then
             getgenv().AutoBest = false; placeBestRunning = false end
 
-        -- Auto skins
         if _G.AutoSkins and not lastState.AutoSkins then startSkinLoop()
         elseif not _G.AutoSkins and lastState.AutoSkins then skinRunning = false end
 
-        -- Lucky Block farm
         if _G.AutoLBFarm and not lastState.AutoLBFarm then startLbFarmLoop()
         elseif not _G.AutoLBFarm and lastState.AutoLBFarm then lbRunning = false end
 
-        -- Guardar estado actual
         lastState = {
             AutoCollect   = _G.AutoCollect,
             AutoUpgrades  = _G.AutoUpgrades,
@@ -370,9 +370,160 @@ task.spawn(function()
     end
 end)
 
--- Función para equipar una skin (opcional)
 function EquipSkin(skinId)
     safeInvoke(rf.EquipSkin, skinId)
 end
 
-print("[BLADEX LOGIC] Script cargado. Usa _G.AutoXXX = true/false para activar funciones.")
+-- ════════════════════════════════════════════════════════════════
+-- 7. INTERFAZ CON COMPKILLER (ya cargada)
+-- ════════════════════════════════════════════════════════════════
+local Notifier = Compkiller.newNotify()
+Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
+
+local ConfigManager = Compkiller:ConfigManager({
+    Directory = "BLADEX-HUB",
+    Config    = "BLADEX-BrainrotV5",
+})
+
+Compkiller:Loader(Compkiller.Logo, 2.5).yield()
+
+local Window = Compkiller.new({
+    Name     = "BLADEX HUB",
+    Keybind  = "LeftAlt",
+    Logo     = Compkiller.Logo,
+    Scale    = UDim2.new(0, 460, 0, 320),
+    TextSize = 15,
+})
+
+Notifier.new({
+    Title    = "BLADEX HUB",
+    Content  = "Script cargado (librería externa)",
+    Duration = 5,
+    Icon     = Compkiller.Logo,
+})
+
+Window:DrawCategory({ Name = "Main" })
+
+local MainTab = Window:DrawTab({
+    Name            = "BeaLuckyBlock",
+    Icon            = "box",
+    EnableScrolling = true,
+})
+
+local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
+
+LeftSection:AddToggle({
+    Name     = "auto money",
+    Flag     = "auto_collect",
+    Default  = false,
+    Callback = function(v) _G.AutoCollect = v end,
+})
+
+LeftSection:AddToggle({
+    Name     = "upgrade brainrots (ráfaga)",
+    Flag     = "auto_upgrades",
+    Default  = false,
+    Callback = function(v) _G.AutoUpgrades = v end,
+})
+
+LeftSection:AddToggle({
+    Name     = "auto comprar velocidad",
+    Flag     = "auto_speed",
+    Default  = false,
+    Callback = function(v) _G.AutoSpeed = v end,
+})
+
+LeftSection:AddToggle({
+    Name     = "Auto Rebirth",
+    Flag     = "auto_rebirth",
+    Default  = false,
+    Callback = function(v) _G.AutoRebirth = v end,
+})
+
+LeftSection:AddToggle({
+    Name     = "auto colocar brainrots",
+    Flag     = "auto_placebest",
+    Default  = false,
+    Callback = function(v) _G.AutoPlaceBest = v end,
+})
+
+local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
+
+local selectedSkin = "default"
+
+RightSection:AddDropdown({
+    Name    = "Seleccionar Skin",
+    Flag    = "skin_equip",
+    Default = "default",
+    Values  = {
+        "default",
+        "fairy_luckyblock",
+        "freezy_luckyblock",
+        "lava_luckyblock",
+        "gliched_luckyblock",
+        "void_luckyblock",
+        "cyborg_luckyblock",
+        "divine_luckyblock",
+        "inferno_luckyblock",
+    },
+    Callback = function(v) selectedSkin = v end,
+})
+
+RightSection:AddButton({
+    Name     = "Equipar Skin",
+    Callback = function()
+        pcall(function() rf.EquipSkin:InvokeServer(selectedSkin) end)
+    end,
+})
+
+local LbConfigSection = MainTab:DrawSection({ Name = "Lucky Block Config", Position = "full", Minimized = false })
+LbConfigSection:AddToggle({
+    Name     = "Auto Lucky Block Farm",
+    Flag     = "lb_farm",
+    Default  = false,
+    Callback = function(v) _G.AutoLBFarm = v end,
+})
+LbConfigSection:AddToggle({
+    Name     = "Auto comprar lucky blocks",
+    Flag     = "auto_skins",
+    Default  = false,
+    Callback = function(v) _G.AutoSkins = v end,
+})
+
+-- Tab de ajustes
+Window:DrawCategory({ Name = "Misc" })
+local SettingsTab = Window:DrawTab({
+    Icon            = "settings-3",
+    Name            = "Ajustes",
+    Type            = "Single",
+    EnableScrolling = true,
+})
+
+local UISection = SettingsTab:DrawSection({ Name = "UI Settings", Minimized = true })
+UISection:AddToggle({
+    Name     = "Always Show Frame",
+    Default  = false,
+    Callback = function(v) Window.AlwayShowTab = v end,
+})
+UISection:AddColorPicker({
+    Name     = "Highlight",
+    Default  = Compkiller.Colors.Highlight,
+    Callback = function(v)
+        Compkiller.Colors.Highlight = v
+        Compkiller:RefreshCurrentColor()
+    end,
+})
+UISection:AddDropdown({
+    Name     = "Select Theme",
+    Default  = "Default",
+    Values   = { "Default", "Dark Green", "Dark Blue", "Purple Rose", "Skeet" },
+    Callback = function(v) Compkiller:SetTheme(v) end,
+})
+
+Window:DrawConfig({
+    Name   = "Config",
+    Icon   = "folder",
+    Config = ConfigManager,
+}):Init()
+
+print("[BLADEX LOGIC] Script cargado. La librería Compkiller debe estar precargada en getgenv().Compkiller")
