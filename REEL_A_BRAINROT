@@ -1369,7 +1369,6 @@ for _, r in ipairs(SUBMIT_RARS) do
     })
 end
 
-Window:DrawCategory({ Name = "Misc" })
 
 -- Dupe
 local _Remote = game:GetService("ReplicatedStorage").RemoteHandler.Plot
@@ -1508,6 +1507,8 @@ for _, baseName in ipairs({ "Base1","Base2","Base3","Base4","Base5","Base6" }) d
         end,
     })
 end
+
+Window:DrawCategory({ Name = "Misc" })
 
 local AjustesTab = Window:DrawTab({
     Icon = "settings-3",
