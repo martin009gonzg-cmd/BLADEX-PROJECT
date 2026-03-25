@@ -1,7 +1,5 @@
 -- Script completo con carga automática de la librería Compkiller
 -- Activar/desactivar funciones mediante variables globales _G.AutoXXX
--- Ejemplo: _G.AutoCollect = true  --> activa auto dinero
---          _G.AutoUpgrades = true --> activa mejora brainrots (30->1) modo ráfaga
 
 -- ════════════════════════════════════════════════════════════════
 -- 0. CARGA DE LA LIBRERÍA UI (desde la URL proporcionada)
@@ -440,7 +438,24 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
--- Sección izquierda: Auto Farm + Lucky Block Config
+-- NUEVA SECCIÓN: Farm Lucky Blocks (izquierda, arriba de Auto Farm)
+local LbSection = MainTab:DrawSection({ Name = "Farm Lucky Blocks", Position = "left", Minimized = false })
+
+LbSection:AddToggle({
+    Name     = "Auto Lucky Block Farm",
+    Flag     = "lb_farm",
+    Default  = false,
+    Callback = function(v) _G.AutoLBFarm = v end,
+})
+
+LbSection:AddToggle({
+    Name     = "Auto comprar lucky blocks",
+    Flag     = "auto_skins",
+    Default  = false,
+    Callback = function(v) _G.AutoSkins = v end,
+})
+
+-- Sección izquierda: Auto Farm (resto de toggles)
 local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
 
 LeftSection:AddToggle({
@@ -476,20 +491,6 @@ LeftSection:AddToggle({
     Flag     = "auto_placebest",
     Default  = false,
     Callback = function(v) _G.AutoPlaceBest = v end,
-})
-
-LeftSection:AddToggle({
-    Name     = "Auto Lucky Block Farm",
-    Flag     = "lb_farm",
-    Default  = false,
-    Callback = function(v) _G.AutoLBFarm = v end,
-})
-
-LeftSection:AddToggle({
-    Name     = "Auto comprar lucky blocks",
-    Flag     = "auto_skins",
-    Default  = false,
-    Callback = function(v) _G.AutoSkins = v end,
 })
 
 -- Sección derecha: Skins
