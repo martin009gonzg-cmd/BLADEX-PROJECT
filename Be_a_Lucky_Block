@@ -417,20 +417,6 @@ FarmLeft:AddToggle({
     end,
 })
 
-FarmLeft:AddButton({
-    Name     = "Colocar Mejor",
-    Callback = function()
-        pcall(function() rf.PlaceBest:InvokeServer() end)
-    end,
-})
-
-FarmLeft:AddButton({
-    Name     = "Speed Max (x100)",
-    Callback = function()
-        pcall(function() rf.Speed:InvokeServer("MovementSpeed", 100) end)
-    end,
-})
-
 -- ══════════════════════════════════════════════
 -- TAB: BeALuckyBlock
 -- ══════════════════════════════════════════════
@@ -480,6 +466,20 @@ LbLeft:AddToggle({
     Callback = function(v)
         autoSkinsOn = v
         if v then startSkinLoop() else stopSkinLoop() end
+    end,
+})
+
+LbLeft:AddButton({
+    Name     = "Colocar Mejor",
+    Callback = function()
+        pcall(function() rf.PlaceBest:InvokeServer() end)
+    end,
+})
+
+LbLeft:AddButton({
+    Name     = "Speed Max (x100)",
+    Callback = function()
+        pcall(function() rf.Speed:InvokeServer("MovementSpeed", 100) end)
     end,
 })
 
