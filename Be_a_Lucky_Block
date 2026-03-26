@@ -67,7 +67,7 @@ local LB_CONFIG = {
         CAMINADORA = CFrame.new(588.96, 38.18, -2127.26),
         BASE       = CFrame.new(733.21, 37.51, -2153.56),
     },
-    MAX_RETRIES = 3,
+    MAX_RETRIES = 2,
 }
 
 -- ════════════════════════════════════════════════════════════════
