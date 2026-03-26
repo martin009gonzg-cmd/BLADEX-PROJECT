@@ -1,1095 +1,145 @@
-if not getgenv().Compkiller then
-    error("❌ Compkiller no está cargada. Precárgala antes de ejecutar este script.")
-end
-
-local Compkiller = getgenv().Compkiller
-
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local LP = Players.LocalPlayer
-
-local function findKnit()
-    local ok, idx = pcall(function()
-        return ReplicatedStorage.Packages._Index
-    end)
-    if not ok then return nil end
-
-    for _, folder in ipairs(idx:GetChildren()) do
-        if folder.Name:lower():match("knit") then
-            local knitFolder = folder:FindFirstChild("knit")
-            if knitFolder then
-                local services = knitFolder:FindFirstChild("Services")
-                if services then
-                    return services
-                end
-            end
+local function _()
+    local _0 = {}
+    local _1 = game
+    local _2 = getgenv
+    local _3 = pcall
+    local _4 = warn
+    local _5 = print
+    local _6 = error
+    local _7 = task.wait
+    local _8 = tostring
+    local _9 = pairs
+    
+    -- ═══════════════════════════════════════════════════════════════
+    -- 🎮 CONFIGURACIÓN DE JUEGOS SOPORTADOS (10 RANURAS)
+    -- ═══════════════════════════════════════════════════════════════
+    
+    -- RANURA 1
+    _0[99435399946069] = {"https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/REEL_A_BRAINROT", "[NEW] Reel a Brainrot! [GAME]"}
+    
+    -- RANURA 2
+    _0[124473577469410] = {"https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/Be_a_Lucky_Block", "Be a Lucky Block"}
+    
+    -- RANURA 3
+    -- _0[99435399946069] = {"https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/Be_a_Lucky_Block", "NBe a Lucky Block"}
+    
+    -- RANURA 4
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 5
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 6
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 7
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 8
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 9
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 10
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- ═══════════════════════════════════════════════════════════════
+    
+    local _a = "https://pastebin.com/raw/ufVie1pF"
+    local _b = _1.PlaceId
+    local _c = _0[_b]
+    
+    if not _c then
+        _4("[BLADEX] Juego no soportado: " .. _8(_b))
+        _5("[BLADEX] Juegos disponibles:")
+        for _d, _e in _9(_0) do
+            _5("  -> " .. _8(_d) .. " - " .. _e[2])
         end
+        return
     end
-    return nil
-end
-
-local knitServices = findKnit()
-
-if not knitServices then
-    error("❌ No se encontró Knit en ReplicatedStorage. Verifica que el juego esté cargado.")
-end
-
-local function findRemote(serviceName, rfName)
-    local service = knitServices:FindFirstChild(serviceName)
-    if not service then return nil end
-    local rfFolder = service:FindFirstChild("RF")
-    if not rfFolder then return nil end
-    return rfFolder:FindFirstChild(rfName)
-end
-
-local function findEvent(serviceName, reName)
-    local service = knitServices:FindFirstChild(serviceName)
-    if not service then return nil end
-    local reFolder = service:FindFirstChild("RE")
-    if not reFolder then return nil end
-    return reFolder:FindFirstChild(reName)
-end
-
-local lbRF = {
-    StartRun = findRemote("RunningService", "StartRun"),
-    StartMove = findRemote("RunningService", "StartMove"),
-    OpenLuckyBlock = findRemote("RunningService", "OpenLuckyBlock"),
-    UpdateCFrame = findRemote("RunningService", "UpdateCFrame"),
-    EndMove = findRemote("RunningService", "EndMove"),
-}
-
-local rf = {
-    Brainrot = findRemote("ContainerService", "UpgradeBrainrot"),
-    WorkUpdate = findEvent("ContainerService", "WorkUpdate"),
-    Container = findRemote("ContainerService", "BuyContainer"),
-    PlaceBest = findRemote("ContainerService", "PlaceBest"),
-    CollectCash = findRemote("ContainerService", "CollectCash"),
-    CollectOfflineCash = findRemote("ContainerService", "CollectOfflineCash"),
-    Rebirth = findRemote("RebirthService", "Rebirth"),
-    Speed = findRemote("UpgradesService", "Upgrade"),
-    EquipSkin = findRemote("SkinService", "EquipSkin"),
-    BuySkin = findRemote("SkinService", "BuySkin"),
-}
-
-local sellRF = findRemote("InventoryService", "SellBrainrot")
-
-local GetRewardRemote = nil
-for _, service in ipairs(knitServices:GetChildren()) do
-    local rfFolder = service:FindFirstChild("RF")
-    if rfFolder and rfFolder:FindFirstChild("GetReward") then
-        GetRewardRemote = rfFolder.GetReward
-        break
-    end
-end
-rf.GetReward = GetRewardRemote
-
-_G.AutoCollect = _G.AutoCollect or false
-_G.AutoUpgrades = _G.AutoUpgrades or false
-_G.AutoContainer = _G.AutoContainer or false
-_G.AutoLBFarm = _G.AutoLBFarm or false
-_G.AutoZeus = _G.AutoZeus or false
-_G.AutoSell = _G.AutoSell or false
-_G.AutoRebirth = _G.AutoRebirth or false
-_G.AutoSpeed = _G.AutoSpeed or false
-_G.AutoPlaceBest = _G.AutoPlaceBest or false
-_G.SelectedBase = _G.SelectedBase or "base14"
-
--- Toggles para cada brainrot a vender
-_G.SellBonecaAmbalabu = _G.SellBonecaAmbalabu or false
-_G.SellCactoHipopotamo = _G.SellCactoHipopotamo or false
-_G.SellCocofantoElefante = _G.SellCocofantoElefante or false
-_G.SellCappuccinaBailarina = _G.SellCappuccinaBailarina or false
-_G.SellFioitteraGangster = _G.SellFioitteraGangster or false
-_G.SellUdinDinDinDun = _G.SellUdinDinDinDun or false
-_G.SellBrrBrrPatapim = _G.SellBrrBrrPatapim or false
-_G.SellAsesinoCapuchino = _G.SellAsesinoCapuchino or false
-_G.SellGorilloWatermellondrillo = _G.SellGorilloWatermellondrillo or false
-_G.SellRaccooniWatermelunni = _G.SellRaccooniWatermelunni or false
-_G.SellTaTaTaTaSahur = _G.SellTaTaTaTaSahur or false
-_G.SellGlorboFrutodrillo = _G.SellGlorboFrutodrillo or false
-_G.SellFrigoCamello = _G.SellFrigoCamello or false
-_G.SellOrangutiniAnanassini = _G.SellOrangutiniAnanassini or false
-_G.SellBailarinLololo = _G.SellBailarinLololo or false
-_G.SellSvininaBombobardino = _G.SellSvininaBombobardino or false
-_G.SellFrulliFrula = _G.SellFrulliFrula or false
-_G.SellGanganzelliTrulala = _G.SellGanganzelliTrulala or false
-_G.SellOrcalaroOrcala = _G.SellOrcalaroOrcala or false
-_G.SellYoni = _G.SellYoni or false
-_G.SellLerulerulerule = _G.SellLerulerulerule or false
-_G.SellCaballoVirtuoso = _G.SellCaballoVirtuoso or false
-_G.SellTostadorRinoceronte = _G.SellTostadorRinoceronte or false
-_G.SellTeTeTeTeSahur = _G.SellTeTeTeTeSahur or false
-_G.SellMateo = _G.SellMateo or false
-_G.SellTiTiTiSahur = _G.SellTiTiTiSahur or false
-_G.SellBurbaloniLuliloli = _G.SellBurbaloniLuliloli or false
-_G.SellTortuginni = _G.SellTortuginni or false
-_G.SellDragonfrutinni = _G.SellDragonfrutinni or false
-_G.SellTralaleritos = _G.SellTralaleritos or false
-_G.SellPuntoAccesoOlla = _G.SellPuntoAccesoOlla or false
-_G.SellCrocodillitos = _G.SellCrocodillitos or false
-_G.SellTrulimeroTrulicina = _G.SellTrulimeroTrulicina or false
-_G.SellVacaSaturno = _G.SellVacaSaturno or false
-_G.SellSaturnita = _G.SellSaturnita or false
-_G.SellVaquitasSaturnitas = _G.SellVaquitasSaturnitas or false
-_G.SellAgarriniLapalini = _G.SellAgarriniLapalini or false
-_G.SellPatataPipi = _G.SellPatataPipi or false
-_G.SellEspaguetisTualetti = _G.SellEspaguetisTualetti or false
-_G.SellCathinniSushinni = _G.SellCathinniSushinni or false
-_G.SellGraipusMedus = _G.SellGraipusMedus or false
-_G.SellTigrrulliniWatermellini = _G.SellTigrrulliniWatermellini or false
-_G.SellAngelaLarila = _G.SellAngelaLarila or false
-_G.SellCanneloniDragon = _G.SellCanneloniDragon or false
-_G.SellAngelDisonteGiuppitere = _G.SellAngelDisonteGiuppitere or false
-_G.SellASahur = _G.SellASahur or false
-
-local BASE_COORDS = {
-    base14 = {
-        block = CFrame.new(733.21, 37.51, -2153.56),
-        runner = CFrame.new(588.96, 38.18, -2127.26),
-    },
-    ZEUS = {
-        block = CFrame.new(733.21, 37.51, -2153.56),
-        runner = CFrame.new(588.96, 38.18, -2127.26),
-    },
-    base1 = { block = CFrame.new(100, 38, -200), runner = CFrame.new(80, 38, -180) },
-    base2 = { block = CFrame.new(200, 38, -350), runner = CFrame.new(180, 38, -330) },
-    base3 = { block = CFrame.new(300, 38, -500), runner = CFrame.new(280, 38, -480) },
-    base4 = { block = CFrame.new(400, 38, -650), runner = CFrame.new(380, 38, -630) },
-    base5 = { block = CFrame.new(500, 38, -800), runner = CFrame.new(480, 38, -780) },
-    base6 = { block = CFrame.new(600, 38, -950), runner = CFrame.new(580, 38, -930) },
-    base7 = { block = CFrame.new(700, 38, -1100), runner = CFrame.new(680, 38, -1080) },
-    base8 = { block = CFrame.new(800, 38, -1250), runner = CFrame.new(780, 38, -1230) },
-    base9 = { block = CFrame.new(900, 38, -1400), runner = CFrame.new(880, 38, -1380) },
-    base10 = { block = CFrame.new(1000, 38, -1550), runner = CFrame.new(980, 38, -1530) },
-    base11 = { block = CFrame.new(1100, 38, -1700), runner = CFrame.new(1080, 38, -1680) },
-    base12 = { block = CFrame.new(1200, 38, -1850), runner = CFrame.new(1180, 38, -1830) },
-    base13 = { block = CFrame.new(1300, 38, -2000), runner = CFrame.new(1280, 38, -1980) },
-}
-
-local LB_CFG = {
-    MAX_RETRIES = 3,
-    BLOCK_COOLDOWN = 2.5,
-    ANTI_BUG_TIMEOUT = 8,
-    DELAYS = {
-        AFTER_TELEPORT = 0.3,
-        AFTER_OPEN = 1.2,
-        AFTER_RUN = 0.5,
-        CYCLE_END = 1.5,
-        RESPAWN_WAIT = 3.0,
-    },
-}
-
-local function safeInvoke(remote, ...)
-    if not remote then return false, "Remoto nulo" end
-    local ok, res = pcall(remote.InvokeServer, remote, ...)
-    if not ok then warn("[safeInvoke] " .. tostring(res)) end
-    return ok, res
-end
-
-local function safeFire(remote, ...)
-    if not remote then return false, "Remoto nulo" end
-    local ok, res = pcall(remote.FireServer, remote, ...)
-    if not ok then warn("[safeFire] " .. tostring(res)) end
-    return ok, res
-end
-
-local function invokeWithRetry(remote, maxRetries, ...)
-    maxRetries = maxRetries or LB_CFG.MAX_RETRIES
-    for i = 1, maxRetries do
-        local ok, res = safeInvoke(remote, ...)
-        if ok then return true, res end
-        warn(("[Retry %d/%d] Falló: %s"):format(i, maxRetries, tostring(remote)))
-        task.wait(0.5)
-    end
-    return false, nil
-end
-
-local function waitForCharacter()
-    local char = LP.Character or LP.CharacterAdded:Wait()
-    local hum = char:WaitForChild("Humanoid", 10)
-    if hum and hum.Health <= 0 then
-        char = LP.CharacterAdded:Wait()
-        task.wait(LB_CFG.DELAYS.RESPAWN_WAIT)
-        char = LP.Character
-    end
-    return char, char and char:FindFirstChild("HumanoidRootPart")
-end
-
-local function teleportToWithConfirm(cf, maxWait)
-    maxWait = maxWait or 3
-    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    hrp.CFrame = cf
-    local start = tick()
-    while tick() - start < maxWait do
-        task.wait(0.1)
-        if hrp and hrp.Parent and (hrp.Position - cf.Position).Magnitude < 5 then
-            return true
+    
+    local _f = _c[1]
+    local _g = _c[2]
+    
+    _5("[BLADEX] Juego: " .. _g)
+    _5("[BLADEX] Iniciando cargador...")
+    
+    local function _h(_i)
+        local _j, _k = _3(function()
+            return _1:HttpGet(_i)
+        end)
+        if _j then
+            return _k
         end
+        _4("[BLADEX] Error en URL: " .. _8(_i))
+        _4("[BLADEX] Detalle: " .. _8(_k))
+        return nil
     end
-    return false
-end
-
-local function isNear(cf, threshold)
-    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    return (hrp.Position - cf.Position).Magnitude < (threshold or 5)
-end
-
-local activeThreads = {}
-
-local function startLoop(name, fn)
-    if activeThreads[name] then
-        pcall(task.cancel, activeThreads[name])
-        activeThreads[name] = nil
+    
+    _5("[BLADEX] Descargando libreria Compkiller...")
+    local _l = _h(_a)
+    if not _l then
+        _6("[BLADEX] Fallo la libreria")
+        return
     end
-    activeThreads[name] = task.spawn(fn)
-end
-
-local function stopLoop(name)
-    if activeThreads[name] then
-        pcall(task.cancel, activeThreads[name])
-        activeThreads[name] = nil
+    
+    local _m, _n = _3(loadstring, _l)
+    if not _m then
+        _6("[BLADEX] Error al compilar: " .. _8(_n))
+        return
     end
-end
-
-local function setLoop(name, enabled, fn)
-    if enabled then
-        startLoop(name, fn)
+    
+    local _o = _n()
+    if _o then
+        _2().Compkiller = _o
+    end
+    
+    local _p = _2().Compkiller
+    if not _p then
+        _5("[BLADEX] Esperando inicializacion...")
+        _7(2)
+        _p = _2().Compkiller
+    end
+    
+    if not _p then
+        _6("[BLADEX] No se encontro Compkiller")
+        return
+    end
+    
+    _5("[BLADEX] Libreria version: " .. _8(_p.Version or "2.6"))
+    _5("[BLADEX] Descargando script del juego...")
+    
+    local _q = _h(_f)
+    if not _q then
+        _6("[BLADEX] Fallo el script principal")
+        return
+    end
+    
+    local _r, _s = _3(loadstring, _q)
+    if not _r then
+        _6("[BLADEX] Error al compilar script: " .. _8(_s))
+        return
+    end
+    
+    _2().Compkiller = _p
+    
+    _5("[BLADEX] Ejecutando " .. _g .. "...")
+    
+    local _t, _u = _3(_s)
+    if _t then
+        _5("")
+        _5("██████╗ ██╗      █████╗ ██████╗ ███████╗██╗  ██╗")
+        _5("██╔══██╗██║     ██╔══██╗██╔══██╗██╔════╝╚██╗██╔╝")
+        _5("██████╔╝██║     ███████║██║  ██║█████╗   ╚███╔╝ ")
+        _5("██╔══██╗██║     ██╔══██║██║  ██║██╔══╝   ██╔██╗ ")
+        _5("██████╔╝███████╗██║  ██║██████╔╝███████╗██╔╝ ██╗")
+        _5("╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝")
+        _5("")
+        _5("                          ✨ BLADEX CARGADO ✨")
+        _5("")
     else
-        stopLoop(name)
+        _4("[BLADEX] Error en ejecucion: " .. _8(_u))
     end
 end
-
-local lastBlockOpen = 0
-
-local function lbFarmCycle()
-    local cycleCompleted = false
-    local char, hrp = waitForCharacter()
-    if not hrp then return false, "Sin HRP" end
-
-    local baseName = _G.AutoZeus and "ZEUS" or (_G.SelectedBase or "base14")
-    local coords = BASE_COORDS[baseName] or BASE_COORDS["base14"]
-
-    local antiBugTask = task.spawn(function()
-        task.wait(LB_CFG.ANTI_BUG_TIMEOUT)
-        if not cycleCompleted and _G.AutoLBFarm then
-            warn("[LBFarm] Anti-bug activado — teleportando a base " .. baseName)
-            pcall(function()
-                local h = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-                if h then h.CFrame = coords.block end
-            end)
-        end
-    end)
-
-    local ok, err = pcall(function()
-        if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
-        task.wait(0.2)
-
-        if not isNear(coords.block, 8) then
-            teleportToWithConfirm(coords.block, 3)
-        end
-
-        local now = tick()
-        local waitTime = LB_CFG.BLOCK_COOLDOWN - (now - lastBlockOpen)
-        if waitTime > 0 then task.wait(waitTime) end
-
-        local blockParam = (baseName == "ZEUS") and "ZEUS" or baseName
-        if not invokeWithRetry(lbRF.OpenLuckyBlock, LB_CFG.MAX_RETRIES, blockParam) then
-            error("Falló OpenLuckyBlock")
-        end
-        lastBlockOpen = tick()
-        task.wait(LB_CFG.DELAYS.AFTER_OPEN)
-
-        if not isNear(coords.runner, 8) then
-            teleportToWithConfirm(coords.runner, 3)
-        end
-        task.wait(LB_CFG.DELAYS.AFTER_TELEPORT)
-
-        if lbRF.StartMove then invokeWithRetry(lbRF.StartMove, LB_CFG.MAX_RETRIES) end
-        if lbRF.StartRun then invokeWithRetry(lbRF.StartRun, LB_CFG.MAX_RETRIES) end
-        task.wait(LB_CFG.DELAYS.AFTER_RUN)
-
-        local currentHrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-        if lbRF.UpdateCFrame and currentHrp then
-            invokeWithRetry(lbRF.UpdateCFrame, LB_CFG.MAX_RETRIES, currentHrp.CFrame)
-        end
-        task.wait(0.8)
-
-        if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
-        task.wait(0.2)
-    end)
-
-    cycleCompleted = true
-    pcall(task.cancel, antiBugTask)
-
-    if not ok then
-        warn("[LBFarm] Error en ciclo: " .. tostring(err))
-        return false, err
-    end
-
-    task.wait(LB_CFG.DELAYS.CYCLE_END)
-    return true
-end
-
-local function loopAutoLBFarm()
-    while _G.AutoLBFarm do
-        local ok, err = pcall(lbFarmCycle)
-        if not ok then
-            warn("[LBFarm] Error no controlado: " .. tostring(err))
-            task.wait(2)
-        end
-    end
-    if lbRF.EndMove then pcall(lbRF.EndMove.InvokeServer, lbRF.EndMove) end
-end
-
--- Mejorado: Auto Collect con CollectCash y CollectOfflineCash
-local function loopAutoCollect()
-    while _G.AutoCollect do
-        -- Recolectar cash normal
-        if rf.CollectCash then
-            local success = safeInvoke(rf.CollectCash)
-            if success then
-                print("[AutoCollect] Cash recolectado")
-            end
-        end
-        
-        -- Recolectar cash offline
-        if rf.CollectOfflineCash then
-            local success = safeInvoke(rf.CollectOfflineCash)
-            if success then
-                print("[AutoCollect] Offline cash recolectado")
-            end
-        end
-        
-        -- Enviar WorkUpdate para ingresos pasivos
-        if rf.WorkUpdate then
-            safeFire(rf.WorkUpdate)
-        end
-        
-        task.wait(2)
-    end
-end
-
--- Mejorado: Upgrade Brainrots con el formato correcto "30"
-local function loopAutoUpgrades()
-    while _G.AutoUpgrades do
-        if not rf.Brainrot then 
-            task.wait(3) 
-            continue 
-        end
-        
-        -- Itera slots del 1 al 10 usando el parámetro "30" como en el ejemplo
-        for slot = 1, 10 do
-            if not _G.AutoUpgrades then break end
-            
-            -- Usar el formato correcto: { [1] = "30" } para upgrade de brainrot
-            local success = safeInvoke(rf.Brainrot, "30")
-            if success then
-                print("[AutoUpgrades] Upgrade Brainrot slot " .. slot .. " ejecutado")
-            end
-            task.wait(0.5) -- Mayor delay para evitar saturar
-        end
-        task.wait(3)
-    end
-end
-
-local function loopAutoContainer()
-    while _G.AutoContainer do
-        if rf.Container then 
-            local success = safeInvoke(rf.Container)
-            if success then
-                print("[AutoContainer] Contenedor comprado")
-            end
-        end
-        task.wait(5)
-    end
-end
-
-local function loopAutoRebirth()
-    while _G.AutoRebirth do
-        if rf.Rebirth then 
-            local success = safeInvoke(rf.Rebirth)
-            if success then
-                print("[AutoRebirth] Rebirth ejecutado")
-            end
-        end
-        task.wait(6)
-    end
-end
-
-local function loopAutoSpeed()
-    while _G.AutoSpeed do
-        if rf.Speed then 
-            local success = safeInvoke(rf.Speed, "speed")
-            if success then
-                print("[AutoSpeed] Velocidad mejorada")
-            end
-        end
-        task.wait(3)
-    end
-end
-
-local function loopAutoPlaceBest()
-    while _G.AutoPlaceBest do
-        if rf.PlaceBest then 
-            local success = safeInvoke(rf.PlaceBest)
-            if success then
-                print("[AutoPlaceBest] Mejor Brainrot colocado")
-            end
-        end
-        task.wait(3)
-    end
-end
-
-local function executeAutoSell()
-    if not sellRF then 
-        warn("[AutoSell] Remoto SellBrainrot no disponible.")
-        return 
-    end
-    
-    local backpack = LP:FindFirstChild("Backpack")
-    if not backpack then return end
-
-    local soldCount = 0
-    for _, item in ipairs(backpack:GetChildren()) do
-        if not _G.AutoSell then break end
-        
-        local entityId = item:GetAttribute("EntityId")
-        local brainrotType = item:GetAttribute("BrainrotType")
-        
-        if brainrotType and entityId then
-            local shouldSell = false
-            if brainrotType == "boneca_ambalabu" and _G.SellBonecaAmbalabu then shouldSell = true
-            elseif brainrotType == "cacto_hipopotamo" and _G.SellCactoHipopotamo then shouldSell = true
-            elseif brainrotType == "cocofanto_elefante" and _G.SellCocofantoElefante then shouldSell = true
-            elseif brainrotType == "cappuccina_bailarina" and _G.SellCappuccinaBailarina then shouldSell = true
-            elseif brainrotType == "fioittera_gangster" and _G.SellFioitteraGangster then shouldSell = true
-            elseif brainrotType == "udin_din_din_dun" and _G.SellUdinDinDinDun then shouldSell = true
-            elseif brainrotType == "brr_brr_patapim" and _G.SellBrrBrrPatapim then shouldSell = true
-            elseif brainrotType == "asesino_capuchino" and _G.SellAsesinoCapuchino then shouldSell = true
-            elseif brainrotType == "gorillo_watermellondrillo" and _G.SellGorilloWatermellondrillo then shouldSell = true
-            elseif brainrotType == "raccooni_watermelunni" and _G.SellRaccooniWatermelunni then shouldSell = true
-            elseif brainrotType == "ta_ta_ta_ta_sahur" and _G.SellTaTaTaTaSahur then shouldSell = true
-            elseif brainrotType == "glorbo_frutodrillo" and _G.SellGlorboFrutodrillo then shouldSell = true
-            elseif brainrotType == "frigo_camello" and _G.SellFrigoCamello then shouldSell = true
-            elseif brainrotType == "orangutini_ananassini" and _G.SellOrangutiniAnanassini then shouldSell = true
-            elseif brainrotType == "bailarin_lololo" and _G.SellBailarinLololo then shouldSell = true
-            elseif brainrotType == "svinina_bombobardino" and _G.SellSvininaBombobardino then shouldSell = true
-            elseif brainrotType == "frulli_frula" and _G.SellFrulliFrula then shouldSell = true
-            elseif brainrotType == "ganganzelli_trulala" and _G.SellGanganzelliTrulala then shouldSell = true
-            elseif brainrotType == "orcalaro_orcala" and _G.SellOrcalaroOrcala then shouldSell = true
-            elseif brainrotType == "yoni" and _G.SellYoni then shouldSell = true
-            elseif brainrotType == "lerulerulerule" and _G.SellLerulerulerule then shouldSell = true
-            elseif brainrotType == "caballo_virtuoso" and _G.SellCaballoVirtuoso then shouldSell = true
-            elseif brainrotType == "tostador_rinoceronte" and _G.SellTostadorRinoceronte then shouldSell = true
-            elseif brainrotType == "te_te_te_te_sahur" and _G.SellTeTeTeTeSahur then shouldSell = true
-            elseif brainrotType == "mateo" and _G.SellMateo then shouldSell = true
-            elseif brainrotType == "ti_ti_ti_sahur" and _G.SellTiTiTiSahur then shouldSell = true
-            elseif brainrotType == "burbaloni_luliloli" and _G.SellBurbaloniLuliloli then shouldSell = true
-            elseif brainrotType == "tortuginni" and _G.SellTortuginni then shouldSell = true
-            elseif brainrotType == "dragonfrutinni" and _G.SellDragonfrutinni then shouldSell = true
-            elseif brainrotType == "tralaleritos" and _G.SellTralaleritos then shouldSell = true
-            elseif brainrotType == "punto_acceso_olla" and _G.SellPuntoAccesoOlla then shouldSell = true
-            elseif brainrotType == "crocodillitos" and _G.SellCrocodillitos then shouldSell = true
-            elseif brainrotType == "trulimero_trulicina" and _G.SellTrulimeroTrulicina then shouldSell = true
-            elseif brainrotType == "vaca_saturno" and _G.SellVacaSaturno then shouldSell = true
-            elseif brainrotType == "saturnita" and _G.SellSaturnita then shouldSell = true
-            elseif brainrotType == "vaquitas_saturnitas" and _G.SellVaquitasSaturnitas then shouldSell = true
-            elseif brainrotType == "agarrini_lapalini" and _G.SellAgarriniLapalini then shouldSell = true
-            elseif brainrotType == "patata_pipi" and _G.SellPatataPipi then shouldSell = true
-            elseif brainrotType == "espaguetis_tualetti" and _G.SellEspaguetisTualetti then shouldSell = true
-            elseif brainrotType == "cathinni_sushinni" and _G.SellCathinniSushinni then shouldSell = true
-            elseif brainrotType == "graipus_medus" and _G.SellGraipusMedus then shouldSell = true
-            elseif brainrotType == "tigrrullini_watermellini" and _G.SellTigrrulliniWatermellini then shouldSell = true
-            elseif brainrotType == "angela_larila" and _G.SellAngelaLarila then shouldSell = true
-            elseif brainrotType == "canneloni_dragon" and _G.SellCanneloniDragon then shouldSell = true
-            elseif brainrotType == "angel_disonte_giuppitere" and _G.SellAngelDisonteGiuppitere then shouldSell = true
-            elseif brainrotType == "a_sahur" and _G.SellASahur then shouldSell = true
-            end
-            
-            if shouldSell then
-                local success = pcall(function() 
-                    sellRF:InvokeServer(entityId) 
-                end)
-                if success then
-                    soldCount = soldCount + 1
-                end
-                task.wait(0.2)
-            end
-        end
-    end
-    
-    if soldCount > 0 then
-        print("[AutoSell] Vendidos " .. soldCount .. " items")
-    end
-end
-
-local function loopAutoSell()
-    while _G.AutoSell do
-        executeAutoSell()
-        task.wait(1.5)
-    end
-end
-
-local LOOP_MAP = {
-    AutoCollect = loopAutoCollect,
-    AutoUpgrades = loopAutoUpgrades,
-    AutoContainer = loopAutoContainer,
-    AutoLBFarm = loopAutoLBFarm,
-    AutoSell = loopAutoSell,
-    AutoRebirth = loopAutoRebirth,
-    AutoSpeed = loopAutoSpeed,
-    AutoPlaceBest = loopAutoPlaceBest,
-}
-
-local function toggle(name, val)
-    _G[name] = val
-    setLoop(name, val, LOOP_MAP[name])
-end
-
-task.spawn(function()
-    local lastState = {}
-    while true do
-        for name, fn in pairs(LOOP_MAP) do
-            local current = _G[name]
-            if current ~= lastState[name] then
-                if current then
-                    startLoop(name, fn)
-                else
-                    stopLoop(name)
-                end
-                lastState[name] = current
-            end
-        end
-        task.wait(0.5)
-    end
-end)
-
-local Notifier = Compkiller.newNotify()
-Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
-
-local ConfigManager = Compkiller:ConfigManager({
-    Directory = "BLADEX-HUB",
-    Config = "BLADEX-BrainrotV3",
-})
-
-Compkiller:Loader(Compkiller.Logo, 2.5).yield()
-
-local Window = Compkiller.new({
-    Name = "BLADEX HUB v3.0",
-    Keybind = "LeftAlt",
-    Logo = Compkiller.Logo,
-    Scale = UDim2.new(0, 480, 0, 340),
-    TextSize = 15,
-})
-
-local function notify(content, duration)
-    Notifier.new({
-        Title = "BLADEX HUB",
-        Content = content,
-        Duration = duration or 4,
-        Icon = Compkiller.Logo,
-    })
-end
-
-Window:DrawCategory({ Name = "BeaLuckyBlock" })
-
-local MainTab = Window:DrawTab({
-    Name = "Farm & Recolección",
-    Icon = "box",
-    EnableScrolling = true,
-})
-
-local LbSection = MainTab:DrawSection({
-    Name = "Lucky Block Farm",
-    Position = "left",
-    Minimized = false,
-})
-
-LbSection:AddToggle({
-    Name = "Auto Ciber Farm",
-    Flag = "lb_farm",
-    Default = false,
-    Callback = function(v) toggle("AutoLBFarm", v) end,
-})
-
-LbSection:AddToggle({
-    Name = "Auto Zeus Farm",
-    Flag = "auto_zeus",
-    Default = false,
-    Callback = function(v) _G.AutoZeus = v end,
-})
-
-LbSection:AddDropdown({
-    Name = "Base a Farmear",
-    Flag = "selected_base",
-    Default = "Base 14",
-    Values = {
-        "Base 1", "Base 2", "Base 3", "Base 4", "Base 5", "Base 6", "Base 7",
-        "Base 8", "Base 9", "Base 10", "Base 11", "Base 12", "Base 13", "Base 14",
-    },
-    Callback = function(v)
-        local num = v:match("Base (%d+)")
-        if num then
-            _G.SelectedBase = "base" .. num
-            notify("Base seleccionada: " .. v, 3)
-        end
-    end,
-})
-
-local FarmSection = MainTab:DrawSection({
-    Name = "Auto Farm",
-    Position = "left",
-    Minimized = true,
-})
-
-FarmSection:AddToggle({
-    Name = "Auto Collect Cash",
-    Flag = "auto_collect",
-    Default = false,
-    Callback = function(v) toggle("AutoCollect", v) end,
-})
-
-FarmSection:AddToggle({
-    Name = "Auto Colocar Brainrots",
-    Flag = "auto_placebest",
-    Default = false,
-    Callback = function(v) toggle("AutoPlaceBest", v) end,
-})
-
-FarmSection:AddToggle({
-    Name = "Auto Rebirth",
-    Flag = "auto_rebirth",
-    Default = false,
-    Callback = function(v) toggle("AutoRebirth", v) end,
-})
-
-FarmSection:AddToggle({
-    Name = "Upgrade Brainrots",
-    Flag = "auto_upgrades",
-    Default = false,
-    Callback = function(v) toggle("AutoUpgrades", v) end,
-})
-
-FarmSection:AddToggle({
-    Name = "Auto Comprar Velocidad",
-    Flag = "auto_speed",
-    Default = false,
-    Callback = function(v) toggle("AutoSpeed", v) end,
-})
-
-FarmSection:AddToggle({
-    Name = "Auto Mejorar Base",
-    Flag = "auto_container",
-    Default = false,
-    Callback = function(v) toggle("AutoContainer", v) end,
-})
-
-local SellSection = MainTab:DrawSection({
-    Name = "Auto Sell (Brainrot)",
-    Position = "right",
-    Minimized = true,
-})
-
-SellSection:AddToggle({
-    Name = "Auto Sell",
-    Flag = "auto_sell",
-    Default = false,
-    Callback = function(v)
-        if not sellRF and v then
-            notify("⚠ Remoto SellBrainrot no encontrado.", 5)
-            return
-        end
-        toggle("AutoSell", v)
-    end,
-})
-
-SellSection:AddToggle({
-    Name = "boneca_ambalabu",
-    Flag = "sell_boneca",
-    Default = false,
-    Callback = function(v) _G.SellBonecaAmbalabu = v end,
-})
-
-SellSection:AddToggle({
-    Name = "cacto_hipopotamo",
-    Flag = "sell_cacto",
-    Default = false,
-    Callback = function(v) _G.SellCactoHipopotamo = v end,
-})
-
-SellSection:AddToggle({
-    Name = "cocofanto_elefante",
-    Flag = "sell_cocofanto",
-    Default = false,
-    Callback = function(v) _G.SellCocofantoElefante = v end,
-})
-
-SellSection:AddToggle({
-    Name = "cappuccina_bailarina",
-    Flag = "sell_cappuccina",
-    Default = false,
-    Callback = function(v) _G.SellCappuccinaBailarina = v end,
-})
-
-SellSection:AddToggle({
-    Name = "fioittera_gangster",
-    Flag = "sell_fioittera",
-    Default = false,
-    Callback = function(v) _G.SellFioitteraGangster = v end,
-})
-
-SellSection:AddToggle({
-    Name = "udin_din_din_dun",
-    Flag = "sell_udin",
-    Default = false,
-    Callback = function(v) _G.SellUdinDinDinDun = v end,
-})
-
-SellSection:AddToggle({
-    Name = "brr_brr_patapim",
-    Flag = "sell_brr",
-    Default = false,
-    Callback = function(v) _G.SellBrrBrrPatapim = v end,
-})
-
-SellSection:AddToggle({
-    Name = "asesino_capuchino",
-    Flag = "sell_asesino",
-    Default = false,
-    Callback = function(v) _G.SellAsesinoCapuchino = v end,
-})
-
-SellSection:AddToggle({
-    Name = "gorillo_watermellondrillo",
-    Flag = "sell_gorillo",
-    Default = false,
-    Callback = function(v) _G.SellGorilloWatermellondrillo = v end,
-})
-
-SellSection:AddToggle({
-    Name = "raccooni_watermelunni",
-    Flag = "sell_raccooni",
-    Default = false,
-    Callback = function(v) _G.SellRaccooniWatermelunni = v end,
-})
-
-SellSection:AddToggle({
-    Name = "ta_ta_ta_ta_sahur",
-    Flag = "sell_ta_ta",
-    Default = false,
-    Callback = function(v) _G.SellTaTaTaTaSahur = v end,
-})
-
-SellSection:AddToggle({
-    Name = "glorbo_frutodrillo",
-    Flag = "sell_glorbo",
-    Default = false,
-    Callback = function(v) _G.SellGlorboFrutodrillo = v end,
-})
-
-SellSection:AddToggle({
-    Name = "frigo_camello",
-    Flag = "sell_frigo",
-    Default = false,
-    Callback = function(v) _G.SellFrigoCamello = v end,
-})
-
-SellSection:AddToggle({
-    Name = "orangutini_ananassini",
-    Flag = "sell_orangutini",
-    Default = false,
-    Callback = function(v) _G.SellOrangutiniAnanassini = v end,
-})
-
-SellSection:AddToggle({
-    Name = "bailarin_lololo",
-    Flag = "sell_bailarin",
-    Default = false,
-    Callback = function(v) _G.SellBailarinLololo = v end,
-})
-
-SellSection:AddToggle({
-    Name = "svinina_bombobardino",
-    Flag = "sell_svinina",
-    Default = false,
-    Callback = function(v) _G.SellSvininaBombobardino = v end,
-})
-
-SellSection:AddToggle({
-    Name = "frulli_frula",
-    Flag = "sell_frulli",
-    Default = false,
-    Callback = function(v) _G.SellFrulliFrula = v end,
-})
-
-SellSection:AddToggle({
-    Name = "ganganzelli_trulala",
-    Flag = "sell_ganganzelli",
-    Default = false,
-    Callback = function(v) _G.SellGanganzelliTrulala = v end,
-})
-
-SellSection:AddToggle({
-    Name = "orcalaro_orcala",
-    Flag = "sell_orcalaro",
-    Default = false,
-    Callback = function(v) _G.SellOrcalaroOrcala = v end,
-})
-
-SellSection:AddToggle({
-    Name = "yoni",
-    Flag = "sell_yoni",
-    Default = false,
-    Callback = function(v) _G.SellYoni = v end,
-})
-
-SellSection:AddToggle({
-    Name = "lerulerulerule",
-    Flag = "sell_lerulerulerule",
-    Default = false,
-    Callback = function(v) _G.SellLerulerulerule = v end,
-})
-
-SellSection:AddToggle({
-    Name = "caballo_virtuoso",
-    Flag = "sell_caballo",
-    Default = false,
-    Callback = function(v) _G.SellCaballoVirtuoso = v end,
-})
-
-SellSection:AddToggle({
-    Name = "tostador_rinoceronte",
-    Flag = "sell_tostador",
-    Default = false,
-    Callback = function(v) _G.SellTostadorRinoceronte = v end,
-})
-
-SellSection:AddToggle({
-    Name = "te_te_te_te_sahur",
-    Flag = "sell_te_te",
-    Default = false,
-    Callback = function(v) _G.SellTeTeTeTeSahur = v end,
-})
-
-SellSection:AddToggle({
-    Name = "mateo",
-    Flag = "sell_mateo",
-    Default = false,
-    Callback = function(v) _G.SellMateo = v end,
-})
-
-SellSection:AddToggle({
-    Name = "ti_ti_ti_sahur",
-    Flag = "sell_ti_ti",
-    Default = false,
-    Callback = function(v) _G.SellTiTiTiSahur = v end,
-})
-
-SellSection:AddToggle({
-    Name = "burbaloni_luliloli",
-    Flag = "sell_burbaloni",
-    Default = false,
-    Callback = function(v) _G.SellBurbaloniLuliloli = v end,
-})
-
-SellSection:AddToggle({
-    Name = "tortuginni",
-    Flag = "sell_tortuginni",
-    Default = false,
-    Callback = function(v) _G.SellTortuginni = v end,
-})
-
-SellSection:AddToggle({
-    Name = "dragonfrutinni",
-    Flag = "sell_dragonfrutinni",
-    Default = false,
-    Callback = function(v) _G.SellDragonfrutinni = v end,
-})
-
-SellSection:AddToggle({
-    Name = "tralaleritos",
-    Flag = "sell_tralaleritos",
-    Default = false,
-    Callback = function(v) _G.SellTralaleritos = v end,
-})
-
-SellSection:AddToggle({
-    Name = "punto_acceso_olla",
-    Flag = "sell_punto",
-    Default = false,
-    Callback = function(v) _G.SellPuntoAccesoOlla = v end,
-})
-
-SellSection:AddToggle({
-    Name = "crocodillitos",
-    Flag = "sell_crocodillitos",
-    Default = false,
-    Callback = function(v) _G.SellCrocodillitos = v end,
-})
-
-SellSection:AddToggle({
-    Name = "trulimero_trulicina",
-    Flag = "sell_trulimero",
-    Default = false,
-    Callback = function(v) _G.SellTrulimeroTrulicina = v end,
-})
-
-SellSection:AddToggle({
-    Name = "vaca_saturno",
-    Flag = "sell_vaca",
-    Default = false,
-    Callback = function(v) _G.SellVacaSaturno = v end,
-})
-
-SellSection:AddToggle({
-    Name = "saturnita",
-    Flag = "sell_saturnita",
-    Default = false,
-    Callback = function(v) _G.SellSaturnita = v end,
-})
-
-SellSection:AddToggle({
-    Name = "vaquitas_saturnitas",
-    Flag = "sell_vaquitas",
-    Default = false,
-    Callback = function(v) _G.SellVaquitasSaturnitas = v end,
-})
-
-SellSection:AddToggle({
-    Name = "agarrini_lapalini",
-    Flag = "sell_agarrini",
-    Default = false,
-    Callback = function(v) _G.SellAgarriniLapalini = v end,
-})
-
-SellSection:AddToggle({
-    Name = "patata_pipi",
-    Flag = "sell_patata",
-    Default = false,
-    Callback = function(v) _G.SellPatataPipi = v end,
-})
-
-SellSection:AddToggle({
-    Name = "espaguetis_tualetti",
-    Flag = "sell_espaguetis",
-    Default = false,
-    Callback = function(v) _G.SellEspaguetisTualetti = v end,
-})
-
-SellSection:AddToggle({
-    Name = "cathinni_sushinni",
-    Flag = "sell_cathinni",
-    Default = false,
-    Callback = function(v) _G.SellCathinniSushinni = v end,
-})
-
-SellSection:AddToggle({
-    Name = "graipus_medus",
-    Flag = "sell_graipus",
-    Default = false,
-    Callback = function(v) _G.SellGraipusMedus = v end,
-})
-
-SellSection:AddToggle({
-    Name = "tigrrullini_watermellini",
-    Flag = "sell_tigrrullini",
-    Default = false,
-    Callback = function(v) _G.SellTigrrulliniWatermellini = v end,
-})
-
-SellSection:AddToggle({
-    Name = "angela_larila",
-    Flag = "sell_angela",
-    Default = false,
-    Callback = function(v) _G.SellAngelaLarila = v end,
-})
-
-SellSection:AddToggle({
-    Name = "canneloni_dragon",
-    Flag = "sell_canneloni",
-    Default = false,
-    Callback = function(v) _G.SellCanneloniDragon = v end,
-})
-
-SellSection:AddToggle({
-    Name = "angel_disonte_giuppitere",
-    Flag = "sell_angel",
-    Default = false,
-    Callback = function(v) _G.SellAngelDisonteGiuppitere = v end,
-})
-
-SellSection:AddToggle({
-    Name = "a_sahur",
-    Flag = "sell_a_sahur",
-    Default = false,
-    Callback = function(v) _G.SellASahur = v end,
-})
-
-local RewardSection = MainTab:DrawSection({
-    Name = "Recompensas Especiales",
-    Position = "full",
-    Minimized = true,
-})
-
-RewardSection:AddButton({
-    Name = "Reclamar Bloque Espiritual",
-    Callback = function()
-        if not rf.GetReward then
-            notify("⚠ Remoto GetReward no encontrado.", 5)
-            return
-        end
-        local ok, result = safeInvoke(rf.GetReward)
-        notify(ok and "¡Reclamo enviado con éxito!" or "Error: " .. tostring(result), 5)
-    end,
-})
-
-Window:DrawCategory({ Name = "Misc" })
-
-local SettingsTab = Window:DrawTab({
-    Name = "Ajustes",
-    Icon = "settings-3",
-    Type = "Single",
-    EnableScrolling = true,
-})
-
-local UISection = SettingsTab:DrawSection({ Name = "UI Settings", Minimized = true })
-
-UISection:AddToggle({
-    Name = "Always Show Frame",
-    Default = false,
-    Callback = function(v) Window.AlwayShowTab = v end,
-})
-
-UISection:AddColorPicker({
-    Name = "Color Highlight",
-    Default = Compkiller.Colors.Highlight,
-    Callback = function(v)
-        Compkiller.Colors.Highlight = v
-        Compkiller:RefreshCurrentColor()
-    end,
-})
-
-UISection:AddDropdown({
-    Name = "Tema",
-    Default = "Default",
-    Values = { "Default", "Dark Green", "Dark Blue", "Purple Rose", "Skeet" },
-    Callback = function(v) Compkiller:SetTheme(v) end,
-})
-
-local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = true })
-
-InfoSection:AddLabel("BLADEX HUB v3.0 | Be a Lucky Block")
-InfoSection:AddLabel("Anti-bug integrado | Bases 1-14 | Auto Sell")
-InfoSection:AddLabel("Compkiller + Farm Optimizado (script 2)")
-
-Window:DrawConfig({
-    Name = "Config",
-    Icon = "folder",
-    Config = ConfigManager,
-}):Init()
-
-notify("¡BLADEX HUB v3.0 cargado! Knit: " .. (knitServices and "✓" or "✗"), 6)
-print("[BLADEX HUB v3.0] Script cargado. Usa LeftAlt para mostrar/ocultar la UI.")
+_()
