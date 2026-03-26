@@ -10,8 +10,41 @@ local function _()
     local _8 = tostring
     local _9 = pairs
     
-    -- Juegos soportados
+    -- ═══════════════════════════════════════════════════════════════
+    -- 🎮 CONFIGURACIÓN DE JUEGOS SOPORTADOS (10 RANURAS)
+    -- ═══════════════════════════════════════════════════════════════
+    
+    -- RANURA 1
     _0[99435399946069] = {"https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/REEL_A_BRAINROT", "[NEW] Reel a Brainrot! [GAME]"}
+    
+    -- RANURA 2
+    _0[124473577469410] = {"https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/Be_a_Lucky_Block", "Be a Lucky Block"}
+    
+    -- RANURA 3
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 4
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 5
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 6
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 7
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 8
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 9
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- RANURA 10
+    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    
+    -- ═══════════════════════════════════════════════════════════════
     
     local _a = "https://pastebin.com/raw/ufVie1pF"
     local _b = _1.PlaceId
