@@ -68,7 +68,6 @@ local rf = {
     Speed = findRemote("UpgradesService", "Upgrade"),
     EquipSkin = findRemote("SkinService", "EquipSkin"),
     BuySkin = findRemote("SkinService", "BuySkin"),
-    UpgradeBase = findRemote("BaseService", "UpgradeBase"),
 }
 
 local sellRF = findRemote("InventoryService", "SellBrainrot")
@@ -89,7 +88,6 @@ _G.AutoContainer = _G.AutoContainer or false
 _G.AutoLBFarm = _G.AutoLBFarm or false
 _G.AutoZeus = _G.AutoZeus or false
 _G.AutoSell = _G.AutoSell or false
-_G.AutoMejorarBase = _G.AutoMejorarBase or false
 _G.AutoRebirth = _G.AutoRebirth or false
 _G.AutoSpeed = _G.AutoSpeed or false
 _G.AutoPlaceBest = _G.AutoPlaceBest or false
@@ -317,13 +315,6 @@ local function loopAutoContainer()
     end
 end
 
-local function loopAutoMejorarBase()
-    while _G.AutoMejorarBase do
-        if rf.UpgradeBase then safeInvoke(rf.UpgradeBase) end
-        task.wait(4)
-    end
-end
-
 local function loopAutoRebirth()
     while _G.AutoRebirth do
         if rf.Rebirth then safeInvoke(rf.Rebirth) end
@@ -374,7 +365,6 @@ local LOOP_MAP = {
     AutoContainer = loopAutoContainer,
     AutoLBFarm = loopAutoLBFarm,
     AutoSell = loopAutoSell,
-    AutoMejorarBase = loopAutoMejorarBase,
     AutoRebirth = loopAutoRebirth,
     AutoSpeed = loopAutoSpeed,
     AutoPlaceBest = loopAutoPlaceBest,
@@ -510,13 +500,6 @@ FarmSection:AddToggle({
 })
 
 FarmSection:AddToggle({
-    Name = "Auto Mejorar Base",
-    Flag = "auto_mejorar_base",
-    Default = false,
-    Callback = function(v) toggle("AutoMejorarBase", v) end,
-})
-
-FarmSection:AddToggle({
     Name = "Auto Comprar Velocidad",
     Flag = "auto_speed",
     Default = false,
@@ -541,8 +524,27 @@ SellSection:AddDropdown({
     Flag = "sell_brainrot",
     Default = "boneca_ambalabu",
     Values = {
-        "boneca_ambalabu", "tralalero_tralala", "bombardiro_crocodilo",
-        "brr_brr_patapim", "tung_tung_tung_sahur", "cappuccino_assassino",
+        "boneca_ambalabu",
+        "tralalero_tralala",
+        "bombardiro_crocodilo",
+        "brr_brr_patapim",
+        "tung_tung_tung_sahur",
+        "cappuccino_assassino",
+        "cacto_hipopotamo",
+        "cocofanto_elefante",
+        "cappuccina_bailarina",
+        "fioittera_gangster",
+        "udin_din_din_dun",
+        "brr_brr_patapim",
+        "gorillo_watermellondrillo",
+        "frulli_frula",
+        "ganganzelli_trulala",
+        "orcalaro_orcala",
+        "tortugini",
+        "tralaleritos",
+        "crocodillitos",
+        "trulimero_trulicina",
+        "vaca_saturna",
     },
     Callback = function(v)
         _G.SellBrainrot = v
