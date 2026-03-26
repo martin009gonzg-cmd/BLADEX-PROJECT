@@ -21,7 +21,7 @@ local function _()
     _0[124473577469410] = {"https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/Be_a_Lucky_Block", "Be a Lucky Block"}
     
     -- RANURA 3
-    -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
+    -- _0[T99435399946069] = {"https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/REEL_A_BRAINROT", "Reel a Brainrot"}
     
     -- RANURA 4
     -- _0[TU_PLACE_ID_AQUI] = {"URL_DEL_SCRIPT_AQUI", "NOMBRE_DEL_JUEGO"}
