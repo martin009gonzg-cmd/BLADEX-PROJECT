@@ -1,28 +1,40 @@
--- Script completo con auto farm ciber optimizado (sin cargador de librería)
--- Activar/desactivar funciones mediante variables globales _G.AutoXXX
--- Requiere Compkiller precargada en getgenv().Compkiller
+-- ════════════════════════════════════════════════════════════════
+-- BLADEX HUB — Be a Lucky Block | v7
+-- Carga la librería ANTES de ejecutar este script:
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/BLADEX_LIBRALY"))()
+-- ════════════════════════════════════════════════════════════════
 
 if not getgenv().Compkiller then
-    error("❌ Compkiller no está cargada. Asegúrate de cargar la librería antes de este script.")
+    error("❌ Compkiller no está cargada. Cárgala primero con loadstring.")
 end
 
 local Compkiller = getgenv().Compkiller
 
 -- ════════════════════════════════════════════════════════════════
--- 1. SERVICIOS Y REMOTOS
+-- 1. SERVICIOS Y JUGADOR
 -- ════════════════════════════════════════════════════════════════
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
+local Players           = game:GetService("Players")
+local LP                = Players.LocalPlayer
 
-local knit = ReplicatedStorage.Packages._Index
-    :FindFirstChild("sleitnick_knit@1.7.0").knit.Services
+-- ════════════════════════════════════════════════════════════════
+-- 2. REMOTOS KNIT
+-- ════════════════════════════════════════════════════════════════
+local knitOk, knit = pcall(function()
+    return ReplicatedStorage.Packages._Index
+        :FindFirstChild("sleitnick_knit@1.7.0").knit.Services
+end)
 
+if not knitOk or not knit then
+    error("❌ No se encontró Knit. ¿Estás en el juego correcto?")
+end
+
+-- Buscar GetReward dinámicamente
 local GetRewardRemote = nil
 for _, service in pairs(knit:GetChildren()) do
-    local rf = service:FindFirstChild("RF")
-    if rf and rf:FindFirstChild("GetReward") then
-        GetRewardRemote = rf.GetReward
+    local rfFolder = service:FindFirstChild("RF")
+    if rfFolder and rfFolder:FindFirstChild("GetReward") then
+        GetRewardRemote = rfFolder.GetReward
         break
     end
 end
@@ -40,11 +52,9 @@ local rf = {
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 2. REMOTOS LUCKY BLOCK (solo los necesarios)
+-- 3. REMOTOS LUCKY BLOCK
 -- ════════════════════════════════════════════════════════════════
-local lbRF = ReplicatedStorage.Packages._Index
-    :FindFirstChild("sleitnick_knit@1.7.0")
-    .knit.Services.RunningService.RF
+local lbRF = knit.RunningService.RF
 
 local StartRun       = lbRF:WaitForChild("StartRun",       10)
 local StartMove      = lbRF:WaitForChild("StartMove",      10)
@@ -52,317 +62,315 @@ local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 
 -- ════════════════════════════════════════════════════════════════
--- 3. CONFIGURACIÓN LUCKY BLOCK
+-- 4. CONFIGURACIÓN (editable desde la UI)
 -- ════════════════════════════════════════════════════════════════
-local LB_CONFIG = {
+local CFG = {
     DELAYS = {
-        AFTER_TELEPORT   = 0.3,
-        AFTER_ACTION     = 0.2,
-        AFTER_OPEN_BLOCK = 0.2,
-        BETWEEN_STEPS    = 0.1,
-        CYCLE_END        = 1.5,
-        RESPAWN_WAIT     = 3.0,
-        RUN_FINISH_MAX   = 4.0,   -- máximo a esperar que el servidor confirme fin de carrera
+        AFTER_TELEPORT = 0.3,
+        CYCLE_END      = 1.5,
+        RESPAWN_WAIT   = 3.0,
+        RETRY_WAIT     = 0.5,
+        SERVER_FINISH  = 0.8,
     },
     COORDS = {
         CAMINADORA = CFrame.new(588.96, 38.18, -2127.26),
         BASE       = CFrame.new(733.21, 37.51, -2153.56),
     },
-    MAX_RETRIES  = 3,
-    RETRY_DELAY  = 0.5,
+    MAX_RETRIES = 3,
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 4. FUNCIONES AUXILIARES (mejoradas)
+-- 5. VARIABLES GLOBALES
 -- ════════════════════════════════════════════════════════════════
+_G.AutoLBFarm      = _G.AutoLBFarm      or false
+_G.AutoZeus        = _G.AutoZeus        or false
+_G.BlockType       = _G.BlockType       or "base14"
+_G.AutoCollect     = _G.AutoCollect     or false
+_G.AutoUpgrades    = _G.AutoUpgrades    or false
+_G.AutoContainer   = _G.AutoContainer   or false
+_G.AutoMejorarBase = _G.AutoMejorarBase or false
+_G.AutoRebirth     = _G.AutoRebirth     or false
+_G.AutoSpeed       = _G.AutoSpeed       or false
+_G.AutoPlaceBest   = _G.AutoPlaceBest   or false
+_G.AutoSkins       = _G.AutoSkins       or false
 
--- Retorna true si el personaje está vivo
+-- ════════════════════════════════════════════════════════════════
+-- 6. FUNCIONES AUXILIARES
+-- ════════════════════════════════════════════════════════════════
+local function log(msg, level)
+    if level == "error" then
+        warn("[BLADEX] ❌ " .. msg)
+    elseif level == "warn" then
+        warn("[BLADEX] ⚠️ " .. msg)
+    else
+        print("[BLADEX] ✅ " .. msg)
+    end
+end
+
+-- Invoke con reintentos y args variables
+local function invokeWithRetry(remote, maxRetries, ...)
+    if not remote then
+        log("Remoto nil omitido", "warn")
+        return false, nil
+    end
+    maxRetries = maxRetries or CFG.MAX_RETRIES
+    local args = {...}
+    for i = 1, maxRetries do
+        local ok, res = pcall(function()
+            return remote:InvokeServer(table.unpack(args))
+        end)
+        if ok then return true, res end
+        log("Retry " .. i .. "/" .. maxRetries .. " → " .. tostring(remote.Name), "warn")
+        task.wait(CFG.DELAYS.RETRY_WAIT)
+    end
+    return false, nil
+end
+
+-- Invoke seguro sin retorno importante
+local function safeInvoke(remote, ...)
+    if not remote then return false, "nil" end
+    return pcall(remote.InvokeServer, remote, ...)
+end
+
+-- Verificar si el personaje está vivo
 local function isAlive()
     local char = LP.Character
     if not char then return false end
     local hum = char:FindFirstChild("Humanoid")
-    return hum ~= nil and hum.Health > 0
+    return hum and hum.Health > 0
 end
 
--- Invoke seguro sin reintentos (uso interno)
-local function safeInvoke(remote, ...)
-    if not remote then return false, "Remoto no disponible" end
-    local ok, res = pcall(remote.InvokeServer, remote, ...)
-    return ok, res
-end
-
--- Teleport con verificación de llegada y check de vida
-local function teleportTo(cf, label)
-    label = label or "destino"
-    for attempt = 1, LB_CONFIG.MAX_RETRIES do
-        if not isAlive() then
-            warn("[Teleport] Personaje muerto, abortando teleport a " .. label)
-            return false
-        end
-        local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = cf
-            task.wait(LB_CONFIG.DELAYS.AFTER_TELEPORT)
-            if (hrp.CFrame.Position - cf.Position).Magnitude < 5 then
-                return true
-            end
-        end
-        warn("[Teleport] Intento " .. attempt .. "/" .. LB_CONFIG.MAX_RETRIES .. " fallido hacia " .. label)
-        task.wait(LB_CONFIG.RETRY_DELAY)
+-- Esperar personaje vivo
+local function waitForCharacter()
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local hum  = char:WaitForChild("Humanoid", 10)
+    if hum and hum.Health <= 0 then
+        log("Esperando respawn...", "warn")
+        char = LP.CharacterAdded:Wait()
+        task.wait(CFG.DELAYS.RESPAWN_WAIT)
     end
-    warn("[Teleport] No se pudo llegar a " .. label)
-    return false
+    local hrp = char:WaitForChild("HumanoidRootPart", 10)
+    return char, hrp
 end
 
--- Teleport con espera activa de confirmación
-local function teleportToWithConfirm(cf, maxWait)
-    maxWait = maxWait or 3
-    if not isAlive() then return false end
-    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    hrp.CFrame = cf
-    local start = tick()
-    while tick() - start < maxWait do
-        task.wait(0.1)
-        if not isAlive() then return false end
-        if hrp and (hrp.Position - cf.Position).Magnitude < 5 then
-            return true
-        end
-    end
-    return false
-end
-
--- Verifica si el personaje está cerca de un CFrame
+-- Verificar proximidad
 local function isNear(cf, threshold)
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
     return (hrp.Position - cf.Position).Magnitude < (threshold or 5)
 end
 
--- Invoke con reintentos, verifica vida entre intentos
--- CAMBIO CLAVE: los args varargs se pasan DESPUÉS de maxRetries
-local function invokeWithRetry(remote, maxRetries, ...)
-    maxRetries = maxRetries or LB_CONFIG.MAX_RETRIES
-    local args = {...}
-    for i = 1, maxRetries do
-        if not isAlive() then
-            warn("[invokeWithRetry] Personaje muerto, abortando")
-            return false, nil
-        end
-        local ok, res = pcall(remote.InvokeServer, remote, table.unpack(args))
-        if ok and res ~= false then
-            return true, res
-        end
-        warn("[Retry " .. i .. "/" .. maxRetries .. "] Falló: " .. tostring(remote) ..
-             " | res=" .. tostring(res))
-        task.wait(LB_CONFIG.RETRY_DELAY)
+-- Teleport con confirmación
+local function teleportTo(cf, maxWait)
+    maxWait = maxWait or 3
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    hrp.CFrame = cf
+    task.wait(CFG.DELAYS.AFTER_TELEPORT)
+    local t = tick()
+    while tick() - t < maxWait do
+        if (hrp.Position - cf.Position).Magnitude < 5 then return true end
+        task.wait(0.1)
     end
-    return false, nil
-end
-
--- Espera al humanoid en un estado específico con timeout
-local function waitForHumanoidState(state, timeout)
-    timeout = timeout or 5
-    local hum = LP.Character and LP.Character:FindFirstChild("Humanoid")
-    if not hum then return false end
-    local start = tick()
-    while hum:GetState() ~= state and tick() - start < timeout do
-        task.wait()
-    end
-    return hum:GetState() == state
-end
-
--- Espera a que el personaje esté listo y vivo
-local function waitForCharacter()
-    local char = LP.Character or LP.CharacterAdded:Wait()
-    local hum  = char:WaitForChild("Humanoid", 10)
-    if hum and hum.Health <= 0 then
-        char = LP.CharacterAdded:Wait()
-        task.wait(LB_CONFIG.DELAYS.RESPAWN_WAIT)
-    end
-    -- Espera extra para que el HRP esté disponible
-    local hrp = char:WaitForChild("HumanoidRootPart", 10)
-    return char, hrp
+    return false
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 5. LOOPS DE AUTOMATIZACIÓN (COLLECT, UPGRADE, CONTAINER, ETC.)
+-- 7. CICLO DE FARM LUCKY BLOCK
 -- ════════════════════════════════════════════════════════════════
--- [Coloca aquí los loops que ya tenías: collect, upgrade, container, etc.]
-
--- ════════════════════════════════════════════════════════════════
--- 6. CICLO DE FARM LUCKY BLOCK (mejorado)
--- ════════════════════════════════════════════════════════════════
-_G.AutoZeus = _G.AutoZeus or false
-
--- Logger con niveles: info / warn / error
-local function log(msg, level)
-    level = level or "info"
-    local prefix = "[LB Farm] "
-    if level == "error" then
-        warn(prefix .. "❌ " .. msg)
-    elseif level == "warn" then
-        warn(prefix .. "⚠️ " .. msg)
-    else
-        print(prefix .. "✅ " .. msg)
-    end
-end
-
 local function lbFarmCycle()
-    log("Iniciando ciclo...")
+    if not isAlive() then
+        log("Personaje no disponible, esperando...", "warn")
+        waitForCharacter()
+        return
+    end
 
-    -- Esperar personaje vivo
-    local char, hrp = waitForCharacter()
+    local _, hrp = waitForCharacter()
     if not hrp then
-        log("No se encontró HumanoidRootPart", "error")
-        return false
+        log("HRP no encontrado", "error")
+        return
     end
 
-    -- 1. Ir a Base (si no está cerca)
-    if not isNear(LB_CONFIG.COORDS.BASE, 5) then
-        if not teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3) then
-            log("No se pudo llegar a BASE", "warn")
-        end
+    log("Ciclo iniciado | bloque: " .. tostring(_G.BlockType))
+
+    -- 1. Base
+    if not isNear(CFG.COORDS.BASE, 5) then
+        teleportTo(CFG.COORDS.BASE, 3)
     end
 
-    -- 2. Ir a Caminadora
-    if not teleportToWithConfirm(LB_CONFIG.COORDS.CAMINADORA, 3) then
-        log("No se pudo llegar a CAMINADORA", "error")
-        return false
+    -- 2. Caminadora
+    if not isNear(CFG.COORDS.CAMINADORA, 5) then
+        teleportTo(CFG.COORDS.CAMINADORA, 3)
     end
 
-    -- 3. StartRun → obtener runId
-    local okStart, runId = invokeWithRetry(StartRun, LB_CONFIG.MAX_RETRIES)
+    -- 3. StartRun → runId
+    local okStart, runId = invokeWithRetry(StartRun, CFG.MAX_RETRIES)
     if not okStart then
         log("Falló StartRun", "error")
-        return false
+        task.wait(2)
+        return
     end
-    log("StartRun OK | runId=" .. tostring(runId))
-    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
+    log("StartRun OK | runId: " .. tostring(runId))
 
-    -- 4. StartMove (pasar runId si el servidor lo requiere)
-    local okMove, _ = invokeWithRetry(StartMove, LB_CONFIG.MAX_RETRIES, runId)
+    -- 4. StartMove (con runId si existe)
+    local okMove
+    if runId then
+        okMove = invokeWithRetry(StartMove, CFG.MAX_RETRIES, runId)
+    else
+        okMove = invokeWithRetry(StartMove, CFG.MAX_RETRIES)
+    end
     if not okMove then
         log("Falló StartMove", "error")
-        return false
+        task.wait(2)
+        return
     end
-    log("StartMove OK")
-    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
-    -- 5. OpenLuckyBlock (bloque según toggle Zeus, pasando runId)
-    local blockType = _G.AutoZeus and "ZEUS" or (_G.CustomBlockType or "base14")
-    local okBlock, _ = invokeWithRetry(OpenLuckyBlock, LB_CONFIG.MAX_RETRIES, blockType, runId)
+    -- 5. OpenLuckyBlock (tipo + runId)
+    local blockType = _G.AutoZeus and "ZEUS" or (_G.BlockType or "base14")
+    local okBlock
+    if runId then
+        okBlock = invokeWithRetry(OpenLuckyBlock, CFG.MAX_RETRIES, blockType, runId)
+    else
+        okBlock = invokeWithRetry(OpenLuckyBlock, CFG.MAX_RETRIES, blockType)
+    end
     if not okBlock then
         log("Falló OpenLuckyBlock (" .. blockType .. ")", "error")
-        return false
+        task.wait(2)
+        return
     end
-    log("OpenLuckyBlock OK | tipo=" .. blockType)
-    task.wait(LB_CONFIG.DELAYS.AFTER_OPEN_BLOCK)
+    log("OpenLuckyBlock OK (" .. blockType .. ")")
 
-    -- 6. UpdateCFrame (pasando runId para que el servidor valide la carrera)
-    -- Actualizar hrp por si cambió (ej. respawn)
-    hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then
-        log("HRP perdido antes de UpdateCFrame", "error")
-        return false
-    end
-    local okCF, _ = invokeWithRetry(UpdateCFrame, LB_CONFIG.MAX_RETRIES, hrp.CFrame, runId)
-    if not okCF then
-        log("Falló UpdateCFrame", "error")
-        return false
-    end
-    log("UpdateCFrame OK")
-
-    -- 7. Espera dinámica: da tiempo al servidor para terminar la carrera
-    --    En vez de esperar fijo 0.8s, esperamos hasta CYCLE_END con check activo
-    local waitStart = tick()
-    while _G.AutoLBFarm and tick() - waitStart < LB_CONFIG.DELAYS.RUN_FINISH_MAX do
-        task.wait(0.2)
+    -- 6. UpdateCFrame (posición + runId)
+    if hrp then
+        local okCF
+        if runId then
+            okCF = invokeWithRetry(UpdateCFrame, CFG.MAX_RETRIES, hrp.CFrame, runId)
+        else
+            okCF = invokeWithRetry(UpdateCFrame, CFG.MAX_RETRIES, hrp.CFrame)
+        end
+        if not okCF then
+            log("Falló UpdateCFrame (no crítico)", "warn")
+        end
     end
 
-    -- 8. Regresar a base
-    if not isNear(LB_CONFIG.COORDS.BASE, 5) then
-        teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
+    -- Espera al servidor
+    task.wait(CFG.DELAYS.SERVER_FINISH)
+
+    -- 7. Regresar a Base
+    if not isNear(CFG.COORDS.BASE, 5) then
+        teleportTo(CFG.COORDS.BASE, 3)
     end
 
-    task.wait(LB_CONFIG.DELAYS.CYCLE_END)
-    log("Ciclo completado ✔")
-    return true
+    task.wait(CFG.DELAYS.CYCLE_END)
+    log("Ciclo completado")
 end
 
 -- ════════════════════════════════════════════════════════════════
--- LOOP PRINCIPAL (fix: lbRunning se resetea correctamente)
+-- 8. LOOP MANAGER
 -- ════════════════════════════════════════════════════════════════
 local lbRunning = false
-local lbCycleCount = 0
-local lbFailCount  = 0
 
 local function startLbFarmLoop()
     if lbRunning then return end
     lbRunning = true
-    lbCycleCount = 0
-    lbFailCount  = 0
-
     task.spawn(function()
         while _G.AutoLBFarm do
             local ok, err = pcall(lbFarmCycle)
-            if ok then
-                lbCycleCount += 1
-                lbFailCount   = 0  -- reset de fallos consecutivos
-                log("Ciclos completados: " .. lbCycleCount)
-            else
-                lbFailCount += 1
-                warn("[LB Farm] Error en ciclo #" .. lbCycleCount .. ": " .. tostring(err))
-                -- Si falla 5 veces seguidas, pausar más tiempo
-                local pauseTime = lbFailCount >= 5 and 10 or 2
-                if lbFailCount >= 5 then
-                    warn("[LB Farm] ⚠️ 5 fallos seguidos, pausando " .. pauseTime .. "s...")
-                end
-                task.wait(pauseTime)
+            if not ok then
+                warn("[BLADEX] Error: " .. tostring(err))
+                task.wait(2)
             end
         end
         lbRunning = false
-        log("Loop detenido")
+        log("Farm detenido")
     end)
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 7. CONTROL DE VARIABLES GLOBALES Y MONITOREO
+-- 9. LOOPS SECUNDARIOS
 -- ════════════════════════════════════════════════════════════════
-_G.AutoCollect      = _G.AutoCollect      or false
-_G.AutoUpgrades     = _G.AutoUpgrades     or false
-_G.AutoContainer    = _G.AutoContainer    or false
-_G.AutoMejorarBase  = _G.AutoMejorarBase  or false
-_G.AutoRebirth      = _G.AutoRebirth      or false
-_G.AutoSpeed        = _G.AutoSpeed        or false
-_G.AutoPlaceBest    = _G.AutoPlaceBest    or false
-_G.AutoSkins        = _G.AutoSkins        or false
-_G.AutoLBFarm       = _G.AutoLBFarm       or false
-_G.CustomBlockType  = _G.CustomBlockType  or "base14"  -- editable desde UI
+task.spawn(function()
+    while true do task.wait(0.5)
+        if _G.AutoCollect then
+            pcall(function() rf.WorkUpdate:FireServer() end)
+        end
+    end
+end)
 
 task.spawn(function()
-    local lastState = {}
-    while true do
-        -- [Aquí van los condicionales de los demás loops]
+    while true do task.wait(0.5)
+        if _G.AutoUpgrades then
+            pcall(function() rf.Brainrot:InvokeServer() end)
+        end
+    end
+end)
 
-        -- LB Farm: solo iniciar si cambió a true; resetear lbRunning si cambió a false
-        if _G.AutoLBFarm and not lastState.AutoLBFarm then
+task.spawn(function()
+    while true do task.wait(0.5)
+        if _G.AutoContainer then
+            pcall(function() rf.Container:InvokeServer() end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do task.wait(0.5)
+        if _G.AutoPlaceBest then
+            pcall(function() rf.PlaceBest:InvokeServer() end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do task.wait(1)
+        if _G.AutoRebirth then
+            pcall(function() rf.Rebirth:InvokeServer() end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do task.wait(0.5)
+        if _G.AutoSpeed then
+            pcall(function() rf.Speed:InvokeServer("speed") end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do task.wait(0.5)
+        if _G.AutoMejorarBase then
+            pcall(function() rf.Container:InvokeServer("base") end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do task.wait(1)
+        if _G.AutoSkins then
+            pcall(function() rf.Skin:InvokeServer() end)
+        end
+    end
+end)
+
+-- ════════════════════════════════════════════════════════════════
+-- 10. MONITOR DE TOGGLES
+-- ════════════════════════════════════════════════════════════════
+task.spawn(function()
+    local last = {}
+    while true do
+        if _G.AutoLBFarm and not last.AutoLBFarm then
             startLbFarmLoop()
         elseif not _G.AutoLBFarm then
-            lbRunning = false  -- FIX: siempre resetear, no solo al cambio
+            lbRunning = false
         end
-
-        lastState.AutoLBFarm = _G.AutoLBFarm
+        last.AutoLBFarm = _G.AutoLBFarm
         task.wait(1)
     end
 end)
 
-function EquipSkin(skinId)
-    safeInvoke(rf.EquipSkin, skinId)
-end
-
 -- ════════════════════════════════════════════════════════════════
--- 8. INTERFAZ CON COMPKILLER
+-- 11. UI CON COMPKILLER
 -- ════════════════════════════════════════════════════════════════
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
@@ -378,17 +386,18 @@ local Window = Compkiller.new({
     Name     = "BLADEX HUB",
     Keybind  = "LeftAlt",
     Logo     = Compkiller.Logo,
-    Scale    = UDim2.new(0, 460, 0, 320),
+    Scale    = UDim2.new(0, 460, 0, 360),
     TextSize = 15,
 })
 
 Notifier.new({
     Title    = "BLADEX HUB",
-    Content  = "Script cargado correctamente v7",
+    Content  = "v7 cargado correctamente ✅",
     Duration = 5,
     Icon     = Compkiller.Logo,
 })
 
+-- ── MAIN ──────────────────────────────────────────────────────
 Window:DrawCategory({ Name = "Main" })
 
 local MainTab = Window:DrawTab({
@@ -398,52 +407,63 @@ local MainTab = Window:DrawTab({
 })
 
 -- Sección Farm Lucky Blocks
-local LbSection = MainTab:DrawSection({ Name = "Farm Lucky Blocks", Position = "left", Minimized = true })
+local LbSection = MainTab:DrawSection({
+    Name      = "Farm Lucky Blocks",
+    Position  = "left",
+    Minimized = false,
+})
 
 LbSection:AddToggle({
-    Name     = "auto farm ciber",
+    Name     = "Auto Farm Ciber",
     Flag     = "lb_farm",
     Default  = false,
-    Callback = function(v) _G.AutoLBFarm = v end,
+    Callback = function(v)
+        _G.AutoLBFarm = v
+        if v then
+            Notifier.new({
+                Title    = "BLADEX HUB",
+                Content  = "Farm Ciber activado 🟢",
+                Duration = 3,
+                Icon     = Compkiller.Logo,
+            })
+        end
+    end,
 })
 
 LbSection:AddToggle({
-    Name     = "auto Zeus",
+    Name     = "Auto Zeus",
     Flag     = "auto_zeus",
     Default  = false,
-    Callback = function(v) _G.AutoZeus = v end,
+    Callback = function(v)
+        _G.AutoZeus = v
+        _G.BlockType = v and "ZEUS" or "base14"
+    end,
 })
 
 LbSection:AddToggle({
-    Name     = "auto comprar Lucky Block",
+    Name     = "Auto Comprar Lucky Block",
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v) _G.AutoSkins = v end,
 })
 
--- Dropdown para elegir tipo de bloque sin editar código
 LbSection:AddDropdown({
-    Name    = "Tipo de Bloque",
-    Flag    = "block_type",
-    Default = "base14",
-    Values  = {
-        "base14",
-        "ZEUS",
-        "base1",
-        "base2",
-        "base3",
-        "base4",
-        "base5",
-    },
+    Name     = "Tipo de Bloque",
+    Flag     = "block_type",
+    Default  = "base14",
+    Values   = { "base14", "ZEUS", "base1", "base2", "base3", "base4", "base5" },
     Callback = function(v)
-        _G.CustomBlockType = v
-        -- Si Zeus está activo y se cambia manualmente, respetar el dropdown
-        _G.AutoZeus = (v == "ZEUS")
+        _G.BlockType = v
+        _G.AutoZeus  = (v == "ZEUS")
     end,
 })
 
 -- Sección Auto Farm
-local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = true })
+local LeftSection = MainTab:DrawSection({
+    Name      = "Auto Farm",
+    Position  = "left",
+    Minimized = true,
+})
 
 LeftSection:AddToggle({
     Name     = "Auto Collect Cash",
@@ -488,15 +508,19 @@ LeftSection:AddToggle({
 })
 
 -- Sección Skins
-local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = true })
+local RightSection = MainTab:DrawSection({
+    Name      = "Skins",
+    Position  = "right",
+    Minimized = true,
+})
 
 local selectedSkin = "default"
 
 RightSection:AddDropdown({
-    Name    = "Seleccionar Skin",
-    Flag    = "skin_equip",
-    Default = "default",
-    Values  = {
+    Name     = "Seleccionar Skin",
+    Flag     = "skin_equip",
+    Default  = "default",
+    Values   = {
         "default",
         "fairy_luckyblock",
         "freezy_luckyblock",
@@ -513,47 +537,51 @@ RightSection:AddDropdown({
 RightSection:AddButton({
     Name     = "Equipar Skin",
     Callback = function()
-        pcall(function() rf.EquipSkin:InvokeServer(selectedSkin) end)
+        local ok, err = pcall(function()
+            rf.EquipSkin:InvokeServer(selectedSkin)
+        end)
+        Notifier.new({
+            Title    = "BLADEX HUB",
+            Content  = ok and ("Skin: " .. selectedSkin .. " ✅") or ("Error: " .. tostring(err)),
+            Duration = 3,
+            Icon     = Compkiller.Logo,
+        })
     end,
 })
 
--- Sección Recompensas Especiales
-local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = true })
+-- Sección Recompensas
+local RewardSection = MainTab:DrawSection({
+    Name      = "Recompensas Especiales",
+    Position  = "full",
+    Minimized = true,
+})
 
 RewardSection:AddButton({
-    Name = "Auto Reclamar Bloque Espiritual",
+    Name     = "Reclamar Bloque Espiritual",
     Callback = function()
         if not rf.GetReward then
             Notifier.new({
                 Title    = "BLADEX HUB",
-                Content  = "Remoto GetReward no encontrado.",
+                Content  = "❌ Remoto GetReward no encontrado",
                 Duration = 5,
                 Icon     = Compkiller.Logo,
             })
             return
         end
         local ok, result = safeInvoke(rf.GetReward)
-        if ok then
-            Notifier.new({
-                Title    = "BLADEX HUB",
-                Content  = "¡Reclamo enviado con éxito!",
-                Duration = 5,
-                Icon     = Compkiller.Logo,
-            })
-        else
-            warn("[BLADEX] Error al reclamar: " .. tostring(result))
-            Notifier.new({
-                Title    = "BLADEX HUB",
-                Content  = "Error: " .. tostring(result),
-                Duration = 5,
-                Icon     = Compkiller.Logo,
-            })
-        end
+        Notifier.new({
+            Title    = "BLADEX HUB",
+            Content  = ok and "¡Reclamo exitoso! ✅" or ("Error: " .. tostring(result)),
+            Duration = 5,
+            Icon     = Compkiller.Logo,
+        })
+        if not ok then warn("[BLADEX] GetReward error: " .. tostring(result)) end
     end,
 })
 
--- Tab de ajustes
+-- ── MISC ──────────────────────────────────────────────────────
 Window:DrawCategory({ Name = "Misc" })
+
 local SettingsTab = Window:DrawTab({
     Icon            = "settings-3",
     Name            = "Ajustes",
@@ -561,22 +589,62 @@ local SettingsTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
+-- Sección Tiempos
+local DelaySection = SettingsTab:DrawSection({
+    Name      = "Tiempos Farm",
+    Minimized = false,
+})
+
+DelaySection:AddSlider({
+    Name     = "Delay entre ciclos (seg)",
+    Flag     = "cycle_end",
+    Min      = 0.5,
+    Max      = 5,
+    Default  = 1.5,
+    Round    = 1,
+    Callback = function(v) CFG.DELAYS.CYCLE_END = v end,
+})
+
+DelaySection:AddSlider({
+    Name     = "Espera servidor (seg)",
+    Flag     = "server_finish",
+    Min      = 0.3,
+    Max      = 3,
+    Default  = 0.8,
+    Round    = 1,
+    Callback = function(v) CFG.DELAYS.SERVER_FINISH = v end,
+})
+
+DelaySection:AddSlider({
+    Name     = "Reintentos remotos",
+    Flag     = "max_retries",
+    Min      = 1,
+    Max      = 5,
+    Default  = 3,
+    Round    = 0,
+    Callback = function(v) CFG.MAX_RETRIES = v end,
+})
+
+-- Sección UI
 local UISection = SettingsTab:DrawSection({ Name = "UI Settings", Minimized = true })
+
 UISection:AddToggle({
     Name     = "Always Show Frame",
     Default  = false,
     Callback = function(v) Window.AlwayShowTab = v end,
 })
+
 UISection:AddColorPicker({
-    Name     = "Highlight",
+    Name     = "Highlight Color",
     Default  = Compkiller.Colors.Highlight,
     Callback = function(v)
         Compkiller.Colors.Highlight = v
         Compkiller:RefreshCurrentColor()
     end,
 })
+
 UISection:AddDropdown({
-    Name     = "Select Theme",
+    Name     = "Tema",
     Default  = "Default",
     Values   = { "Default", "Dark Green", "Dark Blue", "Purple Rose", "Skeet" },
     Callback = function(v) Compkiller:SetTheme(v) end,
@@ -588,4 +656,4 @@ Window:DrawConfig({
     Config = ConfigManager,
 }):Init()
 
-print("[BLADEX HUB v7] Script cargado. Librería Compkiller debe estar precargada en getgenv().Compkiller")
+print("[BLADEX HUB v7] Cargado ✅")
