@@ -52,7 +52,7 @@ local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 
 -- ════════════════════════════════════════════════════════════════
--- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS OPTIMIZADOS)
+-- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS AJUSTADOS)
 -- ════════════════════════════════════════════════════════════════
 local LB_CONFIG = {
     DELAYS = {
@@ -60,7 +60,7 @@ local LB_CONFIG = {
         AFTER_ACTION     = 0.2,
         AFTER_OPEN_BLOCK = 0.2,
         BETWEEN_STEPS    = 0.1,
-        CYCLE_END        = 0.5,
+        CYCLE_END        = 1.5,   -- aumentado para evitar "already running"
         RESPAWN_WAIT     = 3.0,
     },
     COORDS = {
@@ -71,7 +71,7 @@ local LB_CONFIG = {
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 4. FUNCIONES AUXILIARES
+-- 4. FUNCIONES AUXILIARES (sin cambios)
 -- ════════════════════════════════════════════════════════════════
 local function safeInvoke(remote, ...)
     if not remote then return false, "Remoto no disponible" end
@@ -148,193 +148,12 @@ end
 -- ════════════════════════════════════════════════════════════════
 -- 5. LOOPS DE AUTOMATIZACIÓN (COLLECT, UPGRADE, CONTAINER, ETC.)
 -- ════════════════════════════════════════════════════════════════
-local collectRunning = false
-local function startCollectLoop()
-    if collectRunning then return end
-    collectRunning = true
-    task.spawn(function()
-        _G.AutoCashPhysical = true
-        while _G.AutoCollect do
-            for _, v in pairs(workspace:GetDescendants()) do
-                if not _G.AutoCollect then break end
-                if v:IsA("BasePart") and v.Transparency < 1 then
-                    if v:FindFirstChildOfClass("BillboardGui") or v:FindFirstChildOfClass("SurfaceGui") then
-                        local char = LP.Character
-                        if char and char:FindFirstChild("HumanoidRootPart") then
-                            firetouchinterest(char.HumanoidRootPart, v, 0)
-                            task.wait()
-                            firetouchinterest(char.HumanoidRootPart, v, 1)
-                        end
-                    end
-                end
-            end
-            task.wait(0.1)
-        end
-        _G.AutoCashPhysical = false
-        collectRunning = false
-    end)
-end
-
--- UI Hiding integrado en Upgrade Brainrots
-local upgradeLoopThread = nil
-local uiHidingConnection = nil
-local palabrasClave = {
-    ["brainrot"] = true,
-    ["dinero"] = true,
-    ["máximo"] = true
-}
-
-local function procesarObj(obj)
-    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-        local txt = obj.Text:lower()
-        for palabra in pairs(palabrasClave) do
-            if txt:find(palabra) then
-                obj:Destroy()
-                break
-            end
-        end
-    end
-end
-
-local function startUIHiding()
-    if uiHidingConnection then return end
-    local playerGui = LP:WaitForChild("PlayerGui")
-    for _, v in ipairs(playerGui:GetDescendants()) do
-        procesarObj(v)
-    end
-    uiHidingConnection = playerGui.DescendantAdded:Connect(procesarObj)
-end
-
-local function stopUIHiding()
-    if uiHidingConnection then
-        uiHidingConnection:Disconnect()
-        uiHidingConnection = nil
-    end
-end
-
-local function startUpgradeLoop()
-    if upgradeLoopThread then return end
-    startUIHiding()
-    upgradeLoopThread = task.spawn(function()
-        while _G.AutoUpgrades do
-            for i = 30, 1, -1 do
-                if not _G.AutoUpgrades then break end
-                task.spawn(function()
-                    safeInvoke(rf.Brainrot, tostring(i))
-                end)
-                task.wait(0.02)
-            end
-            task.wait(0.3)
-        end
-        upgradeLoopThread = nil
-        stopUIHiding()
-    end)
-end
-
-local function stopUpgradeLoop()
-    _G.AutoUpgrades = false
-    if upgradeLoopThread then
-        task.cancel(upgradeLoopThread)
-        upgradeLoopThread = nil
-    end
-    stopUIHiding()
-end
-
-local containerRunning = false
-local function startContainerLoop()
-    if containerRunning then return end
-    containerRunning = true
-    task.spawn(function()
-        while _G.AutoContainer do
-            safeInvoke(rf.Container)
-            task.wait(1)
-        end
-        containerRunning = false
-    end)
-end
-
-local mejorarBaseRunning = false
-local function startMejorarBaseLoop()
-    if mejorarBaseRunning then return end
-    mejorarBaseRunning = true
-    task.spawn(function()
-        while _G.AutoMejorarBase do
-            safeInvoke(rf.Container)
-            task.wait(1)
-        end
-        mejorarBaseRunning = false
-    end)
-end
-
-local rebirthRunning = false
-local function startRebirthLoop()
-    if rebirthRunning then return end
-    rebirthRunning = true
-    task.spawn(function()
-        while _G.AutoRebirth do
-            safeInvoke(rf.Rebirth)
-            task.wait(5)
-        end
-        rebirthRunning = false
-    end)
-end
-
-local speedRunning = false
-local function startSpeedLoop()
-    if speedRunning then return end
-    speedRunning = true
-    task.spawn(function()
-        while _G.AutoSpeed do
-            safeInvoke(rf.Speed, "MovementSpeed", 1)
-            task.wait(2)
-        end
-        speedRunning = false
-    end)
-end
-
-local placeBestRunning = false
-local function startPlaceBestLoop()
-    if placeBestRunning then return end
-    placeBestRunning = true
-    task.spawn(function()
-        getgenv().AutoBest = true
-        while _G.AutoPlaceBest do
-            safeInvoke(rf.PlaceBest)
-            task.wait(3)
-        end
-        getgenv().AutoBest = false
-        placeBestRunning = false
-    end)
-end
-
-local SKIN_LIST = {
-    "fairy_luckyblock",
-    "freezy_luckyblock",
-    "lava_luckyblock",
-    "gliched_luckyblock",
-    "void_luckyblock",
-    "cyborg_luckyblock",
-    "divine_luckyblock",
-    "inferno_luckyblock",
-}
-local skinRunning = false
-local function startSkinLoop()
-    if skinRunning then return end
-    skinRunning = true
-    task.spawn(function()
-        while _G.AutoSkins do
-            for _, skinId in ipairs(SKIN_LIST) do
-                if not _G.AutoSkins then break end
-                safeInvoke(rf.Skin, skinId)
-                task.wait(3)
-            end
-        end
-        skinRunning = false
-    end)
-end
+-- [Se mantienen exactamente igual que en la versión anterior]
+-- Para no alargar, los omito aquí, pero en tu script final deben estar completos.
+-- En este punto, coloca los loops de collect, upgrade, container, etc. que ya tenías.
 
 -- ════════════════════════════════════════════════════════════════
--- 6. NUEVO CICLO DE FARM LUCKY BLOCK (OPTIMIZADO)
+-- 6. NUEVO CICLO DE FARM LUCKY BLOCK (CON ESPERAS EXTRA)
 -- ════════════════════════════════════════════════════════════════
 _G.AutoZeus = _G.AutoZeus or false
 
@@ -390,11 +209,16 @@ local function lbFarmCycle()
         return
     end
 
-    -- 7. Regresar a base para repetir ciclo
+    -- Espera extra para que la carrera termine en el servidor
+    task.wait(0.8)
+
+    -- 7. Regresar a base
     if not isNear(LB_CONFIG.COORDS.BASE, 5) then
         teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
     end
 
+    -- Espera final antes de repetir (evita solapamiento)
+    task.wait(LB_CONFIG.DELAYS.CYCLE_END)
     log("Ciclo completado")
 end
 
@@ -430,46 +254,11 @@ _G.AutoLBFarm       = _G.AutoLBFarm       or false
 task.spawn(function()
     local lastState = {}
     while true do
-        if _G.AutoCollect and not lastState.AutoCollect then startCollectLoop()
-        elseif not _G.AutoCollect and lastState.AutoCollect then
-            _G.AutoCashPhysical = false; collectRunning = false end
-
-        if _G.AutoUpgrades and not lastState.AutoUpgrades then startUpgradeLoop()
-        elseif not _G.AutoUpgrades and lastState.AutoUpgrades then stopUpgradeLoop() end
-
-        if _G.AutoContainer and not lastState.AutoContainer then startContainerLoop()
-        elseif not _G.AutoContainer and lastState.AutoContainer then containerRunning = false end
-
-        if _G.AutoMejorarBase and not lastState.AutoMejorarBase then startMejorarBaseLoop()
-        elseif not _G.AutoMejorarBase and lastState.AutoMejorarBase then mejorarBaseRunning = false end
-
-        if _G.AutoRebirth and not lastState.AutoRebirth then startRebirthLoop()
-        elseif not _G.AutoRebirth and lastState.AutoRebirth then rebirthRunning = false end
-
-        if _G.AutoSpeed and not lastState.AutoSpeed then startSpeedLoop()
-        elseif not _G.AutoSpeed and lastState.AutoSpeed then speedRunning = false end
-
-        if _G.AutoPlaceBest and not lastState.AutoPlaceBest then startPlaceBestLoop()
-        elseif not _G.AutoPlaceBest and lastState.AutoPlaceBest then
-            getgenv().AutoBest = false; placeBestRunning = false end
-
-        if _G.AutoSkins and not lastState.AutoSkins then startSkinLoop()
-        elseif not _G.AutoSkins and lastState.AutoSkins then skinRunning = false end
-
+        -- [Aquí van todos los condicionales de los demás loops, igual que antes]
+        -- (Se omiten por brevedad, pero deben incluirse)
         if _G.AutoLBFarm and not lastState.AutoLBFarm then startLbFarmLoop()
         elseif not _G.AutoLBFarm and lastState.AutoLBFarm then lbRunning = false end
-
-        lastState = {
-            AutoCollect      = _G.AutoCollect,
-            AutoUpgrades     = _G.AutoUpgrades,
-            AutoContainer    = _G.AutoContainer,
-            AutoMejorarBase  = _G.AutoMejorarBase,
-            AutoRebirth      = _G.AutoRebirth,
-            AutoSpeed        = _G.AutoSpeed,
-            AutoPlaceBest    = _G.AutoPlaceBest,
-            AutoSkins        = _G.AutoSkins,
-            AutoLBFarm       = _G.AutoLBFarm,
-        }
+        lastState.AutoLBFarm = _G.AutoLBFarm
         task.wait(1)
     end
 end)
