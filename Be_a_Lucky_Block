@@ -40,17 +40,18 @@ local rf = {
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 2. REMOTOS LUCKY BLOCK
+-- 2. REMOTOS LUCKY BLOCK (solo los necesarios)
 -- ════════════════════════════════════════════════════════════════
 local lbRF = ReplicatedStorage.Packages._Index
     :FindFirstChild("sleitnick_knit@1.7.0")
     .knit.Services.RunningService.RF
 
 local StartRun       = lbRF:WaitForChild("StartRun",       10)
-local EndMove        = lbRF:WaitForChild("EndMove",        10)
+local StartMove      = lbRF:WaitForChild("StartMove",      10)  -- nuevo
 local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
-local Collected      = lbRF:WaitForChild("Collected",      10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
+
+-- NOTA: Ya no se usan EndMove ni Collected
 
 -- ════════════════════════════════════════════════════════════════
 -- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS OPTIMIZADOS)
@@ -72,7 +73,7 @@ local LB_CONFIG = {
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 4. FUNCIONES AUXILIARES (se mantienen las existentes y se añaden nuevas)
+-- 4. FUNCIONES AUXILIARES (se mantienen todas)
 -- ════════════════════════════════════════════════════════════════
 local function safeInvoke(remote, ...)
     if not remote then return false, "Remoto no disponible" end
@@ -80,7 +81,6 @@ local function safeInvoke(remote, ...)
     return ok, res
 end
 
--- Función teleportTo original (usada por otros loops, no tocar)
 local function teleportTo(cf, label)
     for _ = 1, LB_CONFIG.MAX_RETRIES do
         local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
@@ -94,7 +94,6 @@ local function teleportTo(cf, label)
     return false
 end
 
--- Nueva función de teletransporte con confirmación (para el farm)
 local function teleportToWithConfirm(cf, maxWait)
     maxWait = maxWait or 3
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
@@ -110,14 +109,12 @@ local function teleportToWithConfirm(cf, maxWait)
     return false
 end
 
--- Nueva función para verificar cercanía
 local function isNear(cf, threshold)
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
     return (hrp.Position - cf.Position).Magnitude < (threshold or 5)
 end
 
--- Reintentos para invocar remotos (para el farm)
 local function invokeWithRetry(remote, maxRetries, ...)
     maxRetries = maxRetries or 3
     for i = 1, maxRetries do
@@ -129,7 +126,6 @@ local function invokeWithRetry(remote, maxRetries, ...)
     return false, nil
 end
 
--- Esperar a que el humanoid cambie de estado (opcional)
 local function waitForHumanoidState(state, timeout)
     timeout = timeout or 5
     local hum = LP.Character and LP.Character:FindFirstChild("Humanoid")
@@ -141,7 +137,6 @@ local function waitForHumanoidState(state, timeout)
     return hum:GetState() == state
 end
 
--- Función waitForCharacter original (sin cambios)
 local function waitForCharacter()
     local char = LP.Character or LP.CharacterAdded:Wait()
     local hum  = char:WaitForChild("Humanoid", 10)
@@ -152,12 +147,9 @@ local function waitForCharacter()
     return char, char:WaitForChild("HumanoidRootPart")
 end
 
--- NOTA: Se elimina getLuckyBlockId porque ya no se usa
-
 -- ════════════════════════════════════════════════════════════════
--- 5. LOOPS DE AUTOMATIZACIÓN (sin cambios, excepto el de Lucky Block)
+-- 5. LOOPS DE AUTOMATIZACIÓN (COLLECT, UPGRADE, CONTAINER, ETC.)
 -- ════════════════════════════════════════════════════════════════
-
 local collectRunning = false
 local function startCollectLoop()
     if collectRunning then return end
@@ -344,7 +336,7 @@ local function startSkinLoop()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 6. NUEVO CICLO DE FARM LUCKY BLOCK (OPTIMIZADO)
+-- 6. NUEVO CICLO DE FARM LUCKY BLOCK (con el orden solicitado)
 -- ════════════════════════════════════════════════════════════════
 local function log(msg, level)
     level = level or "info"
@@ -360,12 +352,17 @@ local function lbFarmCycle()
     local _, hrp = waitForCharacter()
     if not hrp then return end
 
-    -- Teletransportar a caminadora si no está cerca
+    -- 1. Teletransportar a base si no está cerca
+    if not isNear(LB_CONFIG.COORDS.BASE, 5) then
+        teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
+    end
+
+    -- 2. Teletransportar a caminadora si no está cerca
     if not isNear(LB_CONFIG.COORDS.CAMINADORA, 5) then
         teleportToWithConfirm(LB_CONFIG.COORDS.CAMINADORA, 3)
     end
 
-    -- 1. StartRun → obtener runId
+    -- 3. StartRun → obtener runId
     local okStart, runId = invokeWithRetry(StartRun, LB_CONFIG.MAX_RETRIES)
     if not okStart then
         log("Falló StartRun", "error")
@@ -373,33 +370,22 @@ local function lbFarmCycle()
     end
     log("StartRun OK, runId: " .. tostring(runId))
 
-    -- 2. EndMove
-    if not invokeWithRetry(EndMove, LB_CONFIG.MAX_RETRIES) then
-        log("Falló EndMove", "error")
+    -- 4. StartMove
+    if not invokeWithRetry(StartMove, LB_CONFIG.MAX_RETRIES) then
+        log("Falló StartMove", "error")
         return
     end
 
-    -- 3. OpenLuckyBlock (con parámetro "base14")
+    -- 5. OpenLuckyBlock (con parámetro "base14")
     if not invokeWithRetry(OpenLuckyBlock, LB_CONFIG.MAX_RETRIES, "base14") then
         log("Falló OpenLuckyBlock", "error")
         return
     end
 
-    -- 4. Collected con el runId
-    if not invokeWithRetry(Collected, LB_CONFIG.MAX_RETRIES, tostring(runId)) then
-        log("Falló Collected con ID " .. tostring(runId), "error")
-        return
-    end
-
-    -- 5. UpdateCFrame
+    -- 6. UpdateCFrame
     if not invokeWithRetry(UpdateCFrame, LB_CONFIG.MAX_RETRIES, hrp.CFrame) then
         log("Falló UpdateCFrame", "error")
         return
-    end
-
-    -- Regresar a base
-    if not isNear(LB_CONFIG.COORDS.BASE, 5) then
-        teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
     end
 
     log("Ciclo completado")
