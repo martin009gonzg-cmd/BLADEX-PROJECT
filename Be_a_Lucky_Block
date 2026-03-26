@@ -344,36 +344,100 @@ local function loopAutoLBFarm()
     if lbRF.EndMove then pcall(lbRF.EndMove.InvokeServer, lbRF.EndMove) end
 end
 
-local function loopAutoCollect()
-    while _G.AutoCollect do
-        if rf.CollectCash then
-            safeInvoke(rf.CollectCash)
+-- Auto Collect Cash mejorado
+local collectRunning = false
+local function startCollectLoop()
+    if collectRunning then return end
+    collectRunning = true
+    
+    task.spawn(function()
+        while _G.AutoCollect do
+            -- Recolectar cash normal y offline en paralelo
+            task.spawn(function()
+                if rf.CollectCash then
+                    safeInvoke(rf.CollectCash)
+                end
+            end)
+            
+            task.spawn(function()
+                if rf.CollectOfflineCash then
+                    safeInvoke(rf.CollectOfflineCash)
+                end
+            end)
+            
+            task.spawn(function()
+                if rf.WorkUpdate then
+                    safeFire(rf.WorkUpdate)
+                end
+            end)
+            
+            task.wait(1.5)
         end
-        if rf.CollectOfflineCash then
-            safeInvoke(rf.CollectOfflineCash)
-        end
-        if rf.WorkUpdate then
-            safeFire(rf.WorkUpdate)
-        end
-        task.wait(2)
-    end
+        collectRunning = false
+    end)
 end
 
-local function loopAutoUpgrades()
-    while _G.AutoUpgrades do
-        if not rf.Brainrot then 
-            task.wait(3) 
-            continue 
+-- Upgrade Brainrots mejorado (ráfagas paralelas)
+local upgradeLoopThread = nil
+local function startUpgradeLoop()
+    if upgradeLoopThread then return end
+    upgradeLoopThread = task.spawn(function()
+        while _G.AutoUpgrades do
+            -- Disparamos peticiones para los 30 slots casi al mismo tiempo
+            for i = 30, 1, -1 do
+                if not _G.AutoUpgrades then break end
+                
+                -- Usamos task.spawn para que no espere respuesta del servidor entre cada slot
+                task.spawn(function()
+                    if rf.Brainrot then
+                        pcall(function() 
+                            rf.Brainrot:InvokeServer(tostring(i)) 
+                        end)
+                    end
+                end)
+                
+                -- Pequeñísimo delay cada 5 slots para estabilidad de red
+                if i % 5 == 0 then task.wait(0.01) end 
+            end
+            
+            -- Espera entre ráfagas completas de los 30 slots
+            task.wait(0.4) 
         end
-        for slot = 1, 10 do
-            if not _G.AutoUpgrades then break end
-            safeInvoke(rf.Brainrot, "30")
-            task.wait(0.5)
-        end
-        task.wait(3)
-    end
+        upgradeLoopThread = nil
+    end)
 end
 
+-- Auto Comprar Velocidad mejorado (ráfaga masiva)
+local speedRunning = false
+local function startSpeedLoop()
+    if speedRunning then return end
+    speedRunning = true
+    
+    task.spawn(function()
+        while _G.AutoSpeed do
+            -- Ráfaga masiva de 200 niveles
+            for i = 1, 200 do 
+                if not _G.AutoSpeed then break end
+                
+                -- Ejecución en paralelo para no bloquear el script
+                task.spawn(function()
+                    if rf.Speed then
+                        safeInvoke(rf.Speed, "MovementSpeed", 1)
+                    end
+                end)
+
+                -- Respiro para el procesador cada 50 niveles
+                if i % 50 == 0 then task.wait() end 
+            end
+            
+            -- Espera un segundo antes de intentar otra ráfaga de 200
+            task.wait(1) 
+        end
+        speedRunning = false
+    end)
+end
+
+-- Auto Container mejorado
 local function loopAutoContainer()
     while _G.AutoContainer do
         if rf.Container then 
@@ -383,6 +447,7 @@ local function loopAutoContainer()
     end
 end
 
+-- Auto Rebirth
 local function loopAutoRebirth()
     while _G.AutoRebirth do
         if rf.Rebirth then 
@@ -392,15 +457,7 @@ local function loopAutoRebirth()
     end
 end
 
-local function loopAutoSpeed()
-    while _G.AutoSpeed do
-        if rf.Speed then 
-            safeInvoke(rf.Speed, "speed")
-        end
-        task.wait(3)
-    end
-end
-
+-- Auto Place Best
 local function loopAutoPlaceBest()
     while _G.AutoPlaceBest do
         if rf.PlaceBest then 
@@ -483,22 +540,50 @@ local function loopAutoSell()
     end
 end
 
+-- Mapa de loops usando las nuevas funciones mejoradas
 local LOOP_MAP = {
-    AutoCollect = loopAutoCollect,
-    AutoUpgrades = loopAutoUpgrades,
+    AutoCollect = startCollectLoop,
+    AutoUpgrades = startUpgradeLoop,
     AutoContainer = loopAutoContainer,
     AutoLBFarm = loopAutoLBFarm,
     AutoSell = loopAutoSell,
     AutoRebirth = loopAutoRebirth,
-    AutoSpeed = loopAutoSpeed,
+    AutoSpeed = startSpeedLoop,
     AutoPlaceBest = loopAutoPlaceBest,
 }
 
 local function toggle(name, val)
     _G[name] = val
-    setLoop(name, val, LOOP_MAP[name])
+    if val then
+        -- Iniciar el loop correspondiente
+        if name == "AutoCollect" then
+            startCollectLoop()
+        elseif name == "AutoUpgrades" then
+            startUpgradeLoop()
+        elseif name == "AutoSpeed" then
+            startSpeedLoop()
+        elseif LOOP_MAP[name] then
+            -- Para loops simples
+            setLoop(name, val, LOOP_MAP[name])
+        end
+    else
+        -- Detener el loop correspondiente
+        if name == "AutoCollect" then
+            collectRunning = false
+        elseif name == "AutoUpgrades" then
+            if upgradeLoopThread then
+                pcall(task.cancel, upgradeLoopThread)
+                upgradeLoopThread = nil
+            end
+        elseif name == "AutoSpeed" then
+            speedRunning = false
+        else
+            stopLoop(name)
+        end
+    end
 end
 
+-- Monitor de cambios para los loops que no son simples
 task.spawn(function()
     local lastState = {}
     while true do
@@ -506,9 +591,28 @@ task.spawn(function()
             local current = _G[name]
             if current ~= lastState[name] then
                 if current then
-                    startLoop(name, fn)
+                    if name == "AutoCollect" then
+                        startCollectLoop()
+                    elseif name == "AutoUpgrades" then
+                        startUpgradeLoop()
+                    elseif name == "AutoSpeed" then
+                        startSpeedLoop()
+                    else
+                        startLoop(name, fn)
+                    end
                 else
-                    stopLoop(name)
+                    if name == "AutoCollect" then
+                        collectRunning = false
+                    elseif name == "AutoUpgrades" then
+                        if upgradeLoopThread then
+                            pcall(task.cancel, upgradeLoopThread)
+                            upgradeLoopThread = nil
+                        end
+                    elseif name == "AutoSpeed" then
+                        speedRunning = false
+                    else
+                        stopLoop(name)
+                    end
                 end
                 lastState[name] = current
             end
