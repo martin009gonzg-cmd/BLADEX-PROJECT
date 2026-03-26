@@ -93,7 +93,6 @@ _G.AutoMejorarBase = _G.AutoMejorarBase or false
 _G.AutoRebirth = _G.AutoRebirth or false
 _G.AutoSpeed = _G.AutoSpeed or false
 _G.AutoPlaceBest = _G.AutoPlaceBest or false
-_G.AutoSkins = _G.AutoSkins or false
 _G.SelectedBase = _G.SelectedBase or "base14"
 _G.SellBrainrot = _G.SellBrainrot or "boneca_ambalabu"
 
@@ -346,24 +345,6 @@ local function loopAutoPlaceBest()
     end
 end
 
-local function loopAutoSkins()
-    local skinList = {
-        "divine_luckyblock", "inferno_luckyblock", "void_luckyblock",
-        "cyborg_luckyblock", "gliched_luckyblock", "lava_luckyblock",
-        "freezy_luckyblock", "fairy_luckyblock", "default",
-    }
-    while _G.AutoSkins do
-        if rf.EquipSkin then
-            for _, skin in ipairs(skinList) do
-                local ok = safeInvoke(rf.EquipSkin, skin)
-                if ok then break end
-                task.wait(0.2)
-            end
-        end
-        task.wait(8)
-    end
-end
-
 local function executeAutoSell()
     if not sellRF then return end
     local backpack = LP:FindFirstChild("Backpack")
@@ -397,7 +378,6 @@ local LOOP_MAP = {
     AutoRebirth = loopAutoRebirth,
     AutoSpeed = loopAutoSpeed,
     AutoPlaceBest = loopAutoPlaceBest,
-    AutoSkins = loopAutoSkins,
 }
 
 local function toggle(name, val)
@@ -465,14 +445,14 @@ local LbSection = MainTab:DrawSection({
 })
 
 LbSection:AddToggle({
-    Name = "Auto LB Farm",
+    Name = "Auto Ciber Farm",
     Flag = "lb_farm",
     Default = false,
     Callback = function(v) toggle("AutoLBFarm", v) end,
 })
 
 LbSection:AddToggle({
-    Name = "Modo Zeus (bloque ZEUS)",
+    Name = "Auto Zeus Farm",
     Flag = "auto_zeus",
     Default = false,
     Callback = function(v) _G.AutoZeus = v end,
@@ -580,40 +560,6 @@ SellSection:AddToggle({
             return
         end
         toggle("AutoSell", v)
-    end,
-})
-
-local SkinSection = MainTab:DrawSection({
-    Name = "Skins",
-    Position = "right",
-    Minimized = true,
-})
-
-local selectedSkin = "default"
-SkinSection:AddDropdown({
-    Name = "Seleccionar Skin",
-    Flag = "skin_equip",
-    Default = "default",
-    Values = {
-        "default", "fairy_luckyblock", "freezy_luckyblock", "lava_luckyblock",
-        "gliched_luckyblock", "void_luckyblock", "cyborg_luckyblock",
-        "divine_luckyblock", "inferno_luckyblock",
-    },
-    Callback = function(v) selectedSkin = v end,
-})
-
-SkinSection:AddToggle({
-    Name = "Auto Equip Mejor Skin",
-    Flag = "auto_skins",
-    Default = false,
-    Callback = function(v) toggle("AutoSkins", v) end,
-})
-
-SkinSection:AddButton({
-    Name = "Equipar Skin Seleccionada",
-    Callback = function()
-        local ok, err = safeInvoke(rf.EquipSkin, selectedSkin)
-        notify(ok and "Skin equipada: " .. selectedSkin or "Error: " .. tostring(err), 4)
     end,
 })
 
