@@ -52,110 +52,47 @@ local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 
 -- ════════════════════════════════════════════════════════════════
--- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS AJUSTADOS)
+-- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS)
 -- ════════════════════════════════════════════════════════════════
+-- Ejemplo de coordenadas para cada base (debes ajustarlas a tu juego)
+local LB_COORDS = {
+    base1  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base2  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base3  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base4  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base5  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base6  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base7  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base8  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base9  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base10 = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base11 = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base12 = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base13 = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    base14 = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+    ZEUS   = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
+}
+
 local LB_CONFIG = {
     DELAYS = {
         AFTER_TELEPORT   = 0.3,
         AFTER_ACTION     = 0.2,
         AFTER_OPEN_BLOCK = 0.2,
         BETWEEN_STEPS    = 0.1,
-        CYCLE_END        = 1.5,   -- aumentado para evitar "already running"
+        CYCLE_END        = 1.5,
         RESPAWN_WAIT     = 3.0,
-    },
-    COORDS = {
-        CAMINADORA = CFrame.new(588.96, 38.18, -2127.26),
-        BASE       = CFrame.new(733.21, 37.51, -2153.56),
     },
     MAX_RETRIES = 2,
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 4. FUNCIONES AUXILIARES (sin cambios)
+-- 4. FUNCIONES AUXILIARES MEJORADAS
 -- ════════════════════════════════════════════════════════════════
 local function safeInvoke(remote, ...)
     if not remote then return false, "Remoto no disponible" end
     local ok, res = pcall(remote.InvokeServer, remote, ...)
     return ok, res
 end
-
-local function teleportTo(cf, label)
-    for _ = 1, LB_CONFIG.MAX_RETRIES do
-        local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = cf
-            task.wait(LB_CONFIG.DELAYS.AFTER_TELEPORT)
-            if (hrp.CFrame.Position - cf.Position).Magnitude < 5 then return true end
-        end
-        task.wait(0.5)
-    end
-    return false
-end
-
-local function teleportToWithConfirm(cf, maxWait)
-    maxWait = maxWait or 3
-    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    hrp.CFrame = cf
-    local start = tick()
-    while tick() - start < maxWait do
-        task.wait(0.1)
-        if hrp and (hrp.Position - cf.Position).Magnitude < 5 then
-            return true
-        end
-    end
-    return false
-end
-
-local function isNear(cf, threshold)
-    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    return (hrp.Position - cf.Position).Magnitude < (threshold or 5)
-end
-
-local function invokeWithRetry(remote, maxRetries, ...)
-    maxRetries = maxRetries or 3
-    for i = 1, maxRetries do
-        local ok, res = pcall(remote.InvokeServer, remote, ...)
-        if ok then return true, res end
-        warn("[Retry " .. i .. "/" .. maxRetries .. "] Falló " .. tostring(remote))
-        task.wait(0.5)
-    end
-    return false, nil
-end
-
-local function waitForHumanoidState(state, timeout)
-    timeout = timeout or 5
-    local hum = LP.Character and LP.Character:FindFirstChild("Humanoid")
-    if not hum then return false end
-    local start = tick()
-    while hum:GetState() ~= state and tick() - start < timeout do
-        task.wait()
-    end
-    return hum:GetState() == state
-end
-
-local function waitForCharacter()
-    local char = LP.Character or LP.CharacterAdded:Wait()
-    local hum  = char:WaitForChild("Humanoid", 10)
-    if hum and hum.Health <= 0 then
-        char = LP.CharacterAdded:Wait()
-        task.wait(LB_CONFIG.DELAYS.RESPAWN_WAIT)
-    end
-    return char, char:WaitForChild("HumanoidRootPart")
-end
-
--- ════════════════════════════════════════════════════════════════
--- 5. LOOPS DE AUTOMATIZACIÓN (COLLECT, UPGRADE, CONTAINER, ETC.)
--- ════════════════════════════════════════════════════════════════
--- [Se mantienen exactamente igual que en la versión anterior]
--- Para no alargar, los omito aquí, pero en tu script final deben estar completos.
--- En este punto, coloca los loops de collect, upgrade, container, etc. que ya tenías.
-
--- ════════════════════════════════════════════════════════════════
--- 6. NUEVO CICLO DE FARM LUCKY BLOCK (CON ESPERAS EXTRA)
--- ════════════════════════════════════════════════════════════════
-_G.AutoZeus = _G.AutoZeus or false
 
 local function log(msg, level)
     level = level or "info"
@@ -166,60 +103,160 @@ local function log(msg, level)
     end
 end
 
+local function isNear(cf, threshold)
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    return (hrp.Position - cf.Position).Magnitude < (threshold or 5)
+end
+
+local function teleportToWithConfirm(cf, maxWait, threshold)
+    maxWait = maxWait or 5
+    threshold = threshold or 10
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    hrp.CFrame = cf
+    local start = tick()
+    while tick() - start < maxWait do
+        task.wait(0.1)
+        if hrp and (hrp.Position - cf.Position).Magnitude < threshold then
+            return true
+        end
+    end
+    return false
+end
+
+local function waitForStableCharacter()
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local hum = char:WaitForChild("Humanoid", 10)
+    local hrp = char:WaitForChild("HumanoidRootPart", 10)
+    if hum.Health <= 0 then
+        char = LP.CharacterAdded:Wait()
+        hum = char:WaitForChild("Humanoid")
+        hrp = char:WaitForChild("HumanoidRootPart")
+        task.wait(LB_CONFIG.DELAYS.RESPAWN_WAIT)
+    end
+    -- Esperar a que el personaje esté completamente levantado
+    if hum:GetState() == Enum.HumanoidStateType.GetUp then
+        task.wait(0.5)
+    end
+    return char, hrp
+end
+
+local function ensureAtTreadmill(coords)
+    for _ = 1, 3 do
+        if isNear(coords.CAMINADORA, 8) then return true end
+        teleportToWithConfirm(coords.CAMINADORA, 2, 12)
+        task.wait(0.5)
+    end
+    return false
+end
+
+local function invokeWithBackoff(remote, maxAttempts, ...)
+    local attempt = 0
+    local delay = 0.2
+    while attempt < maxAttempts do
+        local ok, res = pcall(remote.InvokeServer, remote, ...)
+        if ok then return true, res end
+        attempt = attempt + 1
+        task.wait(delay)
+        delay = math.min(delay * 2, 2)
+    end
+    return false
+end
+
+-- ════════════════════════════════════════════════════════════════
+-- 5. LOOPS DE AUTOMATIZACIÓN (COLLECT, UPGRADE, CONTAINER, ETC.)
+-- ════════════════════════════════════════════════════════════════
+-- [Coloca aquí tus loops de collect, upgrade, container, etc.]
+-- Ejemplo mínimo (debes completar):
+_G.AutoCollect   = _G.AutoCollect   or false
+_G.AutoUpgrades  = _G.AutoUpgrades  or false
+_G.AutoContainer = _G.AutoContainer or false
+-- etc.
+
+task.spawn(function()
+    while true do
+        if _G.AutoCollect then
+            -- Lógica de recolección
+        end
+        if _G.AutoUpgrades then
+            -- Lógica de upgrade
+        end
+        -- ...
+        task.wait(1)
+    end
+end)
+
+-- ════════════════════════════════════════════════════════════════
+-- 6. CICLO MEJORADO DE LUCKY BLOCK (con soporte para múltiples bases)
+-- ════════════════════════════════════════════════════════════════
+_G.LBType = _G.LBType or "base14"  -- Tipo de bloque seleccionado (base1..base14, ZEUS)
+
+local inRun = false
+
 local function lbFarmCycle()
-    log("Iniciando ciclo...")
-    local _, hrp = waitForCharacter()
-    if not hrp then return end
-
-    -- 1. Base
-    if not isNear(LB_CONFIG.COORDS.BASE, 5) then
-        teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
-    end
-
-    -- 2. Caminadora
-    if not isNear(LB_CONFIG.COORDS.CAMINADORA, 5) then
-        teleportToWithConfirm(LB_CONFIG.COORDS.CAMINADORA, 3)
-    end
-
-    -- 3. StartRun → runId
-    local okStart, runId = invokeWithRetry(StartRun, LB_CONFIG.MAX_RETRIES)
-    if not okStart then
-        log("Falló StartRun", "error")
+    if inRun then
+        log("Ya hay una carrera en curso, esperando...")
         return
     end
-    log("StartRun OK, runId: " .. tostring(runId))
+    inRun = true
 
-    -- 4. StartMove
-    if not invokeWithRetry(StartMove, LB_CONFIG.MAX_RETRIES) then
-        log("Falló StartMove", "error")
-        return
+    local success, err = pcall(function()
+        local blockType = _G.LBType
+        local coords = LB_COORDS[blockType]
+        if not coords then
+            error("Coordenadas no definidas para: " .. tostring(blockType))
+        end
+
+        -- 1. Asegurar personaje estable
+        local char, hrp = waitForStableCharacter()
+        if not hrp then error("Personaje no listo") end
+
+        -- 2. Ir a base
+        if not teleportToWithConfirm(coords.BASE, 4, 12) then
+            error("No se pudo llegar a base")
+        end
+
+        -- 3. Ir a caminadora
+        if not ensureAtTreadmill(coords) then
+            error("No se pudo llegar a la caminadora")
+        end
+
+        -- 4. Iniciar carrera (con backoff)
+        local ok, runId = invokeWithBackoff(StartRun, 3)
+        if not ok then error("StartRun falló") end
+        log("StartRun OK, runId: " .. tostring(runId))
+
+        -- 5. Iniciar movimiento
+        if not invokeWithBackoff(StartMove, 3) then
+            error("StartMove falló")
+        end
+
+        -- 6. Abrir lucky block (usando el tipo seleccionado)
+        if not invokeWithBackoff(OpenLuckyBlock, 3, blockType) then
+            error("OpenLuckyBlock falló con tipo " .. blockType)
+        end
+        log("OpenLuckyBlock OK (" .. blockType .. ")")
+
+        -- 7. Actualizar CFrame
+        if not invokeWithBackoff(UpdateCFrame, 3, hrp.CFrame) then
+            error("UpdateCFrame falló")
+        end
+
+        -- 8. Esperar finalización
+        task.wait(1.2)
+
+        -- 9. Regresar a base
+        teleportToWithConfirm(coords.BASE, 3, 12)
+        task.wait(LB_CONFIG.DELAYS.CYCLE_END)
+    end)
+
+    if not success then
+        warn("[LB Farm] Error en ciclo: " .. tostring(err))
+        task.wait(2)
     end
 
-    -- 5. OpenLuckyBlock (parámetro según toggle)
-    local blockType = _G.AutoZeus and "ZEUS" or "base14"
-    if not invokeWithRetry(OpenLuckyBlock, LB_CONFIG.MAX_RETRIES, blockType) then
-        log("Falló OpenLuckyBlock con tipo " .. blockType, "error")
-        return
-    end
-    log("OpenLuckyBlock OK (" .. blockType .. ")")
-
-    -- 6. UpdateCFrame
-    if not invokeWithRetry(UpdateCFrame, LB_CONFIG.MAX_RETRIES, hrp.CFrame) then
-        log("Falló UpdateCFrame", "error")
-        return
-    end
-
-    -- Espera extra para que la carrera termine en el servidor
-    task.wait(0.8)
-
-    -- 7. Regresar a base
-    if not isNear(LB_CONFIG.COORDS.BASE, 5) then
-        teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
-    end
-
-    -- Espera final antes de repetir (evita solapamiento)
-    task.wait(LB_CONFIG.DELAYS.CYCLE_END)
-    log("Ciclo completado")
+    inRun = false
 end
 
 local lbRunning = false
@@ -230,7 +267,7 @@ local function startLbFarmLoop()
         while _G.AutoLBFarm do
             local ok, err = pcall(lbFarmCycle)
             if not ok then
-                warn("[LB Farm] Error: " .. tostring(err))
+                warn("[LB Farm] Error en el bucle: " .. tostring(err))
                 task.wait(2)
             end
         end
@@ -250,15 +287,15 @@ _G.AutoSpeed        = _G.AutoSpeed        or false
 _G.AutoPlaceBest    = _G.AutoPlaceBest    or false
 _G.AutoSkins        = _G.AutoSkins        or false
 _G.AutoLBFarm       = _G.AutoLBFarm       or false
+_G.LBType           = _G.LBType           or "base14"
 
 task.spawn(function()
-    local lastState = {}
+    local lastState = false
     while true do
-        -- [Aquí van todos los condicionales de los demás loops, igual que antes]
-        -- (Se omiten por brevedad, pero deben incluirse)
-        if _G.AutoLBFarm and not lastState.AutoLBFarm then startLbFarmLoop()
-        elseif not _G.AutoLBFarm and lastState.AutoLBFarm then lbRunning = false end
-        lastState.AutoLBFarm = _G.AutoLBFarm
+        if _G.AutoLBFarm and not lastState then
+            startLbFarmLoop()
+        end
+        lastState = _G.AutoLBFarm
         task.wait(1)
     end
 end)
@@ -268,7 +305,7 @@ function EquipSkin(skinId)
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 8. INTERFAZ CON COMPKILLER (con toggle Zeus)
+-- 8. INTERFAZ CON COMPKILLER (con selector de base)
 -- ════════════════════════════════════════════════════════════════
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
@@ -303,81 +340,45 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
--- Sección Farm Lucky Blocks
+-- Sección izquierda: Farm Lucky Blocks
 local LbSection = MainTab:DrawSection({ Name = "Farm Lucky Blocks", Position = "left", Minimized = true })
 
 LbSection:AddToggle({
-    Name     = "auto farm ciber",
+    Name     = "Auto Farm Ciber",
     Flag     = "lb_farm",
     Default  = false,
     Callback = function(v) _G.AutoLBFarm = v end,
 })
 
-LbSection:AddToggle({
-    Name     = "auto Zeus",
-    Flag     = "auto_zeus",
-    Default  = false,
-    Callback = function(v) _G.AutoZeus = v end,
+-- Sección derecha: Selección de bloque
+local RightSelection = MainTab:DrawSection({ Name = "Selección de Bloque", Position = "right", Minimized = true })
+
+-- Crear la lista de tipos (base1 a base14 y ZEUS)
+local blockTypes = {}
+for i = 1, 14 do blockTypes["base" .. i] = "base" .. i end
+blockTypes["ZEUS"] = "ZEUS"
+
+local blockValues = {}
+for i = 1, 14 do table.insert(blockValues, "base" .. i) end
+table.insert(blockValues, "ZEUS")
+
+RightSelection:AddDropdown({
+    Name    = "Tipo de Lucky Block",
+    Flag    = "lb_type",
+    Default = "base14",
+    Values  = blockValues,
+    Callback = function(v) _G.LBType = v end,
 })
 
-LbSection:AddToggle({
-    Name     = "auto comprar Lucky Block",
-    Flag     = "auto_skins",
-    Default  = false,
-    Callback = function(v) _G.AutoSkins = v end,
+RightSelection:AddLabel({
+    Text = "⚠️ Asegúrate de tener el bloque disponible"
 })
 
--- Sección Auto Farm
-local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = true })
-
-LeftSection:AddToggle({
-    Name     = "Auto Collect Cash",
-    Flag     = "auto_collect",
-    Default  = false,
-    Callback = function(v) _G.AutoCollect = v end,
-})
-
-LeftSection:AddToggle({
-    Name     = "Auto Colocar Brainrots",
-    Flag     = "auto_placebest",
-    Default  = false,
-    Callback = function(v) _G.AutoPlaceBest = v end,
-})
-
-LeftSection:AddToggle({
-    Name     = "Upgrade Brainrots",
-    Flag     = "auto_upgrades",
-    Default  = false,
-    Callback = function(v) _G.AutoUpgrades = v end,
-})
-
-LeftSection:AddToggle({
-    Name     = "Auto Rebirth",
-    Flag     = "auto_rebirth",
-    Default  = false,
-    Callback = function(v) _G.AutoRebirth = v end,
-})
-
-LeftSection:AddToggle({
-    Name     = "Auto Mejorar Base",
-    Flag     = "auto_mejorar_base",
-    Default  = false,
-    Callback = function(v) _G.AutoMejorarBase = v end,
-})
-
-LeftSection:AddToggle({
-    Name     = "Auto Comprar Velocidad",
-    Flag     = "auto_speed",
-    Default  = false,
-    Callback = function(v) _G.AutoSpeed = v end,
-})
-
--- Sección Skins
-local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = true })
+-- Sección Skins (izquierda)
+local SkinsSection = MainTab:DrawSection({ Name = "Skins", Position = "left", Minimized = true })
 
 local selectedSkin = "default"
-
-RightSection:AddDropdown({
+SkinsSection:AddDropdown({
     Name    = "Seleccionar Skin",
     Flag    = "skin_equip",
     Default = "default",
@@ -394,12 +395,50 @@ RightSection:AddDropdown({
     },
     Callback = function(v) selectedSkin = v end,
 })
-
-RightSection:AddButton({
+SkinsSection:AddButton({
     Name     = "Equipar Skin",
     Callback = function()
         pcall(function() rf.EquipSkin:InvokeServer(selectedSkin) end)
     end,
+})
+
+-- Sección Auto Farm (izquierda)
+local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = true })
+LeftSection:AddToggle({
+    Name     = "Auto Collect Cash",
+    Flag     = "auto_collect",
+    Default  = false,
+    Callback = function(v) _G.AutoCollect = v end,
+})
+LeftSection:AddToggle({
+    Name     = "Auto Colocar Brainrots",
+    Flag     = "auto_placebest",
+    Default  = false,
+    Callback = function(v) _G.AutoPlaceBest = v end,
+})
+LeftSection:AddToggle({
+    Name     = "Upgrade Brainrots",
+    Flag     = "auto_upgrades",
+    Default  = false,
+    Callback = function(v) _G.AutoUpgrades = v end,
+})
+LeftSection:AddToggle({
+    Name     = "Auto Rebirth",
+    Flag     = "auto_rebirth",
+    Default  = false,
+    Callback = function(v) _G.AutoRebirth = v end,
+})
+LeftSection:AddToggle({
+    Name     = "Auto Mejorar Base",
+    Flag     = "auto_mejorar_base",
+    Default  = false,
+    Callback = function(v) _G.AutoMejorarBase = v end,
+})
+LeftSection:AddToggle({
+    Name     = "Auto Comprar Velocidad",
+    Flag     = "auto_speed",
+    Default  = false,
+    Callback = function(v) _G.AutoSpeed = v end,
 })
 
 -- Sección Recompensas Especiales
