@@ -1,7 +1,7 @@
 -- ================================================================
---   BLADEX HUB v3.0 — Be a Lucky Block
+--   BLADEX HUB v3.1 — Be a Lucky Block
 --   Script combinado: Compkiller UI + Farm Optimizado + Auto Sell
---   Autor: Combinado/Revisado con base en scripts originales
+--   Autor: BLADEX
 --   Requiere: getgenv().Compkiller precargado
 -- ================================================================
 
@@ -20,12 +20,10 @@ local LP                = Players.LocalPlayer
 
 -- ════════════════════════════════════════════════════════════════
 -- SECCIÓN 2 – BÚSQUEDA DINÁMICA DE KNIT
--- (Evita hardcodear la versión del paquete)
 -- ════════════════════════════════════════════════════════════════
 local knitServices = nil
 
 local function findKnit()
-    -- Intenta ubicar la carpeta de servicios de Knit sin depender del nombre de versión
     local ok, idx = pcall(function()
         return ReplicatedStorage.Packages._Index
     end)
@@ -55,7 +53,6 @@ end
 -- SECCIÓN 3 – REFERENCIAS A REMOTOS
 -- ════════════════════════════════════════════════════════════════
 
--- Helper: busca un RF por nombre en todos los servicios (fallback robusto)
 local function findRemote(serviceName, rfName)
     local service = knitServices:FindFirstChild(serviceName)
     if not service then
@@ -88,13 +85,13 @@ local lbRF = {
     StartMove      = findRemote("RunningService", "StartMove"),
     OpenLuckyBlock = findRemote("RunningService", "OpenLuckyBlock"),
     UpdateCFrame   = findRemote("RunningService", "UpdateCFrame"),
-    EndMove        = findRemote("RunningService", "EndMove"),   -- Necesario para limpiar estado
+    EndMove        = findRemote("RunningService", "EndMove"),
 }
 
 -- Remotos generales
 local rf = {
     Brainrot    = findRemote("ContainerService", "UpgradeBrainrot"),
-    WorkUpdate  = findEvent("ContainerService", "WorkUpdate"),
+    WorkUpdate  = findEvent("ContainerService",  "WorkUpdate"),
     Container   = findRemote("ContainerService", "BuyContainer"),
     PlaceBest   = findRemote("ContainerService", "PlaceBest"),
     CollectCash = findRemote("ContainerService", "CollectCash"),
@@ -105,10 +102,10 @@ local rf = {
     UpgradeBase = findRemote("BaseService",      "UpgradeBase"),
 }
 
--- Remoto para venta de Brainrot (desde InventoryService)
+-- Remoto de venta
 local sellRF = findRemote("InventoryService", "SellBrainrot")
 
--- Remoto especial de recompensa (busca dinámicamente en todos los servicios)
+-- Remoto de recompensa (búsqueda dinámica)
 local GetRewardRemote = nil
 for _, service in ipairs(knitServices:GetChildren()) do
     local rfFolder = service:FindFirstChild("RF")
@@ -122,39 +119,34 @@ rf.GetReward = GetRewardRemote
 -- ════════════════════════════════════════════════════════════════
 -- SECCIÓN 4 – VARIABLES GLOBALES (_G)
 -- ════════════════════════════════════════════════════════════════
-_G.AutoCollect      = _G.AutoCollect      or false
-_G.AutoUpgrades     = _G.AutoUpgrades     or false
-_G.AutoContainer    = _G.AutoContainer    or false
-_G.AutoLBFarm       = _G.AutoLBFarm       or false
-_G.AutoZeus         = _G.AutoZeus         or false
-_G.AutoSell         = _G.AutoSell         or false
-_G.AutoMejorarBase  = _G.AutoMejorarBase  or false
-_G.AutoRebirth      = _G.AutoRebirth      or false
-_G.AutoSpeed        = _G.AutoSpeed        or false
-_G.AutoPlaceBest    = _G.AutoPlaceBest    or false
-_G.AutoSkins        = _G.AutoSkins        or false
+_G.AutoCollect             = _G.AutoCollect             or false
+_G.AutoUpgradeBrainrots    = _G.AutoUpgradeBrainrots    or false
+_G.AutoContainer           = _G.AutoContainer           or false
+_G.AutoLBFarm              = _G.AutoLBFarm              or false
+_G.AutoZeus                = _G.AutoZeus                or false
+_G.AutoSell                = _G.AutoSell                or false
+_G.AutoMejorarBase         = _G.AutoMejorarBase         or false
+_G.AutoRebirth             = _G.AutoRebirth             or false
+_G.AutoSpeed               = _G.AutoSpeed               or false
+_G.AutoPlaceBest           = _G.AutoPlaceBest           or false
 
--- Configuraciones ajustables
-_G.SelectedBase     = _G.SelectedBase     or "base14"   -- Base a farmear
-_G.SellBrainrot     = _G.SellBrainrot     or "boneca_ambalabu" -- Brainrot a vender
+_G.SelectedBase            = _G.SelectedBase            or "base14"
+_G.SellBrainrot            = _G.SellBrainrot            or "boneca_ambalabu"
+_G.ContainerAmount         = _G.ContainerAmount         or 1
+_G.SpeedAmount             = _G.SpeedAmount             or 1
 
 -- ════════════════════════════════════════════════════════════════
 -- SECCIÓN 5 – COORDENADAS POR BASE
--- Ajusta las coordenadas para las bases 1–13 según el mapa real.
--- Base 14 tiene coordenadas verificadas del script original.
 -- ════════════════════════════════════════════════════════════════
 local BASE_COORDS = {
-    -- base14: coordenadas conocidas y verificadas
     base14 = {
-        block    = CFrame.new(733.21,  37.51, -2153.56),
-        runner   = CFrame.new(588.96,  38.18, -2127.26),
+        block  = CFrame.new(733.21,  37.51, -2153.56),
+        runner = CFrame.new(588.96,  38.18, -2127.26),
     },
-    -- ZEUS usa las mismas coordenadas que base14
     ZEUS = {
-        block    = CFrame.new(733.21,  37.51, -2153.56),
-        runner   = CFrame.new(588.96,  38.18, -2127.26),
+        block  = CFrame.new(733.21,  37.51, -2153.56),
+        runner = CFrame.new(588.96,  38.18, -2127.26),
     },
-    -- Bases 1–13: reemplaza con las coordenadas reales del mapa
     base1  = { block = CFrame.new(100,  38, -200),  runner = CFrame.new(80,  38, -180)  },
     base2  = { block = CFrame.new(200,  38, -350),  runner = CFrame.new(180, 38, -330)  },
     base3  = { block = CFrame.new(300,  38, -500),  runner = CFrame.new(280, 38, -480)  },
@@ -175,8 +167,8 @@ local BASE_COORDS = {
 -- ════════════════════════════════════════════════════════════════
 local LB_CFG = {
     MAX_RETRIES      = 3,
-    BLOCK_COOLDOWN   = 2.5,   -- Mínimo de segundos entre aperturas de bloque
-    ANTI_BUG_TIMEOUT = 8,     -- Segundos antes de activar anti-bug
+    BLOCK_COOLDOWN   = 2.5,
+    ANTI_BUG_TIMEOUT = 8,
     DELAYS = {
         AFTER_TELEPORT = 0.3,
         AFTER_OPEN     = 1.2,
@@ -190,7 +182,6 @@ local LB_CFG = {
 -- SECCIÓN 7 – FUNCIONES AUXILIARES
 -- ════════════════════════════════════════════════════════════════
 
--- Invoca un RemoteFunction con protección de errores
 local function safeInvoke(remote, ...)
     if not remote then return false, "Remoto nulo" end
     local ok, res = pcall(remote.InvokeServer, remote, ...)
@@ -198,7 +189,6 @@ local function safeInvoke(remote, ...)
     return ok, res
 end
 
--- Invoca con reintentos automáticos
 local function invokeWithRetry(remote, maxRetries, ...)
     maxRetries = maxRetries or LB_CFG.MAX_RETRIES
     for i = 1, maxRetries do
@@ -210,7 +200,6 @@ local function invokeWithRetry(remote, maxRetries, ...)
     return false, nil
 end
 
--- Espera a que el personaje esté disponible y vivo
 local function waitForCharacter()
     local char = LP.Character or LP.CharacterAdded:Wait()
     local hum  = char:WaitForChild("Humanoid", 10)
@@ -222,7 +211,6 @@ local function waitForCharacter()
     return char, char and char:FindFirstChild("HumanoidRootPart")
 end
 
--- Teleporta y confirma la llegada (con timeout)
 local function teleportToWithConfirm(cf, maxWait)
     maxWait = maxWait or 3
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
@@ -238,7 +226,6 @@ local function teleportToWithConfirm(cf, maxWait)
     return false
 end
 
--- Verifica si el jugador está cerca de una posición
 local function isNear(cf, threshold)
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
@@ -246,7 +233,7 @@ local function isNear(cf, threshold)
 end
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 8 – GESTIÓN DE HILOS (evita solapamiento)
+-- SECCIÓN 8 – GESTIÓN DE HILOS
 -- ════════════════════════════════════════════════════════════════
 local activeThreads = {}
 
@@ -274,24 +261,19 @@ local function setLoop(name, enabled, fn)
 end
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 9 – CICLO PRINCIPAL DE FARM (MEJORADO)
--- Anti-bug: si el ciclo no termina en ANTI_BUG_TIMEOUT segundos,
--- teleporta al jugador a la base seleccionada y reinicia.
+-- SECCIÓN 9 – CICLO PRINCIPAL DE FARM
 -- ════════════════════════════════════════════════════════════════
-local lastBlockOpen = 0   -- Marca de tiempo de la última apertura (cooldown global)
+local lastBlockOpen = 0
 
 local function lbFarmCycle()
     local cycleCompleted = false
 
-    -- Obtener personaje
     local char, hrp = waitForCharacter()
     if not hrp then return false, "Sin HRP" end
 
-    -- Resolver base y coordenadas
     local baseName = _G.AutoZeus and "ZEUS" or (_G.SelectedBase or "base14")
     local coords   = BASE_COORDS[baseName] or BASE_COORDS["base14"]
 
-    -- ── Anti-bug: tarea paralela que verifica si el ciclo se bloquea ──
     local antiBugTask = task.spawn(function()
         task.wait(LB_CFG.ANTI_BUG_TIMEOUT)
         if not cycleCompleted and _G.AutoLBFarm then
@@ -304,21 +286,17 @@ local function lbFarmCycle()
     end)
 
     local ok, err = pcall(function()
-        -- 1. Limpiar estado anterior del servidor
         if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
         task.wait(0.2)
 
-        -- 2. Ir al bloque si no estamos cerca
         if not isNear(coords.block, 8) then
             teleportToWithConfirm(coords.block, 3)
         end
 
-        -- 3. Esperar cooldown entre aperturas (evita "already running")
         local now      = tick()
         local waitTime = LB_CFG.BLOCK_COOLDOWN - (now - lastBlockOpen)
         if waitTime > 0 then task.wait(waitTime) end
 
-        -- 4. Abrir Lucky Block
         local blockParam = (baseName == "ZEUS") and "ZEUS" or baseName
         if not invokeWithRetry(lbRF.OpenLuckyBlock, LB_CFG.MAX_RETRIES, blockParam) then
             error("Falló OpenLuckyBlock")
@@ -326,31 +304,27 @@ local function lbFarmCycle()
         lastBlockOpen = tick()
         task.wait(LB_CFG.DELAYS.AFTER_OPEN)
 
-        -- 5. Ir a la caminadora
         if not isNear(coords.runner, 8) then
             teleportToWithConfirm(coords.runner, 3)
         end
         task.wait(LB_CFG.DELAYS.AFTER_TELEPORT)
 
-        -- 6. Activar carrera
         if lbRF.StartMove then invokeWithRetry(lbRF.StartMove, LB_CFG.MAX_RETRIES) end
-        if lbRF.StartRun   then invokeWithRetry(lbRF.StartRun, LB_CFG.MAX_RETRIES) end
+        if lbRF.StartRun   then invokeWithRetry(lbRF.StartRun,  LB_CFG.MAX_RETRIES) end
         task.wait(LB_CFG.DELAYS.AFTER_RUN)
 
-        -- 7. Enviar CFrame actualizada
         local currentHrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if lbRF.UpdateCFrame and currentHrp then
             invokeWithRetry(lbRF.UpdateCFrame, LB_CFG.MAX_RETRIES, currentHrp.CFrame)
         end
         task.wait(0.8)
 
-        -- 8. Finalizar movimiento
         if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
         task.wait(0.2)
     end)
 
     cycleCompleted = true
-    pcall(task.cancel, antiBugTask)   -- Cancelar anti-bug si el ciclo terminó bien
+    pcall(task.cancel, antiBugTask)
 
     if not ok then
         warn("[LBFarm] Error en ciclo: " .. tostring(err))
@@ -361,7 +335,6 @@ local function lbFarmCycle()
     return true
 end
 
--- Loop de farm (se lanza en hilo separado)
 local function loopAutoLBFarm()
     while _G.AutoLBFarm do
         local ok, err = pcall(lbFarmCycle)
@@ -370,20 +343,17 @@ local function loopAutoLBFarm()
             task.wait(2)
         end
     end
-    -- Limpieza al salir del loop
     if lbRF.EndMove then pcall(lbRF.EndMove.InvokeServer, lbRF.EndMove) end
 end
 
 -- ════════════════════════════════════════════════════════════════
 -- SECCIÓN 10 – AUTO COLLECT
--- Recoge el dinero/items de los contenedores activos
 -- ════════════════════════════════════════════════════════════════
 local function loopAutoCollect()
     while _G.AutoCollect do
         if rf.CollectCash then
             safeInvoke(rf.CollectCash)
         end
-        -- Envía WorkUpdate para los contenedores que generan ingresos pasivos
         if rf.WorkUpdate then
             pcall(rf.WorkUpdate.FireServer, rf.WorkUpdate)
         end
@@ -392,16 +362,14 @@ local function loopAutoCollect()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 11 – AUTO UPGRADES (Brainrots)
--- Intenta mejorar todos los Brainrots en el contenedor
+-- SECCIÓN 11 – AUTO MEJORAR BRAINROTS
 -- ════════════════════════════════════════════════════════════════
-local function loopAutoUpgrades()
-    while _G.AutoUpgrades do
+local function loopAutoUpgradeBrainrots()
+    while _G.AutoUpgradeBrainrots do
         if not rf.Brainrot then task.wait(3) continue end
 
-        -- Itera los slots del 1 al 10 (ajusta según el máximo real del juego)
         for slot = 1, 10 do
-            if not _G.AutoUpgrades then break end
+            if not _G.AutoUpgradeBrainrots then break end
             safeInvoke(rf.Brainrot, slot)
             task.wait(0.3)
         end
@@ -410,14 +378,15 @@ local function loopAutoUpgrades()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 12 – AUTO CONTAINER
--- Compra nuevos contenedores si hay recursos disponibles
+-- SECCIÓN 12 – AUTO COMPRAR CONTAINER (con cantidad)
 -- ════════════════════════════════════════════════════════════════
 local function loopAutoContainer()
     while _G.AutoContainer do
         if rf.Container then
-            -- Intenta comprar; el servidor rechaza si no hay fondos suficientes
-            safeInvoke(rf.Container)
+            for i = 1, (_G.ContainerAmount or 1) do
+                safeInvoke(rf.Container)
+                task.wait(0.15)
+            end
         end
         task.wait(5)
     end
@@ -441,7 +410,6 @@ end
 local function loopAutoRebirth()
     while _G.AutoRebirth do
         if rf.Rebirth then
-            -- El servidor verifica los requisitos; si no se cumplen, simplemente ignora
             safeInvoke(rf.Rebirth)
         end
         task.wait(6)
@@ -449,13 +417,15 @@ local function loopAutoRebirth()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 15 – AUTO SPEED (compra mejoras de velocidad)
+-- SECCIÓN 15 – AUTO COMPRAR VELOCIDAD (con cantidad)
 -- ════════════════════════════════════════════════════════════════
 local function loopAutoSpeed()
     while _G.AutoSpeed do
         if rf.Speed then
-            -- El parámetro "speed" es el tipo de upgrade; ajusta si el juego usa otro nombre
-            safeInvoke(rf.Speed, "speed")
+            for i = 1, (_G.SpeedAmount or 1) do
+                safeInvoke(rf.Speed, "speed")
+                task.wait(0.15)
+            end
         end
         task.wait(3)
     end
@@ -463,7 +433,6 @@ end
 
 -- ════════════════════════════════════════════════════════════════
 -- SECCIÓN 16 – AUTO PLACE BEST
--- Coloca automáticamente el mejor Brainrot disponible en un slot libre
 -- ════════════════════════════════════════════════════════════════
 local function loopAutoPlaceBest()
     while _G.AutoPlaceBest do
@@ -475,31 +444,7 @@ local function loopAutoPlaceBest()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 17 – AUTO SKINS
--- Equipa la mejor skin disponible de forma periódica
--- ════════════════════════════════════════════════════════════════
-local function loopAutoSkins()
-    local skinList = {
-        "divine_luckyblock", "inferno_luckyblock", "void_luckyblock",
-        "cyborg_luckyblock", "gliched_luckyblock", "lava_luckyblock",
-        "freezy_luckyblock", "fairy_luckyblock", "default",
-    }
-    while _G.AutoSkins do
-        if rf.EquipSkin then
-            -- Intenta equipar skins de mayor a menor rareza
-            for _, skin in ipairs(skinList) do
-                local ok = safeInvoke(rf.EquipSkin, skin)
-                if ok then break end   -- Se detuvo en la primera exitosa
-                task.wait(0.2)
-            end
-        end
-        task.wait(8)
-    end
-end
-
--- ════════════════════════════════════════════════════════════════
--- SECCIÓN 18 – AUTO SELL (Brainrot seleccionado)
--- Vende items del Backpack que coincidan con _G.SellBrainrot
+-- SECCIÓN 17 – AUTO SELL
 -- ════════════════════════════════════════════════════════════════
 local function executeAutoSell()
     if not sellRF then
@@ -512,14 +457,14 @@ local function executeAutoSell()
     for _, item in ipairs(backpack:GetChildren()) do
         if not _G.AutoSell then break end
 
-        local entityId    = item:GetAttribute("EntityId")
-        local brainrotType= item:GetAttribute("BrainrotType")
+        local entityId     = item:GetAttribute("EntityId")
+        local brainrotType = item:GetAttribute("BrainrotType")
 
         if brainrotType == _G.SellBrainrot and entityId then
             pcall(function()
                 sellRF:InvokeServer(entityId)
             end)
-            task.wait(0.3)   -- Cooldown entre ventas para no saturar el servidor
+            task.wait(0.3)
         end
     end
 end
@@ -532,33 +477,27 @@ local function loopAutoSell()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 19 – MAPA DE LOOPS
--- Centraliza el inicio/parada de cada loop por nombre de toggle
+-- SECCIÓN 18 – MAPA DE LOOPS
 -- ════════════════════════════════════════════════════════════════
 local LOOP_MAP = {
-    AutoCollect     = loopAutoCollect,
-    AutoUpgrades    = loopAutoUpgrades,
-    AutoContainer   = loopAutoContainer,
-    AutoLBFarm      = loopAutoLBFarm,
-    AutoSell        = loopAutoSell,
-    AutoMejorarBase = loopAutoMejorarBase,
-    AutoRebirth     = loopAutoRebirth,
-    AutoSpeed       = loopAutoSpeed,
-    AutoPlaceBest   = loopAutoPlaceBest,
-    AutoSkins       = loopAutoSkins,
+    AutoCollect          = loopAutoCollect,
+    AutoUpgradeBrainrots = loopAutoUpgradeBrainrots,
+    AutoContainer        = loopAutoContainer,
+    AutoLBFarm           = loopAutoLBFarm,
+    AutoSell             = loopAutoSell,
+    AutoMejorarBase      = loopAutoMejorarBase,
+    AutoRebirth          = loopAutoRebirth,
+    AutoSpeed            = loopAutoSpeed,
+    AutoPlaceBest        = loopAutoPlaceBest,
 }
 
--- Función auxiliar de toggle unificada (UI → loop)
 local function toggle(name, val)
     _G[name] = val
     setLoop(name, val, LOOP_MAP[name])
 end
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 20 – HILO MONITOR
--- Detecta cambios en los _G.AutoXXX y gestiona los loops.
--- Esto permite que código externo modifique _G.AutoXXX y
--- el hub reaccione automáticamente.
+-- SECCIÓN 19 – HILO MONITOR
 -- ════════════════════════════════════════════════════════════════
 task.spawn(function()
     local lastState = {}
@@ -579,7 +518,7 @@ task.spawn(function()
 end)
 
 -- ════════════════════════════════════════════════════════════════
--- SECCIÓN 21 – INTERFAZ COMPKILLER
+-- SECCIÓN 20 – INTERFAZ COMPKILLER
 -- ════════════════════════════════════════════════════════════════
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
@@ -592,10 +531,10 @@ local ConfigManager = Compkiller:ConfigManager({
 Compkiller:Loader(Compkiller.Logo, 2.5).yield()
 
 local Window = Compkiller.new({
-    Name     = "BLADEX HUB v3.0",
+    Name     = "BLADEX HUB v3.1",
     Keybind  = "LeftAlt",
     Logo     = Compkiller.Logo,
-    Scale    = UDim2.new(0, 480, 0, 340),
+    Scale    = UDim2.new(0, 520, 0, 360),
     TextSize = 15,
 })
 
@@ -613,17 +552,20 @@ end
 -- ╚══════════════════════════════════════════════════════════════╝
 Window:DrawCategory({ Name = "BeaLuckyBlock" })
 
-local MainTab = Window:DrawTab({
-    Name            = "Farm & Recolección",
-    Icon            = "box",
+-- ══════════════════════════════════
+-- TAB IZQUIERDO: Base Farm
+-- ══════════════════════════════════
+local BaseTab = Window:DrawTab({
+    Name            = "Base Farm",
+    Icon            = "map",
     EnableScrolling = true,
 })
 
--- ── Sección: Lucky Block Farm ──────────────────────────────────
-local LbSection = MainTab:DrawSection({
-    Name       = "Lucky Block Farm",
-    Position   = "left",
-    Minimized  = false,
+-- ── Sección: Lucky Block Farm ─────────────────────────────────
+local LbSection = BaseTab:DrawSection({
+    Name      = "Lucky Block Farm",
+    Position  = "left",
+    Minimized = false,
 })
 
 LbSection:AddToggle({
@@ -640,7 +582,6 @@ LbSection:AddToggle({
     Callback = function(v) _G.AutoZeus = v end,
 })
 
--- ── Dropdown: Selección de base (Base 1 – 14) ─────────────────
 LbSection:AddDropdown({
     Name    = "Base a Farmear",
     Flag    = "selected_base",
@@ -652,7 +593,6 @@ LbSection:AddDropdown({
         "Base 13", "Base 14",
     },
     Callback = function(v)
-        -- Convierte "Base X" → "baseX"
         local num = v:match("Base (%d+)")
         if num then
             _G.SelectedBase = "base" .. num
@@ -661,7 +601,30 @@ LbSection:AddDropdown({
     end,
 })
 
--- ── Sección: Auto Farm general ────────────────────────────────
+-- ── Sección: Auto Mejorar Base ────────────────────────────────
+local BaseMejoraSection = BaseTab:DrawSection({
+    Name      = "Auto Mejorar Base",
+    Position  = "left",
+    Minimized = true,
+})
+
+BaseMejoraSection:AddToggle({
+    Name     = "Auto Mejorar Base",
+    Flag     = "auto_mejorar_base",
+    Default  = false,
+    Callback = function(v) toggle("AutoMejorarBase", v) end,
+})
+
+-- ══════════════════════════════════
+-- TAB PRINCIPAL: Farm & Recolección
+-- ══════════════════════════════════
+local MainTab = Window:DrawTab({
+    Name            = "Farm & Recolección",
+    Icon            = "box",
+    EnableScrolling = true,
+})
+
+-- ── Sección: Auto Farm ────────────────────────────────────────
 local FarmSection = MainTab:DrawSection({
     Name      = "Auto Farm",
     Position  = "left",
@@ -683,31 +646,10 @@ FarmSection:AddToggle({
 })
 
 FarmSection:AddToggle({
-    Name     = "Upgrade Brainrots (Auto)",
-    Flag     = "auto_upgrades",
+    Name     = "Auto Mejorar Brainrots",
+    Flag     = "auto_upgrade_brainrots",
     Default  = false,
-    Callback = function(v) toggle("AutoUpgrades", v) end,
-})
-
-FarmSection:AddToggle({
-    Name     = "Auto Container",
-    Flag     = "auto_container",
-    Default  = false,
-    Callback = function(v) toggle("AutoContainer", v) end,
-})
-
-FarmSection:AddToggle({
-    Name     = "Auto Mejorar Base",
-    Flag     = "auto_mejorar_base",
-    Default  = false,
-    Callback = function(v) toggle("AutoMejorarBase", v) end,
-})
-
-FarmSection:AddToggle({
-    Name     = "Auto Comprar Velocidad",
-    Flag     = "auto_speed",
-    Default  = false,
-    Callback = function(v) toggle("AutoSpeed", v) end,
+    Callback = function(v) toggle("AutoUpgradeBrainrots", v) end,
 })
 
 FarmSection:AddToggle({
@@ -717,9 +659,52 @@ FarmSection:AddToggle({
     Callback = function(v) toggle("AutoRebirth", v) end,
 })
 
--- ── Sección: Auto Sell ────────────────────────────────────────
+-- ── Sección: Auto Mejorar ─────────────────────────────────────
+local MejorarSection = MainTab:DrawSection({
+    Name      = "Auto Mejorar",
+    Position  = "left",
+    Minimized = true,
+})
+
+MejorarSection:AddToggle({
+    Name     = "Auto Comprar Container",
+    Flag     = "auto_container",
+    Default  = false,
+    Callback = function(v) toggle("AutoContainer", v) end,
+})
+
+MejorarSection:AddSlider({
+    Name     = "Cantidad de Containers",
+    Min      = 1,
+    Max      = 20,
+    Default  = 1,
+    Type     = "int",
+    Round    = 1,
+    Flag     = "container_amount",
+    Callback = function(v) _G.ContainerAmount = v end,
+})
+
+MejorarSection:AddToggle({
+    Name     = "Auto Comprar Velocidad",
+    Flag     = "auto_speed",
+    Default  = false,
+    Callback = function(v) toggle("AutoSpeed", v) end,
+})
+
+MejorarSection:AddSlider({
+    Name     = "Cantidad de Velocidad",
+    Min      = 1,
+    Max      = 50,
+    Default  = 1,
+    Type     = "int",
+    Round    = 1,
+    Flag     = "speed_amount",
+    Callback = function(v) _G.SpeedAmount = v end,
+})
+
+-- ── Sección: Auto Venta ───────────────────────────────────────
 local SellSection = MainTab:DrawSection({
-    Name      = "Auto Sell (Brainrot)",
+    Name      = "Auto Venta",
     Position  = "right",
     Minimized = false,
 })
@@ -735,7 +720,6 @@ SellSection:AddDropdown({
         "brr_brr_patapim",
         "tung_tung_tung_sahur",
         "cappuccino_assassino",
-        -- Agrega más según los disponibles en el juego
     },
     Callback = function(v)
         _G.SellBrainrot = v
@@ -753,47 +737,6 @@ SellSection:AddToggle({
             return
         end
         toggle("AutoSell", v)
-    end,
-})
-
--- ── Sección: Skins ────────────────────────────────────────────
-local SkinSection = MainTab:DrawSection({
-    Name      = "Skins",
-    Position  = "right",
-    Minimized = true,
-})
-
-local selectedSkin = "default"
-SkinSection:AddDropdown({
-    Name    = "Seleccionar Skin",
-    Flag    = "skin_equip",
-    Default = "default",
-    Values  = {
-        "default",
-        "fairy_luckyblock",
-        "freezy_luckyblock",
-        "lava_luckyblock",
-        "gliched_luckyblock",
-        "void_luckyblock",
-        "cyborg_luckyblock",
-        "divine_luckyblock",
-        "inferno_luckyblock",
-    },
-    Callback = function(v) selectedSkin = v end,
-})
-
-SkinSection:AddToggle({
-    Name     = "Auto Equip Mejor Skin",
-    Flag     = "auto_skins",
-    Default  = false,
-    Callback = function(v) toggle("AutoSkins", v) end,
-})
-
-SkinSection:AddButton({
-    Name     = "Equipar Skin Seleccionada",
-    Callback = function()
-        local ok, err = safeInvoke(rf.EquipSkin, selectedSkin)
-        notify(ok and "Skin equipada: " .. selectedSkin or "Error: " .. tostring(err), 4)
     end,
 })
 
@@ -838,9 +781,11 @@ UISection:AddToggle({
 })
 
 UISection:AddColorPicker({
-    Name     = "Color Highlight",
-    Default  = Compkiller.Colors.Highlight,
-    Callback = function(v)
+    Name         = "Color Highlight",
+    Default      = Compkiller.Colors.Highlight,
+    Transparency = 0,
+    Flag         = "ui_highlight_color",
+    Callback     = function(v)
         Compkiller.Colors.Highlight = v
         Compkiller:RefreshCurrentColor()
     end,
@@ -856,9 +801,14 @@ UISection:AddDropdown({
 -- ── Info ──────────────────────────────────────────────────────
 local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = true })
 
-InfoSection:AddLabel("BLADEX HUB v3.0  |  Be a Lucky Block")
-InfoSection:AddLabel("Anti-bug integrado  |  Bases 1-14  |  Auto Sell")
-InfoSection:AddLabel("Compkiller + Farm Optimizado (script 2)")
+InfoSection:AddParagraph({
+    Title   = "BLADEX HUB v3.1",
+    Content = "Be a Lucky Block  |  Anti-bug integrado  |  Bases 1–14",
+})
+
+InfoSection:AddHelper({
+    Text = "Auto Venta abre expandida al cargar. Usa LeftAlt para ocultar la UI.",
+})
 
 -- ── Configuración ─────────────────────────────────────────────
 Window:DrawConfig({
@@ -870,5 +820,12 @@ Window:DrawConfig({
 -- ════════════════════════════════════════════════════════════════
 -- NOTIFICACIÓN DE CARGA
 -- ════════════════════════════════════════════════════════════════
-notify("¡BLADEX HUB v3.0 cargado! Knit: " .. (knitServices and "✓" or "✗"), 6)
-print("[BLADEX HUB v3.0] Script cargado. Usa LeftAlt para mostrar/ocultar la UI.")
+notify("BLADEX HUB v3.1 cargado! Knit: " .. (knitServices and "✓" or "✗"), 6)
+
+if sellRF then
+    notify("Auto Venta lista ✓", 3)
+else
+    notify("⚠ Remoto SellBrainrot no encontrado", 5)
+end
+
+print("[BLADEX HUB v3.1] Script cargado. Usa LeftAlt para mostrar/ocultar la UI.")
