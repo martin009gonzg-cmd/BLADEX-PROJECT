@@ -1,9 +1,6 @@
--- Script solo lógica + UI (asume Compkiller ya cargada globalmente)
--- Activar/desactivar funciones mediante variables globales _G.AutoXXX
+-- Script completo con auto farm ciber optimizado
+-- Basado en el original de martin009gonzg-cmd/BLADEX-PROJECT
 
--- ════════════════════════════════════════════════════════════════
--- 0. VERIFICAR LIBRERÍA COMPKILLER (debe estar precargada)
--- ════════════════════════════════════════════════════════════════
 if not getgenv().Compkiller then
     error("❌ Compkiller no está cargada. Asegúrate de cargar la librería antes de este script.")
 end
@@ -42,11 +39,10 @@ local rf = {
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 2. REMOTOS LUCKY BLOCK
+-- 2. REMOTOS LUCKY BLOCK (usando la ruta correcta)
 -- ════════════════════════════════════════════════════════════════
-local lbRF = ReplicatedStorage.Packages._Index
-    :FindFirstChild("sleitnick_knit@1.7.0")
-    .knit.Services.RunningService.RF
+local runningService = knit.RunningService
+local lbRF = runningService.RF
 
 local StartRun       = lbRF:WaitForChild("StartRun",       10)
 local EndMove        = lbRF:WaitForChild("EndMove",        10)
@@ -55,15 +51,15 @@ local Collected      = lbRF:WaitForChild("Collected",      10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 
 -- ════════════════════════════════════════════════════════════════
--- 3. CONFIGURACIÓN LUCKY BLOCK
+-- 3. CONFIGURACIÓN LUCKY BLOCK (DELAYS OPTIMIZADOS)
 -- ════════════════════════════════════════════════════════════════
 local LB_CONFIG = {
     DELAYS = {
-        AFTER_TELEPORT   = 0.8,
-        AFTER_ACTION     = 0.6,
-        AFTER_OPEN_BLOCK = 0.9,
-        BETWEEN_STEPS    = 0.5,
-        CYCLE_END        = 1.0,
+        AFTER_TELEPORT   = 0.3,
+        AFTER_ACTION     = 0.2,
+        AFTER_OPEN_BLOCK = 0.2,
+        BETWEEN_STEPS    = 0.1,
+        CYCLE_END        = 0.2,
         RESPAWN_WAIT     = 3.0,
     },
     COORDS = {
@@ -74,7 +70,7 @@ local LB_CONFIG = {
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 4. FUNCIONES AUXILIARES
+-- 4. FUNCIONES AUXILIARES MEJORADAS
 -- ════════════════════════════════════════════════════════════════
 local function safeInvoke(remote, ...)
     if not remote then return false, "Remoto no disponible" end
@@ -82,52 +78,54 @@ local function safeInvoke(remote, ...)
     return ok, res
 end
 
-local function teleportTo(cf, label)
-    for _ = 1, LB_CONFIG.MAX_RETRIES do
-        local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = cf
-            task.wait(LB_CONFIG.DELAYS.AFTER_TELEPORT)
-            if (hrp.CFrame.Position - cf.Position).Magnitude < 5 then return true end
-        end
+-- Reintentos para invocar remotos
+local function invokeWithRetry(remote, maxRetries, ...)
+    maxRetries = maxRetries or 3
+    for i = 1, maxRetries do
+        local ok, res = pcall(remote.InvokeServer, remote, ...)
+        if ok then return true, res end
+        warn("[Retry " .. i .. "/" .. maxRetries .. "] Falló " .. tostring(remote))
         task.wait(0.5)
+    end
+    return false, nil
+end
+
+-- Esperar a que el humanoid cambie de estado
+local function waitForHumanoidState(state, timeout)
+    timeout = timeout or 5
+    local hum = LP.Character and LP.Character:FindFirstChild("Humanoid")
+    if not hum then return false end
+    local start = tick()
+    while hum:GetState() ~= state and tick() - start < timeout do
+        task.wait()
+    end
+    return hum:GetState() == state
+end
+
+-- Verificar si estamos cerca de una posición
+local function isNear(cf, threshold)
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    return (hrp.Position - cf.Position).Magnitude < (threshold or 5)
+end
+
+-- Teletransporte con confirmación
+local function teleportToWithConfirm(cf, maxWait)
+    maxWait = maxWait or 3
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    hrp.CFrame = cf
+    local start = tick()
+    while tick() - start < maxWait do
+        task.wait(0.1)
+        if hrp and (hrp.Position - cf.Position).Magnitude < 5 then
+            return true
+        end
     end
     return false
 end
 
-local function getLuckyBlockId()
-    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return "10708364552" end
-    local closest, closestDist = nil, math.huge
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name:lower():find("lucky", 1, true) then
-            local pos
-            if obj:IsA("Model") then
-                local ok, p = pcall(function() return obj:GetPivot().Position end)
-                pos = ok and p
-            elseif obj:IsA("BasePart") then
-                pos = obj.Position
-            end
-            if pos then
-                local dist = (hrp.Position - pos).Magnitude
-                if dist < closestDist then
-                    closestDist = dist
-                    closest = obj
-                end
-            end
-        end
-    end
-    if closest then
-        return tostring(
-            closest:GetAttribute("Id") or
-            closest:GetAttribute("ID") or
-            closest:GetAttribute("BlockId") or
-            closest.Name
-        )
-    end
-    return "10708364552"
-end
-
+-- Esperar a que el personaje esté listo
 local function waitForCharacter()
     local char = LP.Character or LP.CharacterAdded:Wait()
     local hum  = char:WaitForChild("Humanoid", 10)
@@ -139,7 +137,7 @@ local function waitForCharacter()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 5. LOOPS DE AUTOMATIZACIÓN
+-- 5. LOOPS DE AUTOMATIZACIÓN (sin cambios, excepto el de LB)
 -- ════════════════════════════════════════════════════════════════
 
 local collectRunning = false
@@ -169,12 +167,43 @@ local function startCollectLoop()
     end)
 end
 
--- Loop de mejora de brainrots (ráfaga)
-local upgradeRunning = false
+-- Loop de mejora de brainrots (con UI hiding)
+local upgradeLoopThread = nil
+local uiHidingConnection = nil
+local palabrasClave = { brainrot = true, dinero = true, máximo = true }
+
+local function procesarObj(obj)
+    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+        local txt = obj.Text:lower()
+        for palabra in pairs(palabrasClave) do
+            if txt:find(palabra) then
+                obj:Destroy()
+                break
+            end
+        end
+    end
+end
+
+local function startUIHiding()
+    if uiHidingConnection then return end
+    local playerGui = LP:WaitForChild("PlayerGui")
+    for _, v in ipairs(playerGui:GetDescendants()) do
+        procesarObj(v)
+    end
+    uiHidingConnection = playerGui.DescendantAdded:Connect(procesarObj)
+end
+
+local function stopUIHiding()
+    if uiHidingConnection then
+        uiHidingConnection:Disconnect()
+        uiHidingConnection = nil
+    end
+end
+
 local function startUpgradeLoop()
-    if upgradeRunning then return end
-    upgradeRunning = true
-    task.spawn(function()
+    if upgradeLoopThread then return end
+    startUIHiding()
+    upgradeLoopThread = task.spawn(function()
         while _G.AutoUpgrades do
             for i = 30, 1, -1 do
                 if not _G.AutoUpgrades then break end
@@ -185,11 +214,21 @@ local function startUpgradeLoop()
             end
             task.wait(0.3)
         end
-        upgradeRunning = false
+        upgradeLoopThread = nil
+        stopUIHiding()
     end)
 end
 
--- Auto container (existente)
+local function stopUpgradeLoop()
+    _G.AutoUpgrades = false
+    if upgradeLoopThread then
+        task.cancel(upgradeLoopThread)
+        upgradeLoopThread = nil
+    end
+    stopUIHiding()
+end
+
+-- Auto container
 local containerRunning = false
 local function startContainerLoop()
     if containerRunning then return end
@@ -250,8 +289,8 @@ local placeBestRunning = false
 local function startPlaceBestLoop()
     if placeBestRunning then return end
     placeBestRunning = true
+    getgenv().AutoBest = true
     task.spawn(function()
-        getgenv().AutoBest = true
         while _G.AutoPlaceBest do
             safeInvoke(rf.PlaceBest)
             task.wait(3)
@@ -261,7 +300,7 @@ local function startPlaceBestLoop()
     end)
 end
 
--- Auto skins (lucky blocks)
+-- Auto skins
 local SKIN_LIST = {
     "fairy_luckyblock",
     "freezy_luckyblock",
@@ -288,39 +327,69 @@ local function startSkinLoop()
     end)
 end
 
--- Lucky Block farm
-local lbRunning = false
-local function lbFarmCycle()
-    local _, hrp = waitForCharacter()
-
-    teleportTo(LB_CONFIG.COORDS.CAMINADORA, "Caminadora")
-    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
-
-    safeInvoke(StartRun)
-    task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
-    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
-
-    safeInvoke(EndMove)
-    task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
-    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
-
-    safeInvoke(OpenLuckyBlock, "base14")
-    task.wait(LB_CONFIG.DELAYS.AFTER_OPEN_BLOCK)
-    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
-
-    local blockId = getLuckyBlockId()
-    safeInvoke(Collected, blockId)
-    task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
-    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
-
-    safeInvoke(UpdateCFrame, hrp.CFrame)
-    task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
-    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
-
-    teleportTo(LB_CONFIG.COORDS.BASE, "Base")
-    task.wait(LB_CONFIG.DELAYS.CYCLE_END)
+-- ════════════════════════════════════════════════════════════════
+-- 6. NUEVO CICLO DE FARM LUCKY BLOCK (OPTIMIZADO)
+-- ════════════════════════════════════════════════════════════════
+local function log(msg, level)
+    level = level or "info"
+    if level == "error" then
+        warn("[LB Farm] " .. msg)
+    else
+        print("[LB Farm] " .. msg)
+    end
 end
 
+local function lbFarmCycle()
+    log("Iniciando ciclo...")
+    local _, hrp = waitForCharacter()
+    if not hrp then return end
+
+    -- Teletransportar a caminadora si no está cerca
+    if not isNear(LB_CONFIG.COORDS.CAMINADORA, 5) then
+        teleportToWithConfirm(LB_CONFIG.COORDS.CAMINADORA, 3)
+    end
+
+    -- 1. StartRun → obtener runId
+    local okStart, runId = invokeWithRetry(StartRun, LB_CONFIG.MAX_RETRIES)
+    if not okStart then
+        log("Falló StartRun", "error")
+        return
+    end
+    log("StartRun OK, runId: " .. tostring(runId))
+
+    -- 2. EndMove
+    if not invokeWithRetry(EndMove, LB_CONFIG.MAX_RETRIES) then
+        log("Falló EndMove", "error")
+        return
+    end
+
+    -- 3. OpenLuckyBlock (con parámetro "base14")
+    if not invokeWithRetry(OpenLuckyBlock, LB_CONFIG.MAX_RETRIES, "base14") then
+        log("Falló OpenLuckyBlock", "error")
+        return
+    end
+
+    -- 4. Collected con el runId
+    if not invokeWithRetry(Collected, LB_CONFIG.MAX_RETRIES, tostring(runId)) then
+        log("Falló Collected con ID " .. tostring(runId), "error")
+        return
+    end
+
+    -- 5. UpdateCFrame
+    if not invokeWithRetry(UpdateCFrame, LB_CONFIG.MAX_RETRIES, hrp.CFrame) then
+        log("Falló UpdateCFrame", "error")
+        return
+    end
+
+    -- Regresar a base
+    if not isNear(LB_CONFIG.COORDS.BASE, 5) then
+        teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
+    end
+
+    log("Ciclo completado")
+end
+
+local lbRunning = false
 local function startLbFarmLoop()
     if lbRunning then return end
     lbRunning = true
@@ -328,7 +397,7 @@ local function startLbFarmLoop()
         while _G.AutoLBFarm do
             local ok, err = pcall(lbFarmCycle)
             if not ok then
-                warn("[LB Farm] Error: " .. tostring(err))
+                log("Error en ciclo: " .. tostring(err), "error")
                 task.wait(2)
             end
         end
@@ -337,111 +406,7 @@ local function startLbFarmLoop()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 5.9 FUNCIÓN PARA OCULTAR ELEMENTOS UI AL ACTIVAR UPGRADE BRAINROTS
--- ════════════════════════════════════════════════════════════════
-local uiHidingConnection = nil
-local palabrasClave = {
-    ["brainrot"] = true,
-    ["dinero"] = true,
-    ["máximo"] = true
-}
-
-local function procesarObj(obj)
-    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-        local txt = obj.Text:lower()
-        for palabra in pairs(palabrasClave) do
-            if txt:find(palabra) then
-                obj:Destroy()
-                break
-            end
-        end
-    end
-end
-
-local function startUIHiding()
-    if uiHidingConnection then return end
-    local playerGui = LP:WaitForChild("PlayerGui")
-    -- Limpieza inicial
-    for _, v in ipairs(playerGui:GetDescendants()) do
-        procesarObj(v)
-    end
-    -- Conectar al evento de nuevos descendientes
-    uiHidingConnection = playerGui.DescendantAdded:Connect(procesarObj)
-end
-
-local function stopUIHiding()
-    if uiHidingConnection then
-        uiHidingConnection:Disconnect()
-        uiHidingConnection = nil
-    end
-end
-
--- Modificamos el callback del toggle Upgrade Brainrots para también activar/desactivar el ocultado de UI
--- Pero primero debemos ajustar el control de variables globales para que también llame a estas funciones.
--- En lugar de modificar el bucle de monitoreo, podemos sobrescribir el callback del toggle para que además de cambiar _G.AutoUpgrades, inicie/detenga el ocultado.
--- Sin embargo, el bucle de monitoreo ya maneja startUpgradeLoop/stopUpgradeLoop según el valor de _G.AutoUpgrades.
--- Podemos hacer que startUpgradeLoop también inicie el ocultado y stopUpgradeLoop lo detenga.
-
--- Modificamos las funciones startUpgradeLoop y stopUpgradeLoop (las que ya existen) para incluir el manejo del UI hiding.
--- Pero cuidado: esas funciones son llamadas por el bucle de monitoreo. Añadiremos el inicio/parada allí.
-
--- Originalmente:
--- local upgradeRunning = false
--- local function startUpgradeLoop()
---     if upgradeRunning then return end
---     upgradeRunning = true
---     task.spawn(function() ... end)
--- end
--- local function stopUpgradeLoop() ... end (no está definida explícitamente, pero se maneja con upgradeRunning = false)
-
--- Vamos a reemplazar las funciones startUpgradeLoop y agregar una stopUpgradeLoop que también detenga el UI hiding.
--- Para mantener consistencia, crearemos una función startUpgradeLoop que inicie el loop y también inicie el UI hiding, y una función stopUpgradeLoop que detenga ambos.
-
--- Reescribimos las funciones de upgrade:
-
-local upgradeLoopThread = nil
-local function startUpgradeLoop()
-    if upgradeLoopThread then return end
-    -- Iniciar ocultado de UI
-    startUIHiding()
-    upgradeLoopThread = task.spawn(function()
-        while _G.AutoUpgrades do
-            for i = 30, 1, -1 do
-                if not _G.AutoUpgrades then break end
-                task.spawn(function()
-                    safeInvoke(rf.Brainrot, tostring(i))
-                end)
-                task.wait(0.02)
-            end
-            task.wait(0.3)
-        end
-        upgradeLoopThread = nil
-        -- Cuando termina el loop, detener ocultado de UI
-        stopUIHiding()
-    end)
-end
-
-local function stopUpgradeLoop()
-    _G.AutoUpgrades = false
-    if upgradeLoopThread then
-        task.cancel(upgradeLoopThread)
-        upgradeLoopThread = nil
-    end
-    stopUIHiding()
-end
-
--- Ahora necesitamos modificar el bucle de monitoreo para que use estas funciones en lugar de las anteriores.
--- Pero en el bucle de monitoreo actual, se usa upgradeRunning como bandera. Cambiaremos para usar upgradeLoopThread.
--- También debemos ajustar el código del bucle de monitoreo para que llame a startUpgradeLoop cuando _G.AutoUpgrades se active y stopUpgradeLoop cuando se desactive.
-
--- En el bloque de control de variables globales, reemplazamos:
--- if _G.AutoUpgrades and not lastState.AutoUpgrades then startUpgradeLoop()
--- elseif not _G.AutoUpgrades and lastState.AutoUpgrades then stopUpgradeLoop()
-
--- Haremos esa modificación más adelante.
-
--- ════════════════════════════════════════════════════════════════
--- 6. CONTROL DE VARIABLES GLOBALES Y MONITOREO (ajustado)
+-- 7. CONTROL DE VARIABLES GLOBALES
 -- ════════════════════════════════════════════════════════════════
 _G.AutoCollect      = _G.AutoCollect      or false
 _G.AutoUpgrades     = _G.AutoUpgrades     or false
@@ -461,7 +426,7 @@ task.spawn(function()
         elseif not _G.AutoCollect and lastState.AutoCollect then
             _G.AutoCashPhysical = false; collectRunning = false end
 
-        -- Auto mejora brainrots (con UI hiding integrado)
+        -- Auto mejora brainrots (con UI hiding)
         if _G.AutoUpgrades and not lastState.AutoUpgrades then startUpgradeLoop()
         elseif not _G.AutoUpgrades and lastState.AutoUpgrades then stopUpgradeLoop() end
 
@@ -486,11 +451,11 @@ task.spawn(function()
         elseif not _G.AutoPlaceBest and lastState.AutoPlaceBest then
             getgenv().AutoBest = false; placeBestRunning = false end
 
-        -- Auto skins (lucky blocks)
+        -- Auto skins
         if _G.AutoSkins and not lastState.AutoSkins then startSkinLoop()
         elseif not _G.AutoSkins and lastState.AutoSkins then skinRunning = false end
 
-        -- Lucky Block farm
+        -- Lucky Block farm (optimizado)
         if _G.AutoLBFarm and not lastState.AutoLBFarm then startLbFarmLoop()
         elseif not _G.AutoLBFarm and lastState.AutoLBFarm then lbRunning = false end
 
@@ -514,7 +479,7 @@ function EquipSkin(skinId)
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 7. INTERFAZ CON COMPKILLER
+-- 8. INTERFAZ CON COMPKILLER
 -- ════════════════════════════════════════════════════════════════
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
@@ -549,7 +514,7 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
--- Sección Farm Lucky Blocks (minimizada al inicio)
+-- Sección Farm Lucky Blocks
 local LbSection = MainTab:DrawSection({ Name = "Farm Lucky Blocks", Position = "left", Minimized = true })
 
 LbSection:AddToggle({
@@ -560,13 +525,13 @@ LbSection:AddToggle({
 })
 
 LbSection:AddToggle({
-    Name     = "auto comprar Lucky Block",  -- Nombre actualizado
+    Name     = "auto comprar Lucky Block",
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v) _G.AutoSkins = v end,
 })
 
--- Sección Auto Farm (minimizada al inicio) con nuevo orden y nombres
+-- Sección Auto Farm
 local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = true })
 
 LeftSection:AddToggle({
@@ -611,7 +576,7 @@ LeftSection:AddToggle({
     Callback = function(v) _G.AutoSpeed = v end,
 })
 
--- Sección Skins (minimizada al inicio)
+-- Sección Skins
 local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = true })
 
 local selectedSkin = "default"
@@ -641,7 +606,7 @@ RightSection:AddButton({
     end,
 })
 
--- Sección Recompensas Especiales (minimizada al inicio)
+-- Sección Recompensas Especiales
 local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = true })
 RewardSection:AddButton({
     Name = "Auto Reclamar Bloque Espiritual",
