@@ -40,7 +40,7 @@ local rf = {
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 2. REMOTOS LUCKY BLOCK (solo los necesarios)
+-- 2. REMOTOS LUCKY BLOCK
 -- ════════════════════════════════════════════════════════════════
 local lbRF = ReplicatedStorage.Packages._Index
     :FindFirstChild("sleitnick_knit@1.7.0")
@@ -52,9 +52,9 @@ local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 
 -- ════════════════════════════════════════════════════════════════
--- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS)
+-- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS POR BASE)
 -- ════════════════════════════════════════════════════════════════
--- Ejemplo de coordenadas para cada base (debes ajustarlas a tu juego)
+-- Ajusta estas coordenadas según las posiciones reales de cada base en tu juego
 local LB_COORDS = {
     base1  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
     base2  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
@@ -135,7 +135,6 @@ local function waitForStableCharacter()
         hrp = char:WaitForChild("HumanoidRootPart")
         task.wait(LB_CONFIG.DELAYS.RESPAWN_WAIT)
     end
-    -- Esperar a que el personaje esté completamente levantado
     if hum:GetState() == Enum.HumanoidStateType.GetUp then
         task.wait(0.5)
     end
@@ -167,30 +166,92 @@ end
 -- ════════════════════════════════════════════════════════════════
 -- 5. LOOPS DE AUTOMATIZACIÓN (COLLECT, UPGRADE, CONTAINER, ETC.)
 -- ════════════════════════════════════════════════════════════════
--- [Coloca aquí tus loops de collect, upgrade, container, etc.]
--- Ejemplo mínimo (debes completar):
-_G.AutoCollect   = _G.AutoCollect   or false
-_G.AutoUpgrades  = _G.AutoUpgrades  or false
-_G.AutoContainer = _G.AutoContainer or false
--- etc.
-
+-- Auto Collect (recolectar dinero)
 task.spawn(function()
     while true do
         if _G.AutoCollect then
-            -- Lógica de recolección
+            safeInvoke(rf.WorkUpdate) -- Asume que este remoto recolecta
         end
+        task.wait(0.5)
+    end
+end)
+
+-- Auto Upgrade Brainrots
+task.spawn(function()
+    while true do
         if _G.AutoUpgrades then
-            -- Lógica de upgrade
+            safeInvoke(rf.Brainrot)
         end
-        -- ...
         task.wait(1)
     end
 end)
 
+-- Auto Comprar Contenedores (si aplica)
+task.spawn(function()
+    while true do
+        if _G.AutoContainer then
+            safeInvoke(rf.Container)
+        end
+        task.wait(2)
+    end
+end)
+
+-- Auto Colocar Brainrots (PlaceBest)
+task.spawn(function()
+    while true do
+        if _G.AutoPlaceBest then
+            safeInvoke(rf.PlaceBest)
+        end
+        task.wait(2)
+    end
+end)
+
+-- Auto Rebirth
+task.spawn(function()
+    while true do
+        if _G.AutoRebirth then
+            safeInvoke(rf.Rebirth)
+        end
+        task.wait(5)
+    end
+end)
+
+-- Auto Comprar Velocidad
+task.spawn(function()
+    while true do
+        if _G.AutoSpeed then
+            safeInvoke(rf.Speed, "Speed") -- Puede requerir el argumento correcto
+        end
+        task.wait(3)
+    end
+end)
+
+-- Auto Mejorar Base (si existe remoto específico)
+task.spawn(function()
+    while true do
+        if _G.AutoMejorarBase then
+            -- Asumiendo que hay un remoto para mejorar base, por ejemplo:
+            -- safeInvoke(knit.BaseService.RF.UpgradeBase)
+            -- Si no existe, puedes omitir o buscar el remoto correcto
+        end
+        task.wait(3)
+    end
+end)
+
+-- Auto Comprar Lucky Blocks (Skins)
+task.spawn(function()
+    while true do
+        if _G.AutoSkins then
+            safeInvoke(rf.Skin, "luckyblock") -- Ajusta el nombre del ítem
+        end
+        task.wait(5)
+    end
+end)
+
 -- ════════════════════════════════════════════════════════════════
--- 6. CICLO MEJORADO DE LUCKY BLOCK (con soporte para múltiples bases)
+-- 6. CICLO MEJORADO DE LUCKY BLOCK (con selector de base)
 -- ════════════════════════════════════════════════════════════════
-_G.LBType = _G.LBType or "base14"  -- Tipo de bloque seleccionado (base1..base14, ZEUS)
+_G.LBType = _G.LBType or "base14"
 
 local inRun = false
 
@@ -208,45 +269,36 @@ local function lbFarmCycle()
             error("Coordenadas no definidas para: " .. tostring(blockType))
         end
 
-        -- 1. Asegurar personaje estable
         local char, hrp = waitForStableCharacter()
         if not hrp then error("Personaje no listo") end
 
-        -- 2. Ir a base
         if not teleportToWithConfirm(coords.BASE, 4, 12) then
             error("No se pudo llegar a base")
         end
 
-        -- 3. Ir a caminadora
         if not ensureAtTreadmill(coords) then
             error("No se pudo llegar a la caminadora")
         end
 
-        -- 4. Iniciar carrera (con backoff)
         local ok, runId = invokeWithBackoff(StartRun, 3)
         if not ok then error("StartRun falló") end
         log("StartRun OK, runId: " .. tostring(runId))
 
-        -- 5. Iniciar movimiento
         if not invokeWithBackoff(StartMove, 3) then
             error("StartMove falló")
         end
 
-        -- 6. Abrir lucky block (usando el tipo seleccionado)
         if not invokeWithBackoff(OpenLuckyBlock, 3, blockType) then
             error("OpenLuckyBlock falló con tipo " .. blockType)
         end
         log("OpenLuckyBlock OK (" .. blockType .. ")")
 
-        -- 7. Actualizar CFrame
         if not invokeWithBackoff(UpdateCFrame, 3, hrp.CFrame) then
             error("UpdateCFrame falló")
         end
 
-        -- 8. Esperar finalización
         task.wait(1.2)
 
-        -- 9. Regresar a base
         teleportToWithConfirm(coords.BASE, 3, 12)
         task.wait(LB_CONFIG.DELAYS.CYCLE_END)
     end)
@@ -276,7 +328,7 @@ local function startLbFarmLoop()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 7. CONTROL DE VARIABLES GLOBALES Y MONITOREO
+-- 7. CONTROL DE VARIABLES GLOBALES
 -- ════════════════════════════════════════════════════════════════
 _G.AutoCollect      = _G.AutoCollect      or false
 _G.AutoUpgrades     = _G.AutoUpgrades     or false
@@ -289,6 +341,7 @@ _G.AutoSkins        = _G.AutoSkins        or false
 _G.AutoLBFarm       = _G.AutoLBFarm       or false
 _G.LBType           = _G.LBType           or "base14"
 
+-- Iniciar/detener el loop de lucky block cuando cambie _G.AutoLBFarm
 task.spawn(function()
     local lastState = false
     while true do
@@ -299,10 +352,6 @@ task.spawn(function()
         task.wait(1)
     end
 end)
-
-function EquipSkin(skinId)
-    safeInvoke(rf.EquipSkin, skinId)
-end
 
 -- ════════════════════════════════════════════════════════════════
 -- 8. INTERFAZ CON COMPKILLER (con selector de base)
@@ -352,11 +401,6 @@ LbSection:AddToggle({
 
 -- Sección derecha: Selección de bloque
 local RightSelection = MainTab:DrawSection({ Name = "Selección de Bloque", Position = "right", Minimized = true })
-
--- Crear la lista de tipos (base1 a base14 y ZEUS)
-local blockTypes = {}
-for i = 1, 14 do blockTypes["base" .. i] = "base" .. i end
-blockTypes["ZEUS"] = "ZEUS"
 
 local blockValues = {}
 for i = 1, 14 do table.insert(blockValues, "base" .. i) end
@@ -439,6 +483,12 @@ LeftSection:AddToggle({
     Flag     = "auto_speed",
     Default  = false,
     Callback = function(v) _G.AutoSpeed = v end,
+})
+LeftSection:AddToggle({
+    Name     = "Auto Comprar Lucky Block",
+    Flag     = "auto_skins",
+    Default  = false,
+    Callback = function(v) _G.AutoSkins = v end,
 })
 
 -- Sección Recompensas Especiales
