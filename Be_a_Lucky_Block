@@ -1,21 +1,63 @@
---[[
-    BLADEX HUB — Brainrot Auto V5
-    Presiona Left Alt para abrir / cerrar
-    Mejora/Recolecta en orden 30 -> 1
-]]
+-- Script completo con carga automática de la librería Compkiller (robusta)
+-- Activar/desactivar funciones mediante variables globales _G.AutoXXX
 
--- ══════════════════════════════════════════════
--- SERVICIOS
--- ══════════════════════════════════════════════
+-- ════════════════════════════════════════════════════════════════
+-- 0. CARGA DE LA LIBRERÍA UI (desde la URL proporcionada)
+-- ════════════════════════════════════════════════════════════════
+local library_url = "https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/BLADEX_LIBRALY"
+
+local Compkiller = getgenv().Compkiller
+
+if not Compkiller then
+    local request = (syn and syn.request) or (http and http.request) or request or (fluxus and fluxus.request) or function(url)
+        return game:HttpGet(url)
+    end
+    local response = request({ Url = library_url, Method = "GET" })
+    local code = type(response) == "table" and response.Body or response
+    if code and code ~= "" then
+        local func, err = loadstring(code)
+        if func then
+            local ok, result = pcall(func)
+            if ok then
+                Compkiller = result or getgenv().Compkiller
+                print("[BLADEX] Librería Compkiller cargada")
+            else
+                warn("[BLADEX] Error al ejecutar librería: " .. tostring(result))
+                return
+            end
+        else
+            warn("[BLADEX] Error al cargar librería: " .. tostring(err))
+            return
+        end
+    else
+        warn("[BLADEX] No se pudo descargar la librería")
+        return
+    end
+    task.wait(0.1)
+end
+
+if not Compkiller then
+    error("❌ No se pudo cargar la librería Compkiller")
+end
+
+-- ════════════════════════════════════════════════════════════════
+-- 1. SERVICIOS Y REMOTOS
+-- ════════════════════════════════════════════════════════════════
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players           = game:GetService("Players")
-local LP                = Players.LocalPlayer
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
 
--- ══════════════════════════════════════════════
--- REMOTOS — Brainrot (Knit)
--- ══════════════════════════════════════════════
 local knit = ReplicatedStorage.Packages._Index
     :FindFirstChild("sleitnick_knit@1.7.0").knit.Services
+
+local GetRewardRemote = nil
+for _, service in pairs(knit:GetChildren()) do
+    local rf = service:FindFirstChild("RF")
+    if rf and rf:FindFirstChild("GetReward") then
+        GetRewardRemote = rf.GetReward
+        break
+    end
+end
 
 local rf = {
     Brainrot   = knit.ContainerService.RF.UpgradeBrainrot,
@@ -26,27 +68,12 @@ local rf = {
     Speed      = knit.UpgradesService.RF.Upgrade,
     Skin       = knit.SkinService.RF.BuySkin,
     EquipSkin  = knit.SkinService.RF.EquipSkin,
+    GetReward  = GetRewardRemote,
 }
 
--- ══════════════════════════════════════════════
--- REMOTOS — Lucky Block (RunningService)
--- ══════════════════════════════════════════════
-local LB_CONFIG = {
-    DELAYS = {
-        AFTER_TELEPORT   = 0.8,
-        AFTER_ACTION     = 0.6,
-        AFTER_OPEN_BLOCK = 0.9,
-        BETWEEN_STEPS    = 0.5,
-        CYCLE_END        = 1.0,
-        RESPAWN_WAIT     = 3.0,
-    },
-    COORDS = {
-        CAMINADORA = CFrame.new(710.440674,  38.81287,   -2124.65723),
-        BASE       = CFrame.new(730.310547,  38.8128662, -2152.41089),
-    },
-    MAX_RETRIES = 3,
-}
-
+-- ════════════════════════════════════════════════════════════════
+-- 2. REMOTOS LUCKY BLOCK
+-- ════════════════════════════════════════════════════════════════
 local lbRF = ReplicatedStorage.Packages._Index
     :FindFirstChild("sleitnick_knit@1.7.0")
     .knit.Services.RunningService.RF
@@ -57,187 +84,45 @@ local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
 local Collected      = lbRF:WaitForChild("Collected",      10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 
--- ══════════════════════════════════════════════
--- ESTADOS — Brainrot
--- ══════════════════════════════════════════════
-local autoCollectOn   = false
-local autoUpgradesOn  = false
-local autoContainerOn = false
-local autoRebirthOn   = false
-local autoSpeedOn     = false
-local autoSkinsOn     = false
-
-local collectLoop   = nil
-local upgradeLoop   = nil
-local containerLoop = nil
-local rebirthLoop   = nil
-local speedLoop     = nil
-local skinLoop      = nil
-
--- ══════════════════════════════════════════════
--- ESTADO — Lucky Block
--- ══════════════════════════════════════════════
-local lbFarmOn    = false
-local lbFarmLoop  = nil
-local lbCycles    = 0
-
--- ══════════════════════════════════════════════
--- LOGICA — AUTO RECOGER (30 -> 1)
--- ══════════════════════════════════════════════
-local function startCollectLoop()
-    if collectLoop then return end
-    collectLoop = task.spawn(function()
-        while autoCollectOn do
-            for i = 30, 1, -1 do
-                if not autoCollectOn then break end
-                pcall(function() rf.WorkUpdate:FireServer(tostring(i)) end)
-                task.wait(0.03)
-            end
-            task.wait(0.3)
-        end
-        collectLoop = nil
-    end)
-end
-local function stopCollectLoop()
-    autoCollectOn = false
-    if collectLoop then task.cancel(collectLoop); collectLoop = nil end
-end
-
--- ══════════════════════════════════════════════
--- LOGICA — AUTO MEJORAR (30 -> 1)
--- ══════════════════════════════════════════════
-local function startUpgradeLoop()
-    if upgradeLoop then return end
-    upgradeLoop = task.spawn(function()
-        while autoUpgradesOn do
-            for i = 30, 1, -1 do
-                if not autoUpgradesOn then break end
-                pcall(function() rf.Brainrot:InvokeServer(tostring(i)) end)
-                task.wait(0.05)
-            end
-            task.wait(0.5)
-        end
-        upgradeLoop = nil
-    end)
-end
-local function stopUpgradeLoop()
-    autoUpgradesOn = false
-    if upgradeLoop then task.cancel(upgradeLoop); upgradeLoop = nil end
-end
-
--- ══════════════════════════════════════════════
--- LOGICA — AUTO CONTAINER
--- ══════════════════════════════════════════════
-local function startContainerLoop()
-    if containerLoop then return end
-    containerLoop = task.spawn(function()
-        while autoContainerOn do
-            pcall(function() rf.Container:InvokeServer() end)
-            task.wait(1)
-        end
-        containerLoop = nil
-    end)
-end
-local function stopContainerLoop()
-    autoContainerOn = false
-    if containerLoop then task.cancel(containerLoop); containerLoop = nil end
-end
-
--- ══════════════════════════════════════════════
--- LOGICA — AUTO REBIRTH
--- ══════════════════════════════════════════════
-local function startRebirthLoop()
-    if rebirthLoop then return end
-    rebirthLoop = task.spawn(function()
-        while autoRebirthOn do
-            pcall(function() rf.Rebirth:InvokeServer() end)
-            task.wait(5)
-        end
-        rebirthLoop = nil
-    end)
-end
-local function stopRebirthLoop()
-    autoRebirthOn = false
-    if rebirthLoop then task.cancel(rebirthLoop); rebirthLoop = nil end
-end
-
--- ══════════════════════════════════════════════
--- LOGICA — AUTO VELOCIDAD
--- ══════════════════════════════════════════════
-local function startSpeedLoop()
-    if speedLoop then return end
-    speedLoop = task.spawn(function()
-        while autoSpeedOn do
-            pcall(function() rf.Speed:InvokeServer("MovementSpeed", 1) end)
-            task.wait(2)
-        end
-        speedLoop = nil
-    end)
-end
-local function stopSpeedLoop()
-    autoSpeedOn = false
-    if speedLoop then task.cancel(speedLoop); speedLoop = nil end
-end
-
--- ══════════════════════════════════════════════
--- LOGICA — AUTO SKINS (todas en orden)
--- ══════════════════════════════════════════════
-local SKIN_LIST = {
-    "fairy_luckyblock",
-    "freezy_luckyblock",
-    "lava_luckyblock",
-    "gliched_luckyblock",
-    "void_luckyblock",
-    "cyborg_luckyblock",
-    "divine_luckyblock",
-    "inferno_luckyblock",
+-- ════════════════════════════════════════════════════════════════
+-- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS ACTUALIZADOS)
+-- ════════════════════════════════════════════════════════════════
+local LB_CONFIG = {
+    DELAYS = {
+        AFTER_TELEPORT   = 0.6,
+        AFTER_ACTION     = 0.4,
+        AFTER_OPEN_BLOCK = 0.7,
+        BETWEEN_STEPS    = 0.3,
+        CYCLE_END        = 0.8,
+        RESPAWN_WAIT     = 3.0,
+    },
+    COORDS = {
+        CAMINADORA = CFrame.new(-507.90, 38.45, -2125.72),
+        BASE       = CFrame.new(734.56,  38.81,  -2152.04),
+    },
+    MAX_RETRIES = 3,
 }
 
-local function startSkinLoop()
-    if skinLoop then return end
-    skinLoop = task.spawn(function()
-        while autoSkinsOn do
-            for _, skinId in ipairs(SKIN_LIST) do
-                if not autoSkinsOn then break end
-                pcall(function() rf.Skin:InvokeServer(skinId) end)
-                task.wait(3)
-            end
-        end
-        skinLoop = nil
-    end)
-end
-local function stopSkinLoop()
-    autoSkinsOn = false
-    if skinLoop then task.cancel(skinLoop); skinLoop = nil end
+-- ════════════════════════════════════════════════════════════════
+-- 4. FUNCIONES AUXILIARES
+-- ════════════════════════════════════════════════════════════════
+local function safeInvoke(remote, ...)
+    if not remote then return false, "Remoto no disponible" end
+    local ok, res = pcall(remote.InvokeServer, remote, ...)
+    return ok, res
 end
 
--- ══════════════════════════════════════════════
--- LOGICA — LUCKY BLOCK AUTOFARM
--- ══════════════════════════════════════════════
-local function lbTeleport(cf, label)
-    for attempt = 1, LB_CONFIG.MAX_RETRIES do
+local function teleportTo(cf, label)
+    for _ = 1, LB_CONFIG.MAX_RETRIES do
         local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
             hrp.CFrame = cf
             task.wait(LB_CONFIG.DELAYS.AFTER_TELEPORT)
             if (hrp.CFrame.Position - cf.Position).Magnitude < 5 then return true end
         end
-        warn("[LB] Teleport " .. label .. " fallo intento " .. attempt)
         task.wait(0.5)
     end
     return false
-end
-
-local function lbSafeInvoke(remote, label, ...)
-    local args = {...}
-    for attempt = 1, LB_CONFIG.MAX_RETRIES do
-        local ok, res = pcall(function()
-            return remote:InvokeServer(unpack(args))
-        end)
-        if ok then return res end
-        warn("[LB][" .. label .. "] Error intento " .. attempt .. ": " .. tostring(res))
-        task.wait(0.2 * attempt)
-    end
 end
 
 local function getLuckyBlockId()
@@ -273,7 +158,7 @@ local function getLuckyBlockId()
     return "10708364552"
 end
 
-local function lbWaitForCharacter()
+local function waitForCharacter()
     local char = LP.Character or LP.CharacterAdded:Wait()
     local hum  = char:WaitForChild("Humanoid", 10)
     if hum and hum.Health <= 0 then
@@ -283,70 +168,310 @@ local function lbWaitForCharacter()
     return char, char:WaitForChild("HumanoidRootPart")
 end
 
+-- ════════════════════════════════════════════════════════════════
+-- 5. LOOPS DE AUTOMATIZACIÓN
+-- ════════════════════════════════════════════════════════════════
+
+local collectRunning = false
+local function startCollectLoop()
+    if collectRunning then return end
+    collectRunning = true
+    task.spawn(function()
+        _G.AutoCashPhysical = true
+        while _G.AutoCollect do
+            for _, v in pairs(workspace:GetDescendants()) do
+                if not _G.AutoCollect then break end
+                if v:IsA("BasePart") and v.Transparency < 1 then
+                    if v:FindFirstChildOfClass("BillboardGui") or v:FindFirstChildOfClass("SurfaceGui") then
+                        local char = LP.Character
+                        if char and char:FindFirstChild("HumanoidRootPart") then
+                            firetouchinterest(char.HumanoidRootPart, v, 0)
+                            task.wait()
+                            firetouchinterest(char.HumanoidRootPart, v, 1)
+                        end
+                    end
+                end
+            end
+            task.wait(0.1)
+        end
+        _G.AutoCashPhysical = false
+        collectRunning = false
+    end)
+end
+
+-- UI Hiding integrado en Upgrade Brainrots
+local upgradeLoopThread = nil
+local uiHidingConnection = nil
+local palabrasClave = {
+    ["brainrot"] = true,
+    ["dinero"] = true,
+    ["máximo"] = true
+}
+
+local function procesarObj(obj)
+    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+        local txt = obj.Text:lower()
+        for palabra in pairs(palabrasClave) do
+            if txt:find(palabra) then
+                obj:Destroy()
+                break
+            end
+        end
+    end
+end
+
+local function startUIHiding()
+    if uiHidingConnection then return end
+    local playerGui = LP:WaitForChild("PlayerGui")
+    for _, v in ipairs(playerGui:GetDescendants()) do
+        procesarObj(v)
+    end
+    uiHidingConnection = playerGui.DescendantAdded:Connect(procesarObj)
+end
+
+local function stopUIHiding()
+    if uiHidingConnection then
+        uiHidingConnection:Disconnect()
+        uiHidingConnection = nil
+    end
+end
+
+local function startUpgradeLoop()
+    if upgradeLoopThread then return end
+    startUIHiding()
+    upgradeLoopThread = task.spawn(function()
+        while _G.AutoUpgrades do
+            for i = 30, 1, -1 do
+                if not _G.AutoUpgrades then break end
+                task.spawn(function()
+                    safeInvoke(rf.Brainrot, tostring(i))
+                end)
+                task.wait(0.02)
+            end
+            task.wait(0.3)
+        end
+        upgradeLoopThread = nil
+        stopUIHiding()
+    end)
+end
+
+local function stopUpgradeLoop()
+    _G.AutoUpgrades = false
+    if upgradeLoopThread then
+        task.cancel(upgradeLoopThread)
+        upgradeLoopThread = nil
+    end
+    stopUIHiding()
+end
+
+local containerRunning = false
+local function startContainerLoop()
+    if containerRunning then return end
+    containerRunning = true
+    task.spawn(function()
+        while _G.AutoContainer do
+            safeInvoke(rf.Container)
+            task.wait(1)
+        end
+        containerRunning = false
+    end)
+end
+
+local mejorarBaseRunning = false
+local function startMejorarBaseLoop()
+    if mejorarBaseRunning then return end
+    mejorarBaseRunning = true
+    task.spawn(function()
+        while _G.AutoMejorarBase do
+            safeInvoke(rf.Container)
+            task.wait(1)
+        end
+        mejorarBaseRunning = false
+    end)
+end
+
+local rebirthRunning = false
+local function startRebirthLoop()
+    if rebirthRunning then return end
+    rebirthRunning = true
+    task.spawn(function()
+        while _G.AutoRebirth do
+            safeInvoke(rf.Rebirth)
+            task.wait(5)
+        end
+        rebirthRunning = false
+    end)
+end
+
+local speedRunning = false
+local function startSpeedLoop()
+    if speedRunning then return end
+    speedRunning = true
+    task.spawn(function()
+        while _G.AutoSpeed do
+            safeInvoke(rf.Speed, "MovementSpeed", 1)
+            task.wait(2)
+        end
+        speedRunning = false
+    end)
+end
+
+local placeBestRunning = false
+local function startPlaceBestLoop()
+    if placeBestRunning then return end
+    placeBestRunning = true
+    task.spawn(function()
+        getgenv().AutoBest = true
+        while _G.AutoPlaceBest do
+            safeInvoke(rf.PlaceBest)
+            task.wait(3)
+        end
+        getgenv().AutoBest = false
+        placeBestRunning = false
+    end)
+end
+
+local SKIN_LIST = {
+    "fairy_luckyblock",
+    "freezy_luckyblock",
+    "lava_luckyblock",
+    "gliched_luckyblock",
+    "void_luckyblock",
+    "cyborg_luckyblock",
+    "divine_luckyblock",
+    "inferno_luckyblock",
+}
+local skinRunning = false
+local function startSkinLoop()
+    if skinRunning then return end
+    skinRunning = true
+    task.spawn(function()
+        while _G.AutoSkins do
+            for _, skinId in ipairs(SKIN_LIST) do
+                if not _G.AutoSkins then break end
+                safeInvoke(rf.Skin, skinId)
+                task.wait(3)
+            end
+        end
+        skinRunning = false
+    end)
+end
+
+local lbRunning = false
 local function lbFarmCycle()
-    local _, hrp = lbWaitForCharacter()
+    local _, hrp = waitForCharacter()
 
-    lbTeleport(LB_CONFIG.COORDS.CAMINADORA, "Caminadora")
+    teleportTo(LB_CONFIG.COORDS.CAMINADORA, "Caminadora")
     task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
-    lbSafeInvoke(StartRun, "StartRun")
+    safeInvoke(StartRun)
     task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
     task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
-    lbSafeInvoke(EndMove, "EndMove")
+    safeInvoke(EndMove)
     task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
     task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
-    lbSafeInvoke(OpenLuckyBlock, "OpenLuckyBlock", "base14")
+    safeInvoke(OpenLuckyBlock, "base14")
     task.wait(LB_CONFIG.DELAYS.AFTER_OPEN_BLOCK)
     task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
     local blockId = getLuckyBlockId()
-    lbSafeInvoke(Collected, "Collected", blockId)
+    safeInvoke(Collected, blockId)
     task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
     task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
-    lbSafeInvoke(UpdateCFrame, "UpdateCFrame", hrp.CFrame)
+    safeInvoke(UpdateCFrame, hrp.CFrame)
     task.wait(LB_CONFIG.DELAYS.AFTER_ACTION)
     task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
-    lbTeleport(LB_CONFIG.COORDS.BASE, "Base")
+    teleportTo(LB_CONFIG.COORDS.BASE, "Base")
     task.wait(LB_CONFIG.DELAYS.CYCLE_END)
-
-    lbCycles = lbCycles + 1
-    print("[LB Farm] Ciclo " .. lbCycles .. " completo")
 end
 
 local function startLbFarmLoop()
-    if lbFarmLoop then return end
-    lbFarmLoop = task.spawn(function()
-        while lbFarmOn do
+    if lbRunning then return end
+    lbRunning = true
+    task.spawn(function()
+        while _G.AutoLBFarm do
             local ok, err = pcall(lbFarmCycle)
             if not ok then
                 warn("[LB Farm] Error: " .. tostring(err))
                 task.wait(2)
             end
         end
-        lbFarmLoop = nil
+        lbRunning = false
     end)
 end
 
-local function stopLbFarmLoop()
-    lbFarmOn = false
-    if lbFarmLoop then task.cancel(lbFarmLoop); lbFarmLoop = nil end
+-- ════════════════════════════════════════════════════════════════
+-- 6. CONTROL DE VARIABLES GLOBALES Y MONITOREO
+-- ════════════════════════════════════════════════════════════════
+_G.AutoCollect      = _G.AutoCollect      or false
+_G.AutoUpgrades     = _G.AutoUpgrades     or false
+_G.AutoContainer    = _G.AutoContainer    or false
+_G.AutoMejorarBase  = _G.AutoMejorarBase  or false
+_G.AutoRebirth      = _G.AutoRebirth      or false
+_G.AutoSpeed        = _G.AutoSpeed        or false
+_G.AutoPlaceBest    = _G.AutoPlaceBest    or false
+_G.AutoSkins        = _G.AutoSkins        or false
+_G.AutoLBFarm       = _G.AutoLBFarm       or false
+
+task.spawn(function()
+    local lastState = {}
+    while true do
+        if _G.AutoCollect and not lastState.AutoCollect then startCollectLoop()
+        elseif not _G.AutoCollect and lastState.AutoCollect then
+            _G.AutoCashPhysical = false; collectRunning = false end
+
+        if _G.AutoUpgrades and not lastState.AutoUpgrades then startUpgradeLoop()
+        elseif not _G.AutoUpgrades and lastState.AutoUpgrades then stopUpgradeLoop() end
+
+        if _G.AutoContainer and not lastState.AutoContainer then startContainerLoop()
+        elseif not _G.AutoContainer and lastState.AutoContainer then containerRunning = false end
+
+        if _G.AutoMejorarBase and not lastState.AutoMejorarBase then startMejorarBaseLoop()
+        elseif not _G.AutoMejorarBase and lastState.AutoMejorarBase then mejorarBaseRunning = false end
+
+        if _G.AutoRebirth and not lastState.AutoRebirth then startRebirthLoop()
+        elseif not _G.AutoRebirth and lastState.AutoRebirth then rebirthRunning = false end
+
+        if _G.AutoSpeed and not lastState.AutoSpeed then startSpeedLoop()
+        elseif not _G.AutoSpeed and lastState.AutoSpeed then speedRunning = false end
+
+        if _G.AutoPlaceBest and not lastState.AutoPlaceBest then startPlaceBestLoop()
+        elseif not _G.AutoPlaceBest and lastState.AutoPlaceBest then
+            getgenv().AutoBest = false; placeBestRunning = false end
+
+        if _G.AutoSkins and not lastState.AutoSkins then startSkinLoop()
+        elseif not _G.AutoSkins and lastState.AutoSkins then skinRunning = false end
+
+        if _G.AutoLBFarm and not lastState.AutoLBFarm then startLbFarmLoop()
+        elseif not _G.AutoLBFarm and lastState.AutoLBFarm then lbRunning = false end
+
+        lastState = {
+            AutoCollect      = _G.AutoCollect,
+            AutoUpgrades     = _G.AutoUpgrades,
+            AutoContainer    = _G.AutoContainer,
+            AutoMejorarBase  = _G.AutoMejorarBase,
+            AutoRebirth      = _G.AutoRebirth,
+            AutoSpeed        = _G.AutoSpeed,
+            AutoPlaceBest    = _G.AutoPlaceBest,
+            AutoSkins        = _G.AutoSkins,
+            AutoLBFarm       = _G.AutoLBFarm,
+        }
+        task.wait(1)
+    end
+end)
+
+function EquipSkin(skinId)
+    safeInvoke(rf.EquipSkin, skinId)
 end
 
--- ══════════════════════════════════════════════
--- LIBRERIA — cargada externamente por el loader
--- ══════════════════════════════════════════════
-local Compkiller = getgenv().Compkiller
-if not Compkiller then
-    warn("[BLADEX] Compkiller no encontrado. Ejecuta el loader primero.")
-    return
-end
-
+-- ════════════════════════════════════════════════════════════════
+-- 7. INTERFAZ CON COMPKILLER
+-- ════════════════════════════════════════════════════════════════
 local Notifier = Compkiller.newNotify()
-
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
 
 local ConfigManager = Compkiller:ConfigManager({
@@ -366,74 +491,87 @@ local Window = Compkiller.new({
 
 Notifier.new({
     Title    = "BLADEX HUB",
-    Content  = "BeaLuckyBlock cargado!",
+    Content  = "Script cargado correctamente",
     Duration = 5,
     Icon     = Compkiller.Logo,
 })
 
--- ══════════════════════════════════════════════
--- UI — TABS
--- ══════════════════════════════════════════════
 Window:DrawCategory({ Name = "Main" })
 
--- ══════════════════════════════════════════════
--- TAB: BEA LUCKY BLOCK (contiene los toggles no-LuckyBlock y skins)
--- ══════════════════════════════════════════════
-local LbTab = Window:DrawTab({
+local MainTab = Window:DrawTab({
     Name            = "BeaLuckyBlock",
     Icon            = "box",
     EnableScrolling = true,
 })
 
--- Sección izquierda: toggles de farm (excepto los de Lucky Block)
-local LbLeft = LbTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = false })
+-- Sección Farm Lucky Blocks
+local LbSection = MainTab:DrawSection({ Name = "Farm Lucky Blocks", Position = "left", Minimized = true })
 
-LbLeft:AddToggle({
-    Name     = "auto money",
+LbSection:AddToggle({
+    Name     = "auto farm ciber",
+    Flag     = "lb_farm",
+    Default  = false,
+    Callback = function(v) _G.AutoLBFarm = v end,
+})
+
+LbSection:AddToggle({
+    Name     = "auto comprar Lucky Block",
+    Flag     = "auto_skins",
+    Default  = false,
+    Callback = function(v) _G.AutoSkins = v end,
+})
+
+-- Sección Auto Farm (orden solicitado)
+local LeftSection = MainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = true })
+
+LeftSection:AddToggle({
+    Name     = "Auto Collect Cash",
     Flag     = "auto_collect",
     Default  = false,
-    Callback = function(v)
-        autoCollectOn = v
-        if v then startCollectLoop() else stopCollectLoop() end
-    end,
+    Callback = function(v) _G.AutoCollect = v end,
 })
 
-LbLeft:AddToggle({
-    Name     = "upgrade brainrots",
+LeftSection:AddToggle({
+    Name     = "Auto Colocar Brainrots",
+    Flag     = "auto_placebest",
+    Default  = false,
+    Callback = function(v) _G.AutoPlaceBest = v end,
+})
+
+LeftSection:AddToggle({
+    Name     = "Upgrade Brainrots",
     Flag     = "auto_upgrades",
     Default  = false,
-    Callback = function(v)
-        autoUpgradesOn = v
-        if v then startUpgradeLoop() else stopUpgradeLoop() end
-    end,
+    Callback = function(v) _G.AutoUpgrades = v end,
 })
 
-LbLeft:AddToggle({
-    Name     = "auto comprar velocidad",
-    Flag     = "auto_speed",
-    Default  = false,
-    Callback = function(v)
-        autoSpeedOn = v
-        if v then startSpeedLoop() else stopSpeedLoop() end
-    end,
-})
-
-LbLeft:AddToggle({
+LeftSection:AddToggle({
     Name     = "Auto Rebirth",
     Flag     = "auto_rebirth",
     Default  = false,
-    Callback = function(v)
-        autoRebirthOn = v
-        if v then startRebirthLoop() else stopRebirthLoop() end
-    end,
+    Callback = function(v) _G.AutoRebirth = v end,
 })
 
--- Sección derecha: skins (sin cambios)
-local LbRight = LbTab:DrawSection({ Name = "Skins", Position = "right", Minimized = false })
+LeftSection:AddToggle({
+    Name     = "Auto Mejorar Base",
+    Flag     = "auto_mejorar_base",
+    Default  = false,
+    Callback = function(v) _G.AutoMejorarBase = v end,
+})
+
+LeftSection:AddToggle({
+    Name     = "Auto Comprar Velocidad",
+    Flag     = "auto_speed",
+    Default  = false,
+    Callback = function(v) _G.AutoSpeed = v end,
+})
+
+-- Sección Skins
+local RightSection = MainTab:DrawSection({ Name = "Skins", Position = "right", Minimized = true })
 
 local selectedSkin = "default"
 
-LbRight:AddDropdown({
+RightSection:AddDropdown({
     Name    = "Seleccionar Skin",
     Flag    = "skin_equip",
     Default = "default",
@@ -448,73 +586,66 @@ LbRight:AddDropdown({
         "divine_luckyblock",
         "inferno_luckyblock",
     },
-    Callback = function(v)
-        selectedSkin = v
-    end,
+    Callback = function(v) selectedSkin = v end,
 })
 
-LbRight:AddButton({
+RightSection:AddButton({
     Name     = "Equipar Skin",
     Callback = function()
-        pcall(function()
-            rf.EquipSkin:InvokeServer(selectedSkin)
-        end)
+        pcall(function() rf.EquipSkin:InvokeServer(selectedSkin) end)
     end,
 })
 
--- ══════════════════════════════════════════════
--- TAB: AUTO LUCKY BLOCKS (contiene los toggles específicos de Lucky Block)
--- ══════════════════════════════════════════════
-local LuckyTab = Window:DrawTab({
-    Name            = "auto lucky blocks",
-    Icon            = "star",
-    EnableScrolling = true,
-})
-
--- Sección izquierda (puede ser única)
-local LuckySection = LuckyTab:DrawSection({ Name = "Lucky Block Config", Position = "left", Minimized = false })
-
-LuckySection:AddToggle({
-    Name     = "Auto Lucky Block Farm",
-    Flag     = "lb_farm",
-    Default  = false,
-    Callback = function(v)
-        lbFarmOn = v
-        if v then startLbFarmLoop() else stopLbFarmLoop() end
+-- Sección Recompensas Especiales
+local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = true })
+RewardSection:AddButton({
+    Name = "Auto Reclamar Bloque Espiritual",
+    Callback = function()
+        if not rf.GetReward then
+            Notifier.new({
+                Title    = "BLADEX HUB",
+                Content  = "Remoto GetReward no encontrado. No se puede reclamar.",
+                Duration = 5,
+                Icon     = Compkiller.Logo,
+            })
+            return
+        end
+        local ok, result = safeInvoke(rf.GetReward)
+        if ok then
+            Notifier.new({
+                Title    = "BLADEX HUB",
+                Content  = "¡Reclamo enviado con éxito!",
+                Duration = 5,
+                Icon     = Compkiller.Logo,
+            })
+        else
+            warn("[BLADEX] Error al reclamar: " .. tostring(result))
+            Notifier.new({
+                Title    = "BLADEX HUB",
+                Content  = "Error al reclamar: " .. tostring(result),
+                Duration = 5,
+                Icon     = Compkiller.Logo,
+            })
+        end
     end,
 })
 
-LuckySection:AddToggle({
-    Name     = "Auto comprar lucky blocks",
-    Flag     = "auto_skins",
-    Default  = false,
-    Callback = function(v)
-        autoSkinsOn = v
-        if v then startSkinLoop() else stopSkinLoop() end
-    end,
-})
-
--- ══════════════════════════════════════════════
--- TAB: AJUSTES
--- ══════════════════════════════════════════════
+-- Tab de ajustes
 Window:DrawCategory({ Name = "Misc" })
-
-local AjustesTab = Window:DrawTab({
+local SettingsTab = Window:DrawTab({
     Icon            = "settings-3",
     Name            = "Ajustes",
     Type            = "Single",
     EnableScrolling = true,
 })
 
-local AjustesSection = AjustesTab:DrawSection({ Name = "UI Settings", Minimized = true })
-
-AjustesSection:AddToggle({
+local UISection = SettingsTab:DrawSection({ Name = "UI Settings", Minimized = true })
+UISection:AddToggle({
     Name     = "Always Show Frame",
     Default  = false,
     Callback = function(v) Window.AlwayShowTab = v end,
 })
-
-AjustesSection:AddColorPicker({
+UISection:AddColorPicker({
     Name     = "Highlight",
     Default  = Compkiller.Colors.Highlight,
     Callback = function(v)
@@ -522,8 +653,7 @@ AjustesSection:AddColorPicker({
         Compkiller:RefreshCurrentColor()
     end,
 })
-
-AjustesSection:AddDropdown({
+UISection:AddDropdown({
     Name     = "Select Theme",
     Default  = "Default",
     Values   = { "Default", "Dark Green", "Dark Blue", "Purple Rose", "Skeet" },
@@ -536,8 +666,4 @@ Window:DrawConfig({
     Config = ConfigManager,
 }):Init()
 
-LP.CharacterAdded:Connect(function(c)
-    -- por si alguna logica futura necesita el personaje
-end)
-
-print("[BLADEX HUB] BeaLuckyBlock cargado!")
+print("[BLADEX HUB] Script cargado correctamente")
