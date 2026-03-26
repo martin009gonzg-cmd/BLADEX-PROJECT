@@ -54,7 +54,7 @@ local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 -- ════════════════════════════════════════════════════════════════
 -- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS POR BASE)
 -- ════════════════════════════════════════════════════════════════
--- Ajusta estas coordenadas según las posiciones reales de cada base en tu juego
+-- ¡Ajusta estas coordenadas a las posiciones reales de tu juego!
 local LB_COORDS = {
     base1  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
     base2  = { CAMINADORA = CFrame.new(588.96, 38.18, -2127.26), BASE = CFrame.new(733.21, 37.51, -2153.56) },
@@ -166,17 +166,15 @@ end
 -- ════════════════════════════════════════════════════════════════
 -- 5. LOOPS DE AUTOMATIZACIÓN (COLLECT, UPGRADE, CONTAINER, ETC.)
 -- ════════════════════════════════════════════════════════════════
--- Auto Collect (recolectar dinero)
 task.spawn(function()
     while true do
         if _G.AutoCollect then
-            safeInvoke(rf.WorkUpdate) -- Asume que este remoto recolecta
+            safeInvoke(rf.WorkUpdate)
         end
         task.wait(0.5)
     end
 end)
 
--- Auto Upgrade Brainrots
 task.spawn(function()
     while true do
         if _G.AutoUpgrades then
@@ -186,7 +184,6 @@ task.spawn(function()
     end
 end)
 
--- Auto Comprar Contenedores (si aplica)
 task.spawn(function()
     while true do
         if _G.AutoContainer then
@@ -196,7 +193,6 @@ task.spawn(function()
     end
 end)
 
--- Auto Colocar Brainrots (PlaceBest)
 task.spawn(function()
     while true do
         if _G.AutoPlaceBest then
@@ -206,7 +202,6 @@ task.spawn(function()
     end
 end)
 
--- Auto Rebirth
 task.spawn(function()
     while true do
         if _G.AutoRebirth then
@@ -216,33 +211,29 @@ task.spawn(function()
     end
 end)
 
--- Auto Comprar Velocidad
 task.spawn(function()
     while true do
         if _G.AutoSpeed then
-            safeInvoke(rf.Speed, "Speed") -- Puede requerir el argumento correcto
+            safeInvoke(rf.Speed, "Speed") -- ajusta el argumento si es necesario
         end
         task.wait(3)
     end
 end)
 
--- Auto Mejorar Base (si existe remoto específico)
 task.spawn(function()
     while true do
         if _G.AutoMejorarBase then
-            -- Asumiendo que hay un remoto para mejorar base, por ejemplo:
-            -- safeInvoke(knit.BaseService.RF.UpgradeBase)
-            -- Si no existe, puedes omitir o buscar el remoto correcto
+            -- Si existe un remoto para mejorar base, colócalo aquí
+            -- Ejemplo: safeInvoke(knit.BaseService.RF.UpgradeBase)
         end
         task.wait(3)
     end
 end)
 
--- Auto Comprar Lucky Blocks (Skins)
 task.spawn(function()
     while true do
         if _G.AutoSkins then
-            safeInvoke(rf.Skin, "luckyblock") -- Ajusta el nombre del ítem
+            safeInvoke(rf.Skin, "luckyblock") -- compra un lucky block (ajusta el nombre)
         end
         task.wait(5)
     end
@@ -341,7 +332,6 @@ _G.AutoSkins        = _G.AutoSkins        or false
 _G.AutoLBFarm       = _G.AutoLBFarm       or false
 _G.LBType           = _G.LBType           or "base14"
 
--- Iniciar/detener el loop de lucky block cuando cambie _G.AutoLBFarm
 task.spawn(function()
     local lastState = false
     while true do
