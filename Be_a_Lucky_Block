@@ -52,7 +52,7 @@ local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
 
 -- ════════════════════════════════════════════════════════════════
--- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS AJUSTADOS)
+-- 3. CONFIGURACIÓN LUCKY BLOCK
 -- ════════════════════════════════════════════════════════════════
 local LB_CONFIG = {
     DELAYS = {
@@ -60,46 +60,71 @@ local LB_CONFIG = {
         AFTER_ACTION     = 0.2,
         AFTER_OPEN_BLOCK = 0.2,
         BETWEEN_STEPS    = 0.1,
-        CYCLE_END        = 1.5,   -- aumentado para evitar "already running"
+        CYCLE_END        = 1.5,
         RESPAWN_WAIT     = 3.0,
+        RUN_FINISH_MAX   = 4.0,   -- máximo a esperar que el servidor confirme fin de carrera
     },
     COORDS = {
         CAMINADORA = CFrame.new(588.96, 38.18, -2127.26),
         BASE       = CFrame.new(733.21, 37.51, -2153.56),
     },
-    MAX_RETRIES = 2,
+    MAX_RETRIES  = 3,
+    RETRY_DELAY  = 0.5,
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 4. FUNCIONES AUXILIARES (sin cambios)
+-- 4. FUNCIONES AUXILIARES (mejoradas)
 -- ════════════════════════════════════════════════════════════════
+
+-- Retorna true si el personaje está vivo
+local function isAlive()
+    local char = LP.Character
+    if not char then return false end
+    local hum = char:FindFirstChild("Humanoid")
+    return hum ~= nil and hum.Health > 0
+end
+
+-- Invoke seguro sin reintentos (uso interno)
 local function safeInvoke(remote, ...)
     if not remote then return false, "Remoto no disponible" end
     local ok, res = pcall(remote.InvokeServer, remote, ...)
     return ok, res
 end
 
+-- Teleport con verificación de llegada y check de vida
 local function teleportTo(cf, label)
-    for _ = 1, LB_CONFIG.MAX_RETRIES do
+    label = label or "destino"
+    for attempt = 1, LB_CONFIG.MAX_RETRIES do
+        if not isAlive() then
+            warn("[Teleport] Personaje muerto, abortando teleport a " .. label)
+            return false
+        end
         local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
             hrp.CFrame = cf
             task.wait(LB_CONFIG.DELAYS.AFTER_TELEPORT)
-            if (hrp.CFrame.Position - cf.Position).Magnitude < 5 then return true end
+            if (hrp.CFrame.Position - cf.Position).Magnitude < 5 then
+                return true
+            end
         end
-        task.wait(0.5)
+        warn("[Teleport] Intento " .. attempt .. "/" .. LB_CONFIG.MAX_RETRIES .. " fallido hacia " .. label)
+        task.wait(LB_CONFIG.RETRY_DELAY)
     end
+    warn("[Teleport] No se pudo llegar a " .. label)
     return false
 end
 
+-- Teleport con espera activa de confirmación
 local function teleportToWithConfirm(cf, maxWait)
     maxWait = maxWait or 3
+    if not isAlive() then return false end
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
     hrp.CFrame = cf
     local start = tick()
     while tick() - start < maxWait do
         task.wait(0.1)
+        if not isAlive() then return false end
         if hrp and (hrp.Position - cf.Position).Magnitude < 5 then
             return true
         end
@@ -107,23 +132,35 @@ local function teleportToWithConfirm(cf, maxWait)
     return false
 end
 
+-- Verifica si el personaje está cerca de un CFrame
 local function isNear(cf, threshold)
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
     return (hrp.Position - cf.Position).Magnitude < (threshold or 5)
 end
 
+-- Invoke con reintentos, verifica vida entre intentos
+-- CAMBIO CLAVE: los args varargs se pasan DESPUÉS de maxRetries
 local function invokeWithRetry(remote, maxRetries, ...)
-    maxRetries = maxRetries or 3
+    maxRetries = maxRetries or LB_CONFIG.MAX_RETRIES
+    local args = {...}
     for i = 1, maxRetries do
-        local ok, res = pcall(remote.InvokeServer, remote, ...)
-        if ok then return true, res end
-        warn("[Retry " .. i .. "/" .. maxRetries .. "] Falló " .. tostring(remote))
-        task.wait(0.5)
+        if not isAlive() then
+            warn("[invokeWithRetry] Personaje muerto, abortando")
+            return false, nil
+        end
+        local ok, res = pcall(remote.InvokeServer, remote, table.unpack(args))
+        if ok and res ~= false then
+            return true, res
+        end
+        warn("[Retry " .. i .. "/" .. maxRetries .. "] Falló: " .. tostring(remote) ..
+             " | res=" .. tostring(res))
+        task.wait(LB_CONFIG.RETRY_DELAY)
     end
     return false, nil
 end
 
+-- Espera al humanoid en un estado específico con timeout
 local function waitForHumanoidState(state, timeout)
     timeout = timeout or 5
     local hum = LP.Character and LP.Character:FindFirstChild("Humanoid")
@@ -135,6 +172,7 @@ local function waitForHumanoidState(state, timeout)
     return hum:GetState() == state
 end
 
+-- Espera a que el personaje esté listo y vivo
 local function waitForCharacter()
     local char = LP.Character or LP.CharacterAdded:Wait()
     local hum  = char:WaitForChild("Humanoid", 10)
@@ -142,99 +180,149 @@ local function waitForCharacter()
         char = LP.CharacterAdded:Wait()
         task.wait(LB_CONFIG.DELAYS.RESPAWN_WAIT)
     end
-    return char, char:WaitForChild("HumanoidRootPart")
+    -- Espera extra para que el HRP esté disponible
+    local hrp = char:WaitForChild("HumanoidRootPart", 10)
+    return char, hrp
 end
 
 -- ════════════════════════════════════════════════════════════════
 -- 5. LOOPS DE AUTOMATIZACIÓN (COLLECT, UPGRADE, CONTAINER, ETC.)
 -- ════════════════════════════════════════════════════════════════
--- [Se mantienen exactamente igual que en la versión anterior]
--- Para no alargar, los omito aquí, pero en tu script final deben estar completos.
--- En este punto, coloca los loops de collect, upgrade, container, etc. que ya tenías.
+-- [Coloca aquí los loops que ya tenías: collect, upgrade, container, etc.]
 
 -- ════════════════════════════════════════════════════════════════
--- 6. NUEVO CICLO DE FARM LUCKY BLOCK (CON ESPERAS EXTRA)
+-- 6. CICLO DE FARM LUCKY BLOCK (mejorado)
 -- ════════════════════════════════════════════════════════════════
 _G.AutoZeus = _G.AutoZeus or false
 
+-- Logger con niveles: info / warn / error
 local function log(msg, level)
     level = level or "info"
+    local prefix = "[LB Farm] "
     if level == "error" then
-        warn("[LB Farm] " .. msg)
+        warn(prefix .. "❌ " .. msg)
+    elseif level == "warn" then
+        warn(prefix .. "⚠️ " .. msg)
     else
-        print("[LB Farm] " .. msg)
+        print(prefix .. "✅ " .. msg)
     end
 end
 
 local function lbFarmCycle()
     log("Iniciando ciclo...")
-    local _, hrp = waitForCharacter()
-    if not hrp then return end
 
-    -- 1. Base
+    -- Esperar personaje vivo
+    local char, hrp = waitForCharacter()
+    if not hrp then
+        log("No se encontró HumanoidRootPart", "error")
+        return false
+    end
+
+    -- 1. Ir a Base (si no está cerca)
     if not isNear(LB_CONFIG.COORDS.BASE, 5) then
-        teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
+        if not teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3) then
+            log("No se pudo llegar a BASE", "warn")
+        end
     end
 
-    -- 2. Caminadora
-    if not isNear(LB_CONFIG.COORDS.CAMINADORA, 5) then
-        teleportToWithConfirm(LB_CONFIG.COORDS.CAMINADORA, 3)
+    -- 2. Ir a Caminadora
+    if not teleportToWithConfirm(LB_CONFIG.COORDS.CAMINADORA, 3) then
+        log("No se pudo llegar a CAMINADORA", "error")
+        return false
     end
 
-    -- 3. StartRun → runId
+    -- 3. StartRun → obtener runId
     local okStart, runId = invokeWithRetry(StartRun, LB_CONFIG.MAX_RETRIES)
     if not okStart then
         log("Falló StartRun", "error")
-        return
+        return false
     end
-    log("StartRun OK, runId: " .. tostring(runId))
+    log("StartRun OK | runId=" .. tostring(runId))
+    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
-    -- 4. StartMove
-    if not invokeWithRetry(StartMove, LB_CONFIG.MAX_RETRIES) then
+    -- 4. StartMove (pasar runId si el servidor lo requiere)
+    local okMove, _ = invokeWithRetry(StartMove, LB_CONFIG.MAX_RETRIES, runId)
+    if not okMove then
         log("Falló StartMove", "error")
-        return
+        return false
     end
+    log("StartMove OK")
+    task.wait(LB_CONFIG.DELAYS.BETWEEN_STEPS)
 
-    -- 5. OpenLuckyBlock (parámetro según toggle)
-    local blockType = _G.AutoZeus and "ZEUS" or "base14"
-    if not invokeWithRetry(OpenLuckyBlock, LB_CONFIG.MAX_RETRIES, blockType) then
-        log("Falló OpenLuckyBlock con tipo " .. blockType, "error")
-        return
+    -- 5. OpenLuckyBlock (bloque según toggle Zeus, pasando runId)
+    local blockType = _G.AutoZeus and "ZEUS" or (_G.CustomBlockType or "base14")
+    local okBlock, _ = invokeWithRetry(OpenLuckyBlock, LB_CONFIG.MAX_RETRIES, blockType, runId)
+    if not okBlock then
+        log("Falló OpenLuckyBlock (" .. blockType .. ")", "error")
+        return false
     end
-    log("OpenLuckyBlock OK (" .. blockType .. ")")
+    log("OpenLuckyBlock OK | tipo=" .. blockType)
+    task.wait(LB_CONFIG.DELAYS.AFTER_OPEN_BLOCK)
 
-    -- 6. UpdateCFrame
-    if not invokeWithRetry(UpdateCFrame, LB_CONFIG.MAX_RETRIES, hrp.CFrame) then
+    -- 6. UpdateCFrame (pasando runId para que el servidor valide la carrera)
+    -- Actualizar hrp por si cambió (ej. respawn)
+    hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        log("HRP perdido antes de UpdateCFrame", "error")
+        return false
+    end
+    local okCF, _ = invokeWithRetry(UpdateCFrame, LB_CONFIG.MAX_RETRIES, hrp.CFrame, runId)
+    if not okCF then
         log("Falló UpdateCFrame", "error")
-        return
+        return false
+    end
+    log("UpdateCFrame OK")
+
+    -- 7. Espera dinámica: da tiempo al servidor para terminar la carrera
+    --    En vez de esperar fijo 0.8s, esperamos hasta CYCLE_END con check activo
+    local waitStart = tick()
+    while _G.AutoLBFarm and tick() - waitStart < LB_CONFIG.DELAYS.RUN_FINISH_MAX do
+        task.wait(0.2)
     end
 
-    -- Espera extra para que la carrera termine en el servidor
-    task.wait(0.8)
-
-    -- 7. Regresar a base
+    -- 8. Regresar a base
     if not isNear(LB_CONFIG.COORDS.BASE, 5) then
         teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
     end
 
-    -- Espera final antes de repetir (evita solapamiento)
     task.wait(LB_CONFIG.DELAYS.CYCLE_END)
-    log("Ciclo completado")
+    log("Ciclo completado ✔")
+    return true
 end
 
+-- ════════════════════════════════════════════════════════════════
+-- LOOP PRINCIPAL (fix: lbRunning se resetea correctamente)
+-- ════════════════════════════════════════════════════════════════
 local lbRunning = false
+local lbCycleCount = 0
+local lbFailCount  = 0
+
 local function startLbFarmLoop()
     if lbRunning then return end
     lbRunning = true
+    lbCycleCount = 0
+    lbFailCount  = 0
+
     task.spawn(function()
         while _G.AutoLBFarm do
             local ok, err = pcall(lbFarmCycle)
-            if not ok then
-                warn("[LB Farm] Error: " .. tostring(err))
-                task.wait(2)
+            if ok then
+                lbCycleCount += 1
+                lbFailCount   = 0  -- reset de fallos consecutivos
+                log("Ciclos completados: " .. lbCycleCount)
+            else
+                lbFailCount += 1
+                warn("[LB Farm] Error en ciclo #" .. lbCycleCount .. ": " .. tostring(err))
+                -- Si falla 5 veces seguidas, pausar más tiempo
+                local pauseTime = lbFailCount >= 5 and 10 or 2
+                if lbFailCount >= 5 then
+                    warn("[LB Farm] ⚠️ 5 fallos seguidos, pausando " .. pauseTime .. "s...")
+                end
+                task.wait(pauseTime)
             end
         end
         lbRunning = false
+        log("Loop detenido")
     end)
 end
 
@@ -250,14 +338,20 @@ _G.AutoSpeed        = _G.AutoSpeed        or false
 _G.AutoPlaceBest    = _G.AutoPlaceBest    or false
 _G.AutoSkins        = _G.AutoSkins        or false
 _G.AutoLBFarm       = _G.AutoLBFarm       or false
+_G.CustomBlockType  = _G.CustomBlockType  or "base14"  -- editable desde UI
 
 task.spawn(function()
     local lastState = {}
     while true do
-        -- [Aquí van todos los condicionales de los demás loops, igual que antes]
-        -- (Se omiten por brevedad, pero deben incluirse)
-        if _G.AutoLBFarm and not lastState.AutoLBFarm then startLbFarmLoop()
-        elseif not _G.AutoLBFarm and lastState.AutoLBFarm then lbRunning = false end
+        -- [Aquí van los condicionales de los demás loops]
+
+        -- LB Farm: solo iniciar si cambió a true; resetear lbRunning si cambió a false
+        if _G.AutoLBFarm and not lastState.AutoLBFarm then
+            startLbFarmLoop()
+        elseif not _G.AutoLBFarm then
+            lbRunning = false  -- FIX: siempre resetear, no solo al cambio
+        end
+
         lastState.AutoLBFarm = _G.AutoLBFarm
         task.wait(1)
     end
@@ -268,14 +362,14 @@ function EquipSkin(skinId)
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 8. INTERFAZ CON COMPKILLER (con toggle Zeus)
+-- 8. INTERFAZ CON COMPKILLER
 -- ════════════════════════════════════════════════════════════════
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
 
 local ConfigManager = Compkiller:ConfigManager({
     Directory = "BLADEX-HUB",
-    Config    = "BLADEX-BrainrotV5",
+    Config    = "BLADEX-BrainrotV7",
 })
 
 Compkiller:Loader(Compkiller.Logo, 2.5).yield()
@@ -290,7 +384,7 @@ local Window = Compkiller.new({
 
 Notifier.new({
     Title    = "BLADEX HUB",
-    Content  = "Script cargado correctamente",
+    Content  = "Script cargado correctamente v7",
     Duration = 5,
     Icon     = Compkiller.Logo,
 })
@@ -325,6 +419,27 @@ LbSection:AddToggle({
     Flag     = "auto_skins",
     Default  = false,
     Callback = function(v) _G.AutoSkins = v end,
+})
+
+-- Dropdown para elegir tipo de bloque sin editar código
+LbSection:AddDropdown({
+    Name    = "Tipo de Bloque",
+    Flag    = "block_type",
+    Default = "base14",
+    Values  = {
+        "base14",
+        "ZEUS",
+        "base1",
+        "base2",
+        "base3",
+        "base4",
+        "base5",
+    },
+    Callback = function(v)
+        _G.CustomBlockType = v
+        -- Si Zeus está activo y se cambia manualmente, respetar el dropdown
+        _G.AutoZeus = (v == "ZEUS")
+    end,
 })
 
 -- Sección Auto Farm
@@ -404,13 +519,14 @@ RightSection:AddButton({
 
 -- Sección Recompensas Especiales
 local RewardSection = MainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = true })
+
 RewardSection:AddButton({
     Name = "Auto Reclamar Bloque Espiritual",
     Callback = function()
         if not rf.GetReward then
             Notifier.new({
                 Title    = "BLADEX HUB",
-                Content  = "Remoto GetReward no encontrado. No se puede reclamar.",
+                Content  = "Remoto GetReward no encontrado.",
                 Duration = 5,
                 Icon     = Compkiller.Logo,
             })
@@ -428,7 +544,7 @@ RewardSection:AddButton({
             warn("[BLADEX] Error al reclamar: " .. tostring(result))
             Notifier.new({
                 Title    = "BLADEX HUB",
-                Content  = "Error al reclamar: " .. tostring(result),
+                Content  = "Error: " .. tostring(result),
                 Duration = 5,
                 Icon     = Compkiller.Logo,
             })
@@ -472,4 +588,4 @@ Window:DrawConfig({
     Config = ConfigManager,
 }):Init()
 
-print("[BLADEX HUB] Script cargado correctamente. Librería Compkiller debe estar precargada en getgenv().Compkiller")
+print("[BLADEX HUB v7] Script cargado. Librería Compkiller debe estar precargada en getgenv().Compkiller")
