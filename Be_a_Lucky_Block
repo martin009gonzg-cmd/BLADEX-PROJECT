@@ -68,6 +68,7 @@ local rf = {
     Speed = findRemote("UpgradesService", "Upgrade"),
     EquipSkin = findRemote("SkinService", "EquipSkin"),
     BuySkin = findRemote("SkinService", "BuySkin"),
+    UpgradeBase = findRemote("BaseService", "UpgradeBase"),
 }
 
 local sellRF = findRemote("InventoryService", "SellBrainrot")
@@ -88,11 +89,59 @@ _G.AutoContainer = _G.AutoContainer or false
 _G.AutoLBFarm = _G.AutoLBFarm or false
 _G.AutoZeus = _G.AutoZeus or false
 _G.AutoSell = _G.AutoSell or false
+_G.AutoMejorarBase = _G.AutoMejorarBase or false
 _G.AutoRebirth = _G.AutoRebirth or false
 _G.AutoSpeed = _G.AutoSpeed or false
 _G.AutoPlaceBest = _G.AutoPlaceBest or false
 _G.SelectedBase = _G.SelectedBase or "base14"
-_G.SellBrainrot = _G.SellBrainrot or "boneca_ambalabu"
+
+-- Toggles para cada brainrot a vender
+_G.SellBonecaAmbalabu = _G.SellBonecaAmbalabu or false
+_G.SellCactoHipopotamo = _G.SellCactoHipopotamo or false
+_G.SellCocofantoElefante = _G.SellCocofantoElefante or false
+_G.SellCappuccinaBailarina = _G.SellCappuccinaBailarina or false
+_G.SellFioitteraGangster = _G.SellFioitteraGangster or false
+_G.SellUdinDinDinDun = _G.SellUdinDinDinDun or false
+_G.SellBrrBrrPatapim = _G.SellBrrBrrPatapim or false
+_G.SellAsesinoCapuchino = _G.SellAsesinoCapuchino or false
+_G.SellGorilloWatermellondrillo = _G.SellGorilloWatermellondrillo or false
+_G.SellRaccooniWatermelunni = _G.SellRaccooniWatermelunni or false
+_G.SellTaTaTaTaSahur = _G.SellTaTaTaTaSahur or false
+_G.SellGlorboFrutodrillo = _G.SellGlorboFrutodrillo or false
+_G.SellFrigoCamello = _G.SellFrigoCamello or false
+_G.SellOrangutiniAnanassini = _G.SellOrangutiniAnanassini or false
+_G.SellBailarinLololo = _G.SellBailarinLololo or false
+_G.SellSvininaBombobardino = _G.SellSvininaBombobardino or false
+_G.SellFrulliFrula = _G.SellFrulliFrula or false
+_G.SellGanganzelliTrulala = _G.SellGanganzelliTrulala or false
+_G.SellOrcalaroOrcala = _G.SellOrcalaroOrcala or false
+_G.SellYoni = _G.SellYoni or false
+_G.SellLerulerulerule = _G.SellLerulerulerule or false
+_G.SellCaballoVirtuoso = _G.SellCaballoVirtuoso or false
+_G.SellTostadorRinoceronte = _G.SellTostadorRinoceronte or false
+_G.SellTeTeTeTeSahur = _G.SellTeTeTeTeSahur or false
+_G.SellMateo = _G.SellMateo or false
+_G.SellTiTiTiSahur = _G.SellTiTiTiSahur or false
+_G.SellBurbaloniLuliloli = _G.SellBurbaloniLuliloli or false
+_G.SellTortuginni = _G.SellTortuginni or false
+_G.SellDragonfrutinni = _G.SellDragonfrutinni or false
+_G.SellTralaleritos = _G.SellTralaleritos or false
+_G.SellPuntoAccesoOlla = _G.SellPuntoAccesoOlla or false
+_G.SellCrocodillitos = _G.SellCrocodillitos or false
+_G.SellTrulimeroTrulicina = _G.SellTrulimeroTrulicina or false
+_G.SellVacaSaturno = _G.SellVacaSaturno or false
+_G.SellSaturnita = _G.SellSaturnita or false
+_G.SellVaquitasSaturnitas = _G.SellVaquitasSaturnitas or false
+_G.SellAgarriniLapalini = _G.SellAgarriniLapalini or false
+_G.SellPatataPipi = _G.SellPatataPipi or false
+_G.SellEspaguetisTualetti = _G.SellEspaguetisTualetti or false
+_G.SellCathinniSushinni = _G.SellCathinniSushinni or false
+_G.SellGraipusMedus = _G.SellGraipusMedus or false
+_G.SellTigrrulliniWatermellini = _G.SellTigrrulliniWatermellini or false
+_G.SellAngelaLarila = _G.SellAngelaLarila or false
+_G.SellCanneloniDragon = _G.SellCanneloniDragon or false
+_G.SellAngelDisonteGiuppitere = _G.SellAngelDisonteGiuppitere or false
+_G.SellASahur = _G.SellASahur or false
 
 local BASE_COORDS = {
     base14 = {
@@ -315,6 +364,13 @@ local function loopAutoContainer()
     end
 end
 
+local function loopAutoMejorarBase()
+    while _G.AutoMejorarBase do
+        if rf.UpgradeBase then safeInvoke(rf.UpgradeBase) end
+        task.wait(4)
+    end
+end
+
 local function loopAutoRebirth()
     while _G.AutoRebirth do
         if rf.Rebirth then safeInvoke(rf.Rebirth) end
@@ -345,7 +401,57 @@ local function executeAutoSell()
         if not _G.AutoSell then break end
         local entityId = item:GetAttribute("EntityId")
         local brainrotType = item:GetAttribute("BrainrotType")
-        if brainrotType == _G.SellBrainrot and entityId then
+        
+        local shouldSell = false
+        if brainrotType == "boneca_ambalabu" and _G.SellBonecaAmbalabu then shouldSell = true
+        elseif brainrotType == "cacto_hipopotamo" and _G.SellCactoHipopotamo then shouldSell = true
+        elseif brainrotType == "cocofanto_elefante" and _G.SellCocofantoElefante then shouldSell = true
+        elseif brainrotType == "cappuccina_bailarina" and _G.SellCappuccinaBailarina then shouldSell = true
+        elseif brainrotType == "fioittera_gangster" and _G.SellFioitteraGangster then shouldSell = true
+        elseif brainrotType == "udin_din_din_dun" and _G.SellUdinDinDinDun then shouldSell = true
+        elseif brainrotType == "brr_brr_patapim" and _G.SellBrrBrrPatapim then shouldSell = true
+        elseif brainrotType == "asesino_capuchino" and _G.SellAsesinoCapuchino then shouldSell = true
+        elseif brainrotType == "gorillo_watermellondrillo" and _G.SellGorilloWatermellondrillo then shouldSell = true
+        elseif brainrotType == "raccooni_watermelunni" and _G.SellRaccooniWatermelunni then shouldSell = true
+        elseif brainrotType == "ta_ta_ta_ta_sahur" and _G.SellTaTaTaTaSahur then shouldSell = true
+        elseif brainrotType == "glorbo_frutodrillo" and _G.SellGlorboFrutodrillo then shouldSell = true
+        elseif brainrotType == "frigo_camello" and _G.SellFrigoCamello then shouldSell = true
+        elseif brainrotType == "orangutini_ananassini" and _G.SellOrangutiniAnanassini then shouldSell = true
+        elseif brainrotType == "bailarin_lololo" and _G.SellBailarinLololo then shouldSell = true
+        elseif brainrotType == "svinina_bombobardino" and _G.SellSvininaBombobardino then shouldSell = true
+        elseif brainrotType == "frulli_frula" and _G.SellFrulliFrula then shouldSell = true
+        elseif brainrotType == "ganganzelli_trulala" and _G.SellGanganzelliTrulala then shouldSell = true
+        elseif brainrotType == "orcalaro_orcala" and _G.SellOrcalaroOrcala then shouldSell = true
+        elseif brainrotType == "yoni" and _G.SellYoni then shouldSell = true
+        elseif brainrotType == "lerulerulerule" and _G.SellLerulerulerule then shouldSell = true
+        elseif brainrotType == "caballo_virtuoso" and _G.SellCaballoVirtuoso then shouldSell = true
+        elseif brainrotType == "tostador_rinoceronte" and _G.SellTostadorRinoceronte then shouldSell = true
+        elseif brainrotType == "te_te_te_te_sahur" and _G.SellTeTeTeTeSahur then shouldSell = true
+        elseif brainrotType == "mateo" and _G.SellMateo then shouldSell = true
+        elseif brainrotType == "ti_ti_ti_sahur" and _G.SellTiTiTiSahur then shouldSell = true
+        elseif brainrotType == "burbaloni_luliloli" and _G.SellBurbaloniLuliloli then shouldSell = true
+        elseif brainrotType == "tortuginni" and _G.SellTortuginni then shouldSell = true
+        elseif brainrotType == "dragonfrutinni" and _G.SellDragonfrutinni then shouldSell = true
+        elseif brainrotType == "tralaleritos" and _G.SellTralaleritos then shouldSell = true
+        elseif brainrotType == "punto_acceso_olla" and _G.SellPuntoAccesoOlla then shouldSell = true
+        elseif brainrotType == "crocodillitos" and _G.SellCrocodillitos then shouldSell = true
+        elseif brainrotType == "trulimero_trulicina" and _G.SellTrulimeroTrulicina then shouldSell = true
+        elseif brainrotType == "vaca_saturno" and _G.SellVacaSaturno then shouldSell = true
+        elseif brainrotType == "saturnita" and _G.SellSaturnita then shouldSell = true
+        elseif brainrotType == "vaquitas_saturnitas" and _G.SellVaquitasSaturnitas then shouldSell = true
+        elseif brainrotType == "agarrini_lapalini" and _G.SellAgarriniLapalini then shouldSell = true
+        elseif brainrotType == "patata_pipi" and _G.SellPatataPipi then shouldSell = true
+        elseif brainrotType == "espaguetis_tualetti" and _G.SellEspaguetisTualetti then shouldSell = true
+        elseif brainrotType == "cathinni_sushinni" and _G.SellCathinniSushinni then shouldSell = true
+        elseif brainrotType == "graipus_medus" and _G.SellGraipusMedus then shouldSell = true
+        elseif brainrotType == "tigrrullini_watermellini" and _G.SellTigrrulliniWatermellini then shouldSell = true
+        elseif brainrotType == "angela_larila" and _G.SellAngelaLarila then shouldSell = true
+        elseif brainrotType == "canneloni_dragon" and _G.SellCanneloniDragon then shouldSell = true
+        elseif brainrotType == "angel_disonte_giuppitere" and _G.SellAngelDisonteGiuppitere then shouldSell = true
+        elseif brainrotType == "a_sahur" and _G.SellASahur then shouldSell = true
+        end
+        
+        if shouldSell and entityId then
             pcall(function() sellRF:InvokeServer(entityId) end)
             task.wait(0.3)
         end
@@ -365,6 +471,7 @@ local LOOP_MAP = {
     AutoContainer = loopAutoContainer,
     AutoLBFarm = loopAutoLBFarm,
     AutoSell = loopAutoSell,
+    AutoMejorarBase = loopAutoMejorarBase,
     AutoRebirth = loopAutoRebirth,
     AutoSpeed = loopAutoSpeed,
     AutoPlaceBest = loopAutoPlaceBest,
@@ -486,6 +593,13 @@ FarmSection:AddToggle({
 })
 
 FarmSection:AddToggle({
+    Name = "Auto Rebirth",
+    Flag = "auto_rebirth",
+    Default = false,
+    Callback = function(v) toggle("AutoRebirth", v) end,
+})
+
+FarmSection:AddToggle({
     Name = "Upgrade Brainrots (Auto)",
     Flag = "auto_upgrades",
     Default = false,
@@ -493,10 +607,10 @@ FarmSection:AddToggle({
 })
 
 FarmSection:AddToggle({
-    Name = "Auto Container",
-    Flag = "auto_container",
+    Name = "Auto Mejorar Base",
+    Flag = "auto_mejorar_base",
     Default = false,
-    Callback = function(v) toggle("AutoContainer", v) end,
+    Callback = function(v) toggle("AutoMejorarBase", v) end,
 })
 
 FarmSection:AddToggle({
@@ -507,49 +621,16 @@ FarmSection:AddToggle({
 })
 
 FarmSection:AddToggle({
-    Name = "Auto Rebirth",
-    Flag = "auto_rebirth",
+    Name = "Auto Container",
+    Flag = "auto_container",
     Default = false,
-    Callback = function(v) toggle("AutoRebirth", v) end,
+    Callback = function(v) toggle("AutoContainer", v) end,
 })
 
 local SellSection = MainTab:DrawSection({
     Name = "Auto Sell (Brainrot)",
     Position = "right",
     Minimized = false,
-})
-
-SellSection:AddDropdown({
-    Name = "Brainrot a Vender",
-    Flag = "sell_brainrot",
-    Default = "boneca_ambalabu",
-    Values = {
-        "boneca_ambalabu",
-        "tralalero_tralala",
-        "bombardiro_crocodilo",
-        "brr_brr_patapim",
-        "tung_tung_tung_sahur",
-        "cappuccino_assassino",
-        "cacto_hipopotamo",
-        "cocofanto_elefante",
-        "cappuccina_bailarina",
-        "fioittera_gangster",
-        "udin_din_din_dun",
-        "brr_brr_patapim",
-        "gorillo_watermellondrillo",
-        "frulli_frula",
-        "ganganzelli_trulala",
-        "orcalaro_orcala",
-        "tortugini",
-        "tralaleritos",
-        "crocodillitos",
-        "trulimero_trulicina",
-        "vaca_saturna",
-    },
-    Callback = function(v)
-        _G.SellBrainrot = v
-        notify("Brainrot a vender: " .. v, 3)
-    end,
 })
 
 SellSection:AddToggle({
@@ -563,6 +644,328 @@ SellSection:AddToggle({
         end
         toggle("AutoSell", v)
     end,
+})
+
+SellSection:AddToggle({
+    Name = "boneca_ambalabu",
+    Flag = "sell_boneca",
+    Default = false,
+    Callback = function(v) _G.SellBonecaAmbalabu = v end,
+})
+
+SellSection:AddToggle({
+    Name = "cacto_hipopotamo",
+    Flag = "sell_cacto",
+    Default = false,
+    Callback = function(v) _G.SellCactoHipopotamo = v end,
+})
+
+SellSection:AddToggle({
+    Name = "cocofanto_elefante",
+    Flag = "sell_cocofanto",
+    Default = false,
+    Callback = function(v) _G.SellCocofantoElefante = v end,
+})
+
+SellSection:AddToggle({
+    Name = "cappuccina_bailarina",
+    Flag = "sell_cappuccina",
+    Default = false,
+    Callback = function(v) _G.SellCappuccinaBailarina = v end,
+})
+
+SellSection:AddToggle({
+    Name = "fioittera_gangster",
+    Flag = "sell_fioittera",
+    Default = false,
+    Callback = function(v) _G.SellFioitteraGangster = v end,
+})
+
+SellSection:AddToggle({
+    Name = "udin_din_din_dun",
+    Flag = "sell_udin",
+    Default = false,
+    Callback = function(v) _G.SellUdinDinDinDun = v end,
+})
+
+SellSection:AddToggle({
+    Name = "brr_brr_patapim",
+    Flag = "sell_brr",
+    Default = false,
+    Callback = function(v) _G.SellBrrBrrPatapim = v end,
+})
+
+SellSection:AddToggle({
+    Name = "asesino_capuchino",
+    Flag = "sell_asesino",
+    Default = false,
+    Callback = function(v) _G.SellAsesinoCapuchino = v end,
+})
+
+SellSection:AddToggle({
+    Name = "gorillo_watermellondrillo",
+    Flag = "sell_gorillo",
+    Default = false,
+    Callback = function(v) _G.SellGorilloWatermellondrillo = v end,
+})
+
+SellSection:AddToggle({
+    Name = "raccooni_watermelunni",
+    Flag = "sell_raccooni",
+    Default = false,
+    Callback = function(v) _G.SellRaccooniWatermelunni = v end,
+})
+
+SellSection:AddToggle({
+    Name = "ta_ta_ta_ta_sahur",
+    Flag = "sell_ta_ta",
+    Default = false,
+    Callback = function(v) _G.SellTaTaTaTaSahur = v end,
+})
+
+SellSection:AddToggle({
+    Name = "glorbo_frutodrillo",
+    Flag = "sell_glorbo",
+    Default = false,
+    Callback = function(v) _G.SellGlorboFrutodrillo = v end,
+})
+
+SellSection:AddToggle({
+    Name = "frigo_camello",
+    Flag = "sell_frigo",
+    Default = false,
+    Callback = function(v) _G.SellFrigoCamello = v end,
+})
+
+SellSection:AddToggle({
+    Name = "orangutini_ananassini",
+    Flag = "sell_orangutini",
+    Default = false,
+    Callback = function(v) _G.SellOrangutiniAnanassini = v end,
+})
+
+SellSection:AddToggle({
+    Name = "bailarin_lololo",
+    Flag = "sell_bailarin",
+    Default = false,
+    Callback = function(v) _G.SellBailarinLololo = v end,
+})
+
+SellSection:AddToggle({
+    Name = "svinina_bombobardino",
+    Flag = "sell_svinina",
+    Default = false,
+    Callback = function(v) _G.SellSvininaBombobardino = v end,
+})
+
+SellSection:AddToggle({
+    Name = "frulli_frula",
+    Flag = "sell_frulli",
+    Default = false,
+    Callback = function(v) _G.SellFrulliFrula = v end,
+})
+
+SellSection:AddToggle({
+    Name = "ganganzelli_trulala",
+    Flag = "sell_ganganzelli",
+    Default = false,
+    Callback = function(v) _G.SellGanganzelliTrulala = v end,
+})
+
+SellSection:AddToggle({
+    Name = "orcalaro_orcala",
+    Flag = "sell_orcalaro",
+    Default = false,
+    Callback = function(v) _G.SellOrcalaroOrcala = v end,
+})
+
+SellSection:AddToggle({
+    Name = "yoni",
+    Flag = "sell_yoni",
+    Default = false,
+    Callback = function(v) _G.SellYoni = v end,
+})
+
+SellSection:AddToggle({
+    Name = "lerulerulerule",
+    Flag = "sell_lerulerulerule",
+    Default = false,
+    Callback = function(v) _G.SellLerulerulerule = v end,
+})
+
+SellSection:AddToggle({
+    Name = "caballo_virtuoso",
+    Flag = "sell_caballo",
+    Default = false,
+    Callback = function(v) _G.SellCaballoVirtuoso = v end,
+})
+
+SellSection:AddToggle({
+    Name = "tostador_rinoceronte",
+    Flag = "sell_tostador",
+    Default = false,
+    Callback = function(v) _G.SellTostadorRinoceronte = v end,
+})
+
+SellSection:AddToggle({
+    Name = "te_te_te_te_sahur",
+    Flag = "sell_te_te",
+    Default = false,
+    Callback = function(v) _G.SellTeTeTeTeSahur = v end,
+})
+
+SellSection:AddToggle({
+    Name = "mateo",
+    Flag = "sell_mateo",
+    Default = false,
+    Callback = function(v) _G.SellMateo = v end,
+})
+
+SellSection:AddToggle({
+    Name = "ti_ti_ti_sahur",
+    Flag = "sell_ti_ti",
+    Default = false,
+    Callback = function(v) _G.SellTiTiTiSahur = v end,
+})
+
+SellSection:AddToggle({
+    Name = "burbaloni_luliloli",
+    Flag = "sell_burbaloni",
+    Default = false,
+    Callback = function(v) _G.SellBurbaloniLuliloli = v end,
+})
+
+SellSection:AddToggle({
+    Name = "tortuginni",
+    Flag = "sell_tortuginni",
+    Default = false,
+    Callback = function(v) _G.SellTortuginni = v end,
+})
+
+SellSection:AddToggle({
+    Name = "dragonfrutinni",
+    Flag = "sell_dragonfrutinni",
+    Default = false,
+    Callback = function(v) _G.SellDragonfrutinni = v end,
+})
+
+SellSection:AddToggle({
+    Name = "tralaleritos",
+    Flag = "sell_tralaleritos",
+    Default = false,
+    Callback = function(v) _G.SellTralaleritos = v end,
+})
+
+SellSection:AddToggle({
+    Name = "punto_acceso_olla",
+    Flag = "sell_punto",
+    Default = false,
+    Callback = function(v) _G.SellPuntoAccesoOlla = v end,
+})
+
+SellSection:AddToggle({
+    Name = "crocodillitos",
+    Flag = "sell_crocodillitos",
+    Default = false,
+    Callback = function(v) _G.SellCrocodillitos = v end,
+})
+
+SellSection:AddToggle({
+    Name = "trulimero_trulicina",
+    Flag = "sell_trulimero",
+    Default = false,
+    Callback = function(v) _G.SellTrulimeroTrulicina = v end,
+})
+
+SellSection:AddToggle({
+    Name = "vaca_saturno",
+    Flag = "sell_vaca",
+    Default = false,
+    Callback = function(v) _G.SellVacaSaturno = v end,
+})
+
+SellSection:AddToggle({
+    Name = "saturnita",
+    Flag = "sell_saturnita",
+    Default = false,
+    Callback = function(v) _G.SellSaturnita = v end,
+})
+
+SellSection:AddToggle({
+    Name = "vaquitas_saturnitas",
+    Flag = "sell_vaquitas",
+    Default = false,
+    Callback = function(v) _G.SellVaquitasSaturnitas = v end,
+})
+
+SellSection:AddToggle({
+    Name = "agarrini_lapalini",
+    Flag = "sell_agarrini",
+    Default = false,
+    Callback = function(v) _G.SellAgarriniLapalini = v end,
+})
+
+SellSection:AddToggle({
+    Name = "patata_pipi",
+    Flag = "sell_patata",
+    Default = false,
+    Callback = function(v) _G.SellPatataPipi = v end,
+})
+
+SellSection:AddToggle({
+    Name = "espaguetis_tualetti",
+    Flag = "sell_espaguetis",
+    Default = false,
+    Callback = function(v) _G.SellEspaguetisTualetti = v end,
+})
+
+SellSection:AddToggle({
+    Name = "cathinni_sushinni",
+    Flag = "sell_cathinni",
+    Default = false,
+    Callback = function(v) _G.SellCathinniSushinni = v end,
+})
+
+SellSection:AddToggle({
+    Name = "graipus_medus",
+    Flag = "sell_graipus",
+    Default = false,
+    Callback = function(v) _G.SellGraipusMedus = v end,
+})
+
+SellSection:AddToggle({
+    Name = "tigrrullini_watermellini",
+    Flag = "sell_tigrrullini",
+    Default = false,
+    Callback = function(v) _G.SellTigrrulliniWatermellini = v end,
+})
+
+SellSection:AddToggle({
+    Name = "angela_larila",
+    Flag = "sell_angela",
+    Default = false,
+    Callback = function(v) _G.SellAngelaLarila = v end,
+})
+
+SellSection:AddToggle({
+    Name = "canneloni_dragon",
+    Flag = "sell_canneloni",
+    Default = false,
+    Callback = function(v) _G.SellCanneloniDragon = v end,
+})
+
+SellSection:AddToggle({
+    Name = "angel_disonte_giuppitere",
+    Flag = "sell_angel",
+    Default = false,
+    Callback = function(v) _G.SellAngelDisonteGiuppitere = v end,
+})
+
+SellSection:AddToggle({
+    Name = "a_sahur",
+    Flag = "sell_a_sahur",
+    Default = false,
+    Callback = function(v) _G.SellASahur = v end,
 })
 
 local RewardSection = MainTab:DrawSection({
