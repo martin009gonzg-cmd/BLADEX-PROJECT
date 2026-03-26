@@ -47,11 +47,9 @@ local lbRF = ReplicatedStorage.Packages._Index
     .knit.Services.RunningService.RF
 
 local StartRun       = lbRF:WaitForChild("StartRun",       10)
-local StartMove      = lbRF:WaitForChild("StartMove",      10)  -- nuevo
+local StartMove      = lbRF:WaitForChild("StartMove",      10)
 local OpenLuckyBlock = lbRF:WaitForChild("OpenLuckyBlock", 10)
 local UpdateCFrame   = lbRF:WaitForChild("UpdateCFrame",   10)
-
--- NOTA: Ya no se usan EndMove ni Collected
 
 -- ════════════════════════════════════════════════════════════════
 -- 3. CONFIGURACIÓN LUCKY BLOCK (COORDENADAS Y DELAYS OPTIMIZADOS)
@@ -62,18 +60,18 @@ local LB_CONFIG = {
         AFTER_ACTION     = 0.2,
         AFTER_OPEN_BLOCK = 0.2,
         BETWEEN_STEPS    = 0.1,
-        CYCLE_END        = 0.2,
+        CYCLE_END        = 0.5,
         RESPAWN_WAIT     = 3.0,
     },
     COORDS = {
-        CAMINADORA = CFrame.new(-507.90, 38.45, -2125.72),
-        BASE       = CFrame.new(734.56,  38.81,  -2152.04),
+        CAMINADORA = CFrame.new(588.96, 38.18, -2127.26),
+        BASE       = CFrame.new(733.21, 37.51, -2153.56),
     },
     MAX_RETRIES = 3,
 }
 
 -- ════════════════════════════════════════════════════════════════
--- 4. FUNCIONES AUXILIARES (se mantienen todas)
+-- 4. FUNCIONES AUXILIARES
 -- ════════════════════════════════════════════════════════════════
 local function safeInvoke(remote, ...)
     if not remote then return false, "Remoto no disponible" end
@@ -336,8 +334,10 @@ local function startSkinLoop()
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 6. NUEVO CICLO DE FARM LUCKY BLOCK (con el orden solicitado)
+-- 6. NUEVO CICLO DE FARM LUCKY BLOCK (OPTIMIZADO)
 -- ════════════════════════════════════════════════════════════════
+_G.AutoZeus = _G.AutoZeus or false
+
 local function log(msg, level)
     level = level or "info"
     if level == "error" then
@@ -352,17 +352,17 @@ local function lbFarmCycle()
     local _, hrp = waitForCharacter()
     if not hrp then return end
 
-    -- 1. Teletransportar a base si no está cerca
+    -- 1. Base
     if not isNear(LB_CONFIG.COORDS.BASE, 5) then
         teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
     end
 
-    -- 2. Teletransportar a caminadora si no está cerca
+    -- 2. Caminadora
     if not isNear(LB_CONFIG.COORDS.CAMINADORA, 5) then
         teleportToWithConfirm(LB_CONFIG.COORDS.CAMINADORA, 3)
     end
 
-    -- 3. StartRun → obtener runId
+    -- 3. StartRun → runId
     local okStart, runId = invokeWithRetry(StartRun, LB_CONFIG.MAX_RETRIES)
     if not okStart then
         log("Falló StartRun", "error")
@@ -376,16 +376,23 @@ local function lbFarmCycle()
         return
     end
 
-    -- 5. OpenLuckyBlock (con parámetro "base14")
-    if not invokeWithRetry(OpenLuckyBlock, LB_CONFIG.MAX_RETRIES, "base14") then
-        log("Falló OpenLuckyBlock", "error")
+    -- 5. OpenLuckyBlock (parámetro según toggle)
+    local blockType = _G.AutoZeus and "ZEUS" or "base14"
+    if not invokeWithRetry(OpenLuckyBlock, LB_CONFIG.MAX_RETRIES, blockType) then
+        log("Falló OpenLuckyBlock con tipo " .. blockType, "error")
         return
     end
+    log("OpenLuckyBlock OK (" .. blockType .. ")")
 
     -- 6. UpdateCFrame
     if not invokeWithRetry(UpdateCFrame, LB_CONFIG.MAX_RETRIES, hrp.CFrame) then
         log("Falló UpdateCFrame", "error")
         return
+    end
+
+    -- 7. Regresar a base para repetir ciclo
+    if not isNear(LB_CONFIG.COORDS.BASE, 5) then
+        teleportToWithConfirm(LB_CONFIG.COORDS.BASE, 3)
     end
 
     log("Ciclo completado")
@@ -472,7 +479,7 @@ function EquipSkin(skinId)
 end
 
 -- ════════════════════════════════════════════════════════════════
--- 8. INTERFAZ CON COMPKILLER (sin cambios)
+-- 8. INTERFAZ CON COMPKILLER (con toggle Zeus)
 -- ════════════════════════════════════════════════════════════════
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
@@ -515,6 +522,13 @@ LbSection:AddToggle({
     Flag     = "lb_farm",
     Default  = false,
     Callback = function(v) _G.AutoLBFarm = v end,
+})
+
+LbSection:AddToggle({
+    Name     = "auto Zeus",
+    Flag     = "auto_zeus",
+    Default  = false,
+    Callback = function(v) _G.AutoZeus = v end,
 })
 
 LbSection:AddToggle({
