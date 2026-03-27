@@ -785,11 +785,12 @@ end)
 
 Compkiller:Loader(Compkiller.Logo, 2.5).yield()
 
+-- Ventana MÁS GRANDE para que quepan todas las secciones
 local Window = Compkiller.new({
     Name = "BLADEX HUB v4.0",
     Keybind = "LeftAlt",
     Logo = Compkiller.Logo,
-    Scale = UDim2.new(0, 520, 0, 480),
+    Scale = UDim2.new(0, 750, 0, 650),  -- Tamaño aumentado: 750x650
     TextSize = 15,
 })
 
@@ -812,11 +813,11 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
--- Seccion Lucky Block (MINIMIZADA por defecto)
+-- Seccion Lucky Block (EXPANDIDA)
 local LbSection = MainTab:DrawSection({
     Name = "Lucky Block Farm (Optimizado)",
     Position = "left",
-    Minimized = true,
+    Minimized = false,
 })
 
 LbSection:AddToggle({
@@ -852,11 +853,11 @@ LbSection:AddDropdown({
 
 LbSection:AddLabel("Delays: 1.8s cooldown | Ciclos 3-4 segundos")
 
--- Seccion Mega Upgrades (MINIMIZADA)
+-- Seccion Mega Upgrades (EXPANDIDA)
 local MegaSection = MainTab:DrawSection({
     Name = "MEGA UPGRADES (Delay 0.1s)",
     Position = "left",
-    Minimized = true,
+    Minimized = false,
 })
 
 MegaSection:AddToggle({
@@ -878,64 +879,11 @@ MegaSection:AddToggle({
 
 MegaSection:AddLabel("30 slots en paralelo cada 0.1s")
 
--- Seccion Auto Cash Fisico (MINIMIZADA)
-local CashPhysicalSection = MainTab:DrawSection({
-    Name = "Auto Cash Fisico",
-    Position = "left",
-    Minimized = true,
-})
-
-CashPhysicalSection:AddToggle({
-    Name = "Auto Cash Fisico",
-    Flag = "auto_cash_physical",
-    Default = false,
-    Callback = function(v) 
-        toggle("AutoCashPhysical", v)
-        notify(v and "Auto Cash Fisico ACTIVADO" or "Auto Cash Fisico DESACTIVADO", 3)
-    end,
-})
-
-CashPhysicalSection:AddSlider({
-    Name = "Delay entre ciclos (segundos)",
-    Flag = "cash_physical_delay",
-    Default = 0.15,
-    Min = 0.05,
-    Max = 0.5,
-    Decimals = 2,
-    Callback = function(v) _G.CashPhysicalDelay = v end,
-})
-
-CashPhysicalSection:AddSlider({
-    Name = "Rango de busqueda",
-    Flag = "cash_physical_range",
-    Default = 50,
-    Min = 20,
-    Max = 150,
-    Callback = function(v) _G.CashPhysicalRange = v end,
-})
-
--- Seccion Auto Hide UI (MINIMIZADA)
-local UIHiderSection = MainTab:DrawSection({
-    Name = "Auto Hide UI",
-    Position = "left",
-    Minimized = true,
-})
-
-UIHiderSection:AddToggle({
-    Name = "Ocultar textos no deseados",
-    Flag = "hide_ui",
-    Default = false,
-    Callback = function(v) 
-        toggle("HideUI", v)
-        if v then notify("UI Hider ACTIVADO", 3) end
-    end,
-})
-
--- Seccion Auto Farm (MINIMIZADA)
+-- Seccion Auto Farm (EXPANDIDA)
 local FarmSection = MainTab:DrawSection({
     Name = "Auto Farm",
     Position = "left",
-    Minimized = true,
+    Minimized = false,
 })
 
 FarmSection:AddToggle({
@@ -973,11 +921,66 @@ FarmSection:AddToggle({
     Callback = function(v) toggle("AutoContainer", v) end,
 })
 
--- Seccion Auto Sell (MINIMIZADA)
+-- Seccion Auto Cash Fisico (EXPANDIDA)
+local CashPhysicalSection = MainTab:DrawSection({
+    Name = "Auto Cash Fisico",
+    Position = "left",
+    Minimized = false,
+})
+
+CashPhysicalSection:AddToggle({
+    Name = "Auto Cash Fisico",
+    Flag = "auto_cash_physical",
+    Default = false,
+    Callback = function(v) 
+        toggle("AutoCashPhysical", v)
+        notify(v and "Auto Cash Fisico ACTIVADO" or "Auto Cash Fisico DESACTIVADO", 3)
+    end,
+})
+
+CashPhysicalSection:AddSlider({
+    Name = "Delay entre ciclos (segundos)",
+    Flag = "cash_physical_delay",
+    Default = 0.15,
+    Min = 0.05,
+    Max = 0.5,
+    Decimals = 2,
+    Callback = function(v) _G.CashPhysicalDelay = v end,
+})
+
+CashPhysicalSection:AddSlider({
+    Name = "Rango de busqueda",
+    Flag = "cash_physical_range",
+    Default = 50,
+    Min = 20,
+    Max = 150,
+    Callback = function(v) _G.CashPhysicalRange = v end,
+})
+
+-- Seccion Auto Hide UI (EXPANDIDA)
+local UIHiderSection = MainTab:DrawSection({
+    Name = "Auto Hide UI",
+    Position = "left",
+    Minimized = false,
+})
+
+UIHiderSection:AddToggle({
+    Name = "Ocultar textos no deseados",
+    Flag = "hide_ui",
+    Default = false,
+    Callback = function(v) 
+        toggle("HideUI", v)
+        if v then notify("UI Hider ACTIVADO", 3) end
+    end,
+})
+
+UIHiderSection:AddLabel("Elimina textos con: brainrot, dinero, maximo, cash, upgrade, $")
+
+-- Seccion Auto Sell (EXPANDIDA)
 local SellSection = MainTab:DrawSection({
     Name = "Auto Sell (Brainrot)",
     Position = "right",
-    Minimized = true,
+    Minimized = false,
 })
 
 SellSection:AddToggle({
@@ -1041,11 +1044,11 @@ SellSection:AddToggle({ Name = "canneloni_dragon", Flag = "sell_canneloni", Defa
 SellSection:AddToggle({ Name = "angel_disonte_giuppitere", Flag = "sell_angel", Default = false, Callback = function(v) _G.SellAngelDisonteGiuppitere = v end })
 SellSection:AddToggle({ Name = "a_sahur", Flag = "sell_a_sahur", Default = false, Callback = function(v) _G.SellASahur = v end })
 
--- Seccion Recompensas (MINIMIZADA)
+-- Seccion Recompensas (EXPANDIDA)
 local RewardSection = MainTab:DrawSection({
     Name = "Recompensas Especiales",
     Position = "full",
-    Minimized = true,
+    Minimized = false,
 })
 
 RewardSection:AddButton({
