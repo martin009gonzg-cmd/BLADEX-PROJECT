@@ -703,7 +703,7 @@ local FarmSection = MainTab:DrawSection({
 FarmSection:AddToggle({
     Name = "Auto Collect Cash",
     Flag = "auto_collect",
-    Default = true,
+    Default = false,
     Callback = function(v) toggle("AutoCollect", v) end,
 })
 
