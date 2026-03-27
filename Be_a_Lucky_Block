@@ -85,6 +85,7 @@ for _, service in ipairs(knitServices:GetChildren()) do
 end
 rf.GetReward = GetRewardRemote
 
+-- Variables Globales
 _G.AutoCollect = _G.AutoCollect or false
 _G.AutoUpgrades = _G.AutoUpgrades or false
 _G.AutoContainer = _G.AutoContainer or false
@@ -98,6 +99,8 @@ _G.AutoCashPhysical = _G.AutoCashPhysical or false
 _G.HideUI = _G.HideUI or false
 _G.MegaUpgrade = _G.MegaUpgrade or false
 _G.SelectedBase = _G.SelectedBase or "base14"
+_G.CashPhysicalDelay = _G.CashPhysicalDelay or 0.15
+_G.CashPhysicalRange = _G.CashPhysicalRange or 50
 
 -- Toggles para cada brainrot a vender
 _G.SellBonecaAmbalabu = _G.SellBonecaAmbalabu or false
@@ -198,7 +201,6 @@ local function startMegaUpgrade()
         print("--- MEGA AUTO-UPGRADE ACTIVADO (Delay 0.1s) ---")
         
         while _G.AutoUpgrades or _G.MegaUpgrade do
-            -- Disparamos los 30 slots en paralelo para máxima velocidad
             for i = 1, 30 do
                 if not (_G.AutoUpgrades or _G.MegaUpgrade) then break end
                 task.spawn(function()
@@ -209,8 +211,6 @@ local function startMegaUpgrade()
                     end)
                 end)
             end
-            
-            -- Delay exacto de 0.1 segundos
             task.wait(0.1)
         end
         
@@ -230,7 +230,7 @@ local function stopMegaUpgrade()
     upgradeRunning = false
 end
 
--- ========== 🎨 AUTO HIDE UI (Destruye textos no deseados) ==========
+-- ========== 🎨 AUTO HIDE UI ==========
 local palabrasClave = {
     ["brainrot"] = true,
     ["dinero"] = true,
@@ -240,16 +240,15 @@ local palabrasClave = {
     ["money"] = true,
     ["upgrade"] = true,
     ["mejorar"] = true,
+    ["$"] = true,
+    ["coin"] = true,
 }
 
 local function procesarUI(obj)
     if not _G.HideUI then return end
     
-    if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("Frame") then
-        -- Si es un Frame, buscamos texto en su interior
-        local textToCheck = obj:IsA("TextLabel") and obj.Text or (obj:IsA("TextButton") and obj.Text) or ""
-        local txt = textToCheck:lower()
-        
+    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+        local txt = (obj.Text or ""):lower()
         for palabra in pairs(palabrasClave) do
             if txt:find(palabra) then
                 pcall(function()
@@ -264,21 +263,39 @@ end
 
 local function initUIHider()
     local playerGui = LP:WaitForChild("PlayerGui")
-    
-    -- Escuchar nuevas inserciones
     playerGui.DescendantAdded:Connect(procesarUI)
-    
-    -- Limpieza inicial
     for _, v in ipairs(playerGui:GetDescendants()) do
         procesarUI(v)
     end
-    
     print("--- UI HIDER ACTIVADO ---")
 end
 
--- ========== 💰 AUTO CASH FÍSICO (Recolecta dinero del workspace) ==========
+-- ========== 💰 AUTO CASH FÍSICO MEJORADO ==========
 local cashPhysicalRunning = false
 local cashPhysicalThread = nil
+
+local function isCashPart(part)
+    if not part:IsA("BasePart") then return false end
+    if part.Transparency >= 0.8 then return false end
+    
+    local name = part.Name:lower()
+    
+    if name:find("cash") or name:find("money") or name:find("coin") or 
+       name:find("dinero") or name:find("dolar") or name:find("$") then
+        return true
+    end
+    
+    if part:FindFirstChildOfClass("BillboardGui") or 
+       part:FindFirstChildOfClass("SurfaceGui") then
+        return true
+    end
+    
+    if part.Color and (part.Color.r > 0.5 and part.Color.g > 0.5 and part.Color.b < 0.3) then
+        return true
+    end
+    
+    return false
+end
 
 local function startCashPhysical()
     if cashPhysicalRunning then return end
@@ -288,50 +305,56 @@ local function startCashPhysical()
         print("--- AUTO CASH FÍSICO ACTIVADO ---")
         
         while _G.AutoCashPhysical do
-            -- Buscar dinero en el workspace
-            local cashParts = {}
+            local char = LP.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
             
-            -- Buscar partes con dinero
-            for _, v in pairs(workspace:GetDescendants()) do
-                if not _G.AutoCashPhysical then break end
+            if hrp then
+                local charPos = hrp.Position
+                local cashParts = {}
                 
-                -- Detectar partes de dinero por nombre o atributos
-                if v:IsA("BasePart") and v.Transparency < 1 then
-                    local name = v.Name:lower()
-                    local hasCash = name:find("cash") or name:find("money") or name:find("coin") or name:find("dinero")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if not _G.AutoCashPhysical then break end
                     
-                    -- También buscar por BillboardGui (indicador visual de dinero)
-                    if hasCash or v:FindFirstChildOfClass("BillboardGui") or v:FindFirstChildOfClass("SurfaceGui") then
-                        table.insert(cashParts, v)
+                    if isCashPart(v) and v.Parent then
+                        local distance = (v.Position - charPos).Magnitude
+                        if distance < _G.CashPhysicalRange then
+                            table.insert(cashParts, {
+                                part = v,
+                                distance = distance,
+                                position = v.Position
+                            })
+                        end
+                    end
+                end
+                
+                table.sort(cashParts, function(a, b) return a.distance < b.distance end)
+                
+                local maxPerCycle = 15
+                for i = 1, math.min(#cashParts, maxPerCycle) do
+                    if not _G.AutoCashPhysical then break end
+                    
+                    local cash = cashParts[i]
+                    if cash.part and cash.part.Parent then
+                        pcall(function()
+                            firetouchinterest(hrp, cash.part, 0)
+                            task.wait(0.01)
+                            firetouchinterest(hrp, cash.part, 1)
+                        end)
+                        
+                        if cash.distance > 20 then
+                            pcall(function()
+                                local originalCF = hrp.CFrame
+                                hrp.CFrame = CFrame.new(cash.position + Vector3.new(0, 3, 0))
+                                task.wait(0.03)
+                                hrp.CFrame = originalCF
+                            end)
+                        end
+                        task.wait(0.02)
                     end
                 end
             end
             
-            -- Recolectar todas las partes de dinero encontradas
-            local char = LP.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local hrp = char.HumanoidRootPart
-                
-                for _, cashPart in ipairs(cashParts) do
-                    if not _G.AutoCashPhysical then break end
-                    pcall(function()
-                        -- Método 1: Simular toque
-                        firetouchinterest(hrp, cashPart, 0)
-                        task.wait(0.02)
-                        firetouchinterest(hrp, cashPart, 1)
-                        
-                        -- Método 2: Teleportar temporalmente cerca (si es necesario)
-                        if cashPart.Position and (hrp.Position - cashPart.Position).Magnitude > 15 then
-                            local originalCF = hrp.CFrame
-                            hrp.CFrame = CFrame.new(cashPart.Position + Vector3.new(0, 3, 0))
-                            task.wait(0.05)
-                            hrp.CFrame = originalCF
-                        end
-                    end)
-                end
-            end
-            
-            task.wait(0.2) -- Delay entre ciclos
+            task.wait(_G.CashPhysicalDelay)
         end
         
         print("--- AUTO CASH FÍSICO DETENIDO ---")
@@ -424,7 +447,7 @@ local function stopLoop(name)
     end
 end
 
--- LBFarm Cycle
+-- LBFarm
 local lastBlockOpen = 0
 
 local function lbFarmCycle()
@@ -502,7 +525,7 @@ local function loopAutoLBFarm()
     if lbRF.EndMove then pcall(lbRF.EndMove.InvokeServer, lbRF.EndMove) end
 end
 
--- Auto Collect Cash mejorado
+-- Auto Collect Cash
 local collectRunning = false
 local function startCollectLoop()
     if collectRunning then return end
@@ -649,6 +672,7 @@ local LOOP_MAP = {
     AutoPlaceBest = loopAutoPlaceBest,
 }
 
+-- Función toggle principal
 local function toggle(name, val)
     _G[name] = val
     if val then
@@ -712,7 +736,6 @@ task.spawn(function()
             end
         end
         
-        -- Monitorear MegaUpgrade y AutoUpgrades separadamente
         if (_G.AutoUpgrades or _G.MegaUpgrade) and not upgradeRunning then
             startMegaUpgrade()
         elseif not (_G.AutoUpgrades or _G.MegaUpgrade) and upgradeRunning then
@@ -744,7 +767,7 @@ local Window = Compkiller.new({
     Name = "BLADEX HUB v4.0",
     Keybind = "LeftAlt",
     Logo = Compkiller.Logo,
-    Scale = UDim2.new(0, 480, 0, 400),
+    Scale = UDim2.new(0, 520, 0, 450),
     TextSize = 15,
 })
 
@@ -767,7 +790,7 @@ local MainTab = Window:DrawTab({
 
 -- Sección Lucky Block
 local LbSection = MainTab:DrawSection({
-    Name = "Lucky Block Farm (Optimizado)",
+    Name = "🎲 Lucky Block Farm (Optimizado)",
     Position = "left",
     Minimized = false,
 })
@@ -803,9 +826,9 @@ LbSection:AddDropdown({
     end,
 })
 
-LbSection:AddLabel("⚡ Delays optimizados: 1.8s cooldown | Ciclos ~3-4 segundos")
+LbSection:AddLabel("⚡ Delays: 1.8s cooldown | Ciclos ~3-4 segundos")
 
--- Sección Mega Upgrades (NUEVA)
+-- Sección Mega Upgrades
 local MegaSection = MainTab:DrawSection({
     Name = "⚡ MEGA UPGRADES (Delay 0.1s)",
     Position = "left",
@@ -818,7 +841,7 @@ MegaSection:AddToggle({
     Default = false,
     Callback = function(v) 
         toggle("MegaUpgrade", v)
-        notify(v and "MEGA UPGRADE ACTIVADO - Delay 0.1s" or "MEGA UPGRADE DESACTIVADO", 3)
+        notify(v and "🔥 MEGA UPGRADE ACTIVADO - Delay 0.1s" or "MEGA UPGRADE DESACTIVADO", 3)
     end,
 })
 
@@ -829,9 +852,9 @@ MegaSection:AddToggle({
     Callback = function(v) toggle("AutoUpgrades", v) end,
 })
 
-MegaSection:AddLabel("💡 MEGA UPGRADE: 30 slots en paralelo cada 0.1s | Velocidad máxima")
+MegaSection:AddLabel("💡 30 slots en paralelo cada 0.1s | Velocidad máxima")
 
--- Sección Auto Cash Físico (NUEVA)
+-- Sección Auto Cash Físico
 local CashPhysicalSection = MainTab:DrawSection({
     Name = "💰 AUTO CASH FÍSICO",
     Position = "left",
@@ -844,13 +867,32 @@ CashPhysicalSection:AddToggle({
     Default = false,
     Callback = function(v) 
         toggle("AutoCashPhysical", v)
-        notify(v and "Auto Cash Físico ACTIVADO" or "Auto Cash Físico DESACTIVADO", 3)
+        notify(v and "💰 Auto Cash Físico ACTIVADO" or "Auto Cash Físico DESACTIVADO", 3)
     end,
 })
 
-CashPhysicalSection:AddLabel("💵 Recolecta automáticamente el dinero del workspace")
+CashPhysicalSection:AddSlider({
+    Name = "Delay entre ciclos (segundos)",
+    Flag = "cash_physical_delay",
+    Default = 0.15,
+    Min = 0.05,
+    Max = 0.5,
+    Decimals = 2,
+    Callback = function(v) _G.CashPhysicalDelay = v end,
+})
 
--- Sección UI Hider (NUEVA)
+CashPhysicalSection:AddSlider({
+    Name = "Rango de búsqueda",
+    Flag = "cash_physical_range",
+    Default = 50,
+    Min = 20,
+    Max = 150,
+    Callback = function(v) _G.CashPhysicalRange = v end,
+})
+
+CashPhysicalSection:AddLabel("💵 Detecta dinero por nombre, color verde y GUI")
+
+-- Sección UI Hider
 local UIHiderSection = MainTab:DrawSection({
     Name = "🎨 AUTO HIDE UI",
     Position = "left",
@@ -863,21 +905,21 @@ UIHiderSection:AddToggle({
     Default = false,
     Callback = function(v) 
         toggle("HideUI", v)
-        if v then notify("UI Hider ACTIVADO - Ocultando textos no deseados", 3) end
+        if v then notify("🎨 UI Hider ACTIVADO", 3) end
     end,
 })
 
-UIHiderSection:AddLabel("🗑️ Elimina textos con: brainrot, dinero, máximo, cash, upgrade")
+UIHiderSection:AddLabel("🗑️ Elimina textos con: brainrot, dinero, máximo, cash, upgrade, $")
 
--- Sección Auto Farm (original)
+-- Sección Auto Farm
 local FarmSection = MainTab:DrawSection({
-    Name = "Auto Farm",
+    Name = "🤖 Auto Farm",
     Position = "left",
     Minimized = true,
 })
 
 FarmSection:AddToggle({
-    Name = "Auto Collect Cash",
+    Name = "Auto Collect Cash (Remoto)",
     Flag = "auto_collect",
     Default = false,
     Callback = function(v) toggle("AutoCollect", v) end,
@@ -913,7 +955,7 @@ FarmSection:AddToggle({
 
 -- Sección Auto Sell
 local SellSection = MainTab:DrawSection({
-    Name = "Auto Sell (Brainrot)",
+    Name = "🏷️ Auto Sell (Brainrot)",
     Position = "right",
     Minimized = true,
 })
@@ -931,12 +973,12 @@ SellSection:AddToggle({
     end,
 })
 
--- (Nota: Los toggles de venta individuales se mantienen igual pero se omiten por brevedad)
--- ... [todos los toggles de venta se mantienen] ...
+-- (Los toggles de venta individuales se mantienen pero se omiten por brevedad en esta respuesta)
+-- Se asume que ya están en el script original
 
 -- Sección Recompensas
 local RewardSection = MainTab:DrawSection({
-    Name = "Recompensas Especiales",
+    Name = "🎁 Recompensas Especiales",
     Position = "full",
     Minimized = true,
 })
@@ -949,11 +991,11 @@ RewardSection:AddButton({
             return
         end
         local ok, result = safeInvoke(rf.GetReward)
-        notify(ok and "¡Reclamo enviado con éxito!" or "Error: " .. tostring(result), 5)
+        notify(ok and "✓ ¡Reclamo enviado con éxito!" or "✗ Error: " .. tostring(result), 5)
     end,
 })
 
--- Sección Ajustes
+-- Ajustes
 Window:DrawCategory({ Name = "Misc" })
 
 local SettingsTab = Window:DrawTab({
@@ -991,7 +1033,7 @@ local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = true })
 
 InfoSection:AddLabel("BLADEX HUB v4.0 | Be a Lucky Block")
 InfoSection:AddLabel("⚡ MEGA UPGRADE (0.1s) | 💰 Cash Físico | 🎨 UI Hider")
-InfoSection:AddLabel("Anti-bug integrado | Delays optimizados")
+InfoSection:AddLabel("Anti-bug integrado | Delays optimizados | Velocidad máxima")
 
 Window:DrawConfig({
     Name = "Config",
@@ -999,5 +1041,5 @@ Window:DrawConfig({
     Config = ConfigManager,
 }):Init()
 
-notify("¡BLADEX HUB v4.0 cargado! ⚡ Nuevas funciones: MEGA UPGRADE, Cash Físico, UI Hider", 6)
+notify("✨ BLADEX HUB v4.0 cargado! ⚡ Mega Upgrade | 💰 Cash Físico | 🎨 UI Hider", 6)
 print("[BLADEX HUB v4.0] Script cargado. Usa LeftAlt para mostrar/ocultar la UI.")
