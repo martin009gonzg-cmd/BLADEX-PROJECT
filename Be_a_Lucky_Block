@@ -1,9 +1,13 @@
-lt para mostrar/ocultar la UI.")
 if not getgenv().Compkiller then
     error("❌ Compkiller no está cargada. Precárgala antes de ejecutar este script.")
 end
 
 local Compkiller = getgenv().Compkiller
+
+-- Verificar que Compkiller tenga las funciones necesarias
+if not Compkiller.newNotify or not Compkiller.ConfigManager or not Compkiller.new then
+    error("❌ Compkiller está cargada pero falta alguna función. Versión incompatible.")
+end
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -33,7 +37,12 @@ end
 local knitServices = findKnit()
 
 if not knitServices then
-    error("❌ No se encontró Knit en ReplicatedStorage. Verifica que el juego esté cargado.")
+    warn("❌ No se encontró Knit. Esperando 5 segundos y reintentando...")
+    task.wait(5)
+    knitServices = findKnit()
+    if not knitServices then
+        error("❌ No se encontró Knit en ReplicatedStorage. Verifica que el juego esté cargado.")
+    end
 end
 
 local function findRemote(serviceName, rfName)
@@ -76,11 +85,13 @@ local rf = {
 local sellRF = findRemote("InventoryService", "SellBrainrot")
 
 local GetRewardRemote = nil
-for _, service in ipairs(knitServices:GetChildren()) do
-    local rfFolder = service:FindFirstChild("RF")
-    if rfFolder and rfFolder:FindFirstChild("GetReward") then
-        GetRewardRemote = rfFolder.GetReward
-        break
+if knitServices then
+    for _, service in ipairs(knitServices:GetChildren()) do
+        local rfFolder = service:FindFirstChild("RF")
+        if rfFolder and rfFolder:FindFirstChild("GetReward") then
+            GetRewardRemote = rfFolder.GetReward
+            break
+        end
     end
 end
 rf.GetReward = GetRewardRemote
@@ -261,12 +272,19 @@ local function procesarUI(obj)
 end
 
 local function initUIHider()
-    local playerGui = LP:WaitForChild("PlayerGui")
-    playerGui.DescendantAdded:Connect(procesarUI)
-    for _, v in ipairs(playerGui:GetDescendants()) do
-        procesarUI(v)
+    local success, err = pcall(function()
+        local playerGui = LP:WaitForChild("PlayerGui", 10)
+        if playerGui then
+            playerGui.DescendantAdded:Connect(procesarUI)
+            for _, v in ipairs(playerGui:GetDescendants()) do
+                procesarUI(v)
+            end
+            print("--- UI HIDER ACTIVADO ---")
+        end
+    end)
+    if not success then
+        warn("Error al iniciar UI Hider: " .. tostring(err))
     end
-    print("--- UI HIDER ACTIVADO ---")
 end
 
 -- ========== AUTO CASH FISICO ==========
@@ -760,23 +778,30 @@ local ConfigManager = Compkiller:ConfigManager({
     Config = "BLADEX-BrainrotV4",
 })
 
+-- Cargar configuracion guardada
+pcall(function()
+    ConfigManager:Load()
+end)
+
 Compkiller:Loader(Compkiller.Logo, 2.5).yield()
 
 local Window = Compkiller.new({
     Name = "BLADEX HUB v4.0",
     Keybind = "LeftAlt",
     Logo = Compkiller.Logo,
-    Scale = UDim2.new(0, 520, 0, 450),
+    Scale = UDim2.new(0, 520, 0, 480),
     TextSize = 15,
 })
 
 local function notify(content, duration)
-    Notifier.new({
-        Title = "BLADEX HUB",
-        Content = content,
-        Duration = duration or 4,
-        Icon = Compkiller.Logo,
-    })
+    pcall(function()
+        Notifier.new({
+            Title = "BLADEX HUB",
+            Content = content,
+            Duration = duration or 4,
+            Icon = Compkiller.Logo,
+        })
+    end)
 end
 
 Window:DrawCategory({ Name = "BeaLuckyBlock" })
@@ -787,7 +812,7 @@ local MainTab = Window:DrawTab({
     EnableScrolling = true,
 })
 
--- Seccion Lucky Block
+-- Seccion Lucky Block (EXPANDIDA por defecto)
 local LbSection = MainTab:DrawSection({
     Name = "Lucky Block Farm (Optimizado)",
     Position = "left",
@@ -795,7 +820,7 @@ local LbSection = MainTab:DrawSection({
 })
 
 LbSection:AddToggle({
-    Name = "Auto Ciber Farm (Velocidad Maxima)",
+    Name = "Auto Ciber Farm",
     Flag = "lb_farm",
     Default = false,
     Callback = function(v) toggle("AutoLBFarm", v) end,
@@ -827,33 +852,33 @@ LbSection:AddDropdown({
 
 LbSection:AddLabel("Delays: 1.8s cooldown | Ciclos 3-4 segundos")
 
--- Seccion Mega Upgrades
+-- Seccion Mega Upgrades (MINIMIZADA)
 local MegaSection = MainTab:DrawSection({
     Name = "MEGA UPGRADES (Delay 0.1s)",
     Position = "left",
-    Minimized = false,
+    Minimized = true,
 })
 
 MegaSection:AddToggle({
-    Name = "MEGA Auto Upgrade Brainrots (Delay 0.1s)",
+    Name = "MEGA Auto Upgrade Brainrots",
     Flag = "mega_upgrade",
     Default = false,
     Callback = function(v) 
         toggle("MegaUpgrade", v)
-        notify(v and "MEGA UPGRADE ACTIVADO - Delay 0.1s" or "MEGA UPGRADE DESACTIVADO", 3)
+        notify(v and "MEGA UPGRADE ACTIVADO" or "MEGA UPGRADE DESACTIVADO", 3)
     end,
 })
 
 MegaSection:AddToggle({
-    Name = "Auto Upgrade Brainrots (Modo Normal)",
+    Name = "Auto Upgrade Brainrots (Normal)",
     Flag = "auto_upgrades",
     Default = false,
     Callback = function(v) toggle("AutoUpgrades", v) end,
 })
 
-MegaSection:AddLabel("30 slots en paralelo cada 0.1s | Velocidad maxima")
+MegaSection:AddLabel("30 slots en paralelo cada 0.1s")
 
--- Seccion Auto Cash Fisico
+-- Seccion Auto Cash Fisico (MINIMIZADA)
 local CashPhysicalSection = MainTab:DrawSection({
     Name = "Auto Cash Fisico",
     Position = "left",
@@ -861,7 +886,7 @@ local CashPhysicalSection = MainTab:DrawSection({
 })
 
 CashPhysicalSection:AddToggle({
-    Name = "Auto Cash Fisico (Recolectar dinero del mapa)",
+    Name = "Auto Cash Fisico",
     Flag = "auto_cash_physical",
     Default = false,
     Callback = function(v) 
@@ -889,9 +914,7 @@ CashPhysicalSection:AddSlider({
     Callback = function(v) _G.CashPhysicalRange = v end,
 })
 
-CashPhysicalSection:AddLabel("Detecta dinero por nombre, color verde y GUI")
-
--- Seccion UI Hider
+-- Seccion Auto Hide UI (MINIMIZADA)
 local UIHiderSection = MainTab:DrawSection({
     Name = "Auto Hide UI",
     Position = "left",
@@ -899,7 +922,7 @@ local UIHiderSection = MainTab:DrawSection({
 })
 
 UIHiderSection:AddToggle({
-    Name = "Ocultar/Destruir textos no deseados",
+    Name = "Ocultar textos no deseados",
     Flag = "hide_ui",
     Default = false,
     Callback = function(v) 
@@ -908,9 +931,7 @@ UIHiderSection:AddToggle({
     end,
 })
 
-UIHiderSection:AddLabel("Elimina textos con: brainrot, dinero, maximo, cash, upgrade, $")
-
--- Seccion Auto Farm
+-- Seccion Auto Farm (MINIMIZADA)
 local FarmSection = MainTab:DrawSection({
     Name = "Auto Farm",
     Position = "left",
@@ -952,11 +973,11 @@ FarmSection:AddToggle({
     Callback = function(v) toggle("AutoContainer", v) end,
 })
 
--- Seccion Auto Sell (MINIMIZADA POR DEFECTO)
+-- Seccion Auto Sell (MINIMIZADA por defecto)
 local SellSection = MainTab:DrawSection({
     Name = "Auto Sell (Brainrot)",
     Position = "right",
-    Minimized = true,  -- <--- MINIMIZADA POR DEFECTO
+    Minimized = true,
 })
 
 SellSection:AddToggle({
@@ -972,55 +993,55 @@ SellSection:AddToggle({
     end,
 })
 
--- Todos los toggles de venta individuales (MINIMIZADOS DENTRO DE LA SECCION)
-SellSection:AddToggle({ Name = "boneca_ambalabu", Flag = "sell_boneca", Default = false, Callback = function(v) _G.SellBonecaAmbalabu = v end, })
-SellSection:AddToggle({ Name = "cacto_hipopotamo", Flag = "sell_cacto", Default = false, Callback = function(v) _G.SellCactoHipopotamo = v end, })
-SellSection:AddToggle({ Name = "cocofanto_elefante", Flag = "sell_cocofanto", Default = false, Callback = function(v) _G.SellCocofantoElefante = v end, })
-SellSection:AddToggle({ Name = "cappuccina_bailarina", Flag = "sell_cappuccina", Default = false, Callback = function(v) _G.SellCappuccinaBailarina = v end, })
-SellSection:AddToggle({ Name = "fioittera_gangster", Flag = "sell_fioittera", Default = false, Callback = function(v) _G.SellFioitteraGangster = v end, })
-SellSection:AddToggle({ Name = "udin_din_din_dun", Flag = "sell_udin", Default = false, Callback = function(v) _G.SellUdinDinDinDun = v end, })
-SellSection:AddToggle({ Name = "brr_brr_patapim", Flag = "sell_brr", Default = false, Callback = function(v) _G.SellBrrBrrPatapim = v end, })
-SellSection:AddToggle({ Name = "asesino_capuchino", Flag = "sell_asesino", Default = false, Callback = function(v) _G.SellAsesinoCapuchino = v end, })
-SellSection:AddToggle({ Name = "gorillo_watermellondrillo", Flag = "sell_gorillo", Default = false, Callback = function(v) _G.SellGorilloWatermellondrillo = v end, })
-SellSection:AddToggle({ Name = "raccooni_watermelunni", Flag = "sell_raccooni", Default = false, Callback = function(v) _G.SellRaccooniWatermelunni = v end, })
-SellSection:AddToggle({ Name = "ta_ta_ta_ta_sahur", Flag = "sell_ta_ta", Default = false, Callback = function(v) _G.SellTaTaTaTaSahur = v end, })
-SellSection:AddToggle({ Name = "glorbo_frutodrillo", Flag = "sell_glorbo", Default = false, Callback = function(v) _G.SellGlorboFrutodrillo = v end, })
-SellSection:AddToggle({ Name = "frigo_camello", Flag = "sell_frigo", Default = false, Callback = function(v) _G.SellFrigoCamello = v end, })
-SellSection:AddToggle({ Name = "orangutini_ananassini", Flag = "sell_orangutini", Default = false, Callback = function(v) _G.SellOrangutiniAnanassini = v end, })
-SellSection:AddToggle({ Name = "bailarin_lololo", Flag = "sell_bailarin", Default = false, Callback = function(v) _G.SellBailarinLololo = v end, })
-SellSection:AddToggle({ Name = "svinina_bombobardino", Flag = "sell_svinina", Default = false, Callback = function(v) _G.SellSvininaBombobardino = v end, })
-SellSection:AddToggle({ Name = "frulli_frula", Flag = "sell_frulli", Default = false, Callback = function(v) _G.SellFrulliFrula = v end, })
-SellSection:AddToggle({ Name = "ganganzelli_trulala", Flag = "sell_ganganzelli", Default = false, Callback = function(v) _G.SellGanganzelliTrulala = v end, })
-SellSection:AddToggle({ Name = "orcalaro_orcala", Flag = "sell_orcalaro", Default = false, Callback = function(v) _G.SellOrcalaroOrcala = v end, })
-SellSection:AddToggle({ Name = "yoni", Flag = "sell_yoni", Default = false, Callback = function(v) _G.SellYoni = v end, })
-SellSection:AddToggle({ Name = "lerulerulerule", Flag = "sell_lerulerulerule", Default = false, Callback = function(v) _G.SellLerulerulerule = v end, })
-SellSection:AddToggle({ Name = "caballo_virtuoso", Flag = "sell_caballo", Default = false, Callback = function(v) _G.SellCaballoVirtuoso = v end, })
-SellSection:AddToggle({ Name = "tostador_rinoceronte", Flag = "sell_tostador", Default = false, Callback = function(v) _G.SellTostadorRinoceronte = v end, })
-SellSection:AddToggle({ Name = "te_te_te_te_sahur", Flag = "sell_te_te", Default = false, Callback = function(v) _G.SellTeTeTeTeSahur = v end, })
-SellSection:AddToggle({ Name = "mateo", Flag = "sell_mateo", Default = false, Callback = function(v) _G.SellMateo = v end, })
-SellSection:AddToggle({ Name = "ti_ti_ti_sahur", Flag = "sell_ti_ti", Default = false, Callback = function(v) _G.SellTiTiTiSahur = v end, })
-SellSection:AddToggle({ Name = "burbaloni_luliloli", Flag = "sell_burbaloni", Default = false, Callback = function(v) _G.SellBurbaloniLuliloli = v end, })
-SellSection:AddToggle({ Name = "tortuginni", Flag = "sell_tortuginni", Default = false, Callback = function(v) _G.SellTortuginni = v end, })
-SellSection:AddToggle({ Name = "dragonfrutinni", Flag = "sell_dragonfrutinni", Default = false, Callback = function(v) _G.SellDragonfrutinni = v end, })
-SellSection:AddToggle({ Name = "tralaleritos", Flag = "sell_tralaleritos", Default = false, Callback = function(v) _G.SellTralaleritos = v end, })
-SellSection:AddToggle({ Name = "punto_acceso_olla", Flag = "sell_punto", Default = false, Callback = function(v) _G.SellPuntoAccesoOlla = v end, })
-SellSection:AddToggle({ Name = "crocodillitos", Flag = "sell_crocodillitos", Default = false, Callback = function(v) _G.SellCrocodillitos = v end, })
-SellSection:AddToggle({ Name = "trulimero_trulicina", Flag = "sell_trulimero", Default = false, Callback = function(v) _G.SellTrulimeroTrulicina = v end, })
-SellSection:AddToggle({ Name = "vaca_saturno", Flag = "sell_vaca", Default = false, Callback = function(v) _G.SellVacaSaturno = v end, })
-SellSection:AddToggle({ Name = "saturnita", Flag = "sell_saturnita", Default = false, Callback = function(v) _G.SellSaturnita = v end, })
-SellSection:AddToggle({ Name = "vaquitas_saturnitas", Flag = "sell_vaquitas", Default = false, Callback = function(v) _G.SellVaquitasSaturnitas = v end, })
-SellSection:AddToggle({ Name = "agarrini_lapalini", Flag = "sell_agarrini", Default = false, Callback = function(v) _G.SellAgarriniLapalini = v end, })
-SellSection:AddToggle({ Name = "patata_pipi", Flag = "sell_patata", Default = false, Callback = function(v) _G.SellPatataPipi = v end, })
-SellSection:AddToggle({ Name = "espaguetis_tualetti", Flag = "sell_espaguetis", Default = false, Callback = function(v) _G.SellEspaguetisTualetti = v end, })
-SellSection:AddToggle({ Name = "cathinni_sushinni", Flag = "sell_cathinni", Default = false, Callback = function(v) _G.SellCathinniSushinni = v end, })
-SellSection:AddToggle({ Name = "graipus_medus", Flag = "sell_graipus", Default = false, Callback = function(v) _G.SellGraipusMedus = v end, })
-SellSection:AddToggle({ Name = "tigrrullini_watermellini", Flag = "sell_tigrrullini", Default = false, Callback = function(v) _G.SellTigrrulliniWatermellini = v end, })
-SellSection:AddToggle({ Name = "angela_larila", Flag = "sell_angela", Default = false, Callback = function(v) _G.SellAngelaLarila = v end, })
-SellSection:AddToggle({ Name = "canneloni_dragon", Flag = "sell_canneloni", Default = false, Callback = function(v) _G.SellCanneloniDragon = v end, })
-SellSection:AddToggle({ Name = "angel_disonte_giuppitere", Flag = "sell_angel", Default = false, Callback = function(v) _G.SellAngelDisonteGiuppitere = v end, })
-SellSection:AddToggle({ Name = "a_sahur", Flag = "sell_a_sahur", Default = false, Callback = function(v) _G.SellASahur = v end, })
+-- Todos los toggles de venta individuales
+SellSection:AddToggle({ Name = "boneca_ambalabu", Flag = "sell_boneca", Default = false, Callback = function(v) _G.SellBonecaAmbalabu = v end })
+SellSection:AddToggle({ Name = "cacto_hipopotamo", Flag = "sell_cacto", Default = false, Callback = function(v) _G.SellCactoHipopotamo = v end })
+SellSection:AddToggle({ Name = "cocofanto_elefante", Flag = "sell_cocofanto", Default = false, Callback = function(v) _G.SellCocofantoElefante = v end })
+SellSection:AddToggle({ Name = "cappuccina_bailarina", Flag = "sell_cappuccina", Default = false, Callback = function(v) _G.SellCappuccinaBailarina = v end })
+SellSection:AddToggle({ Name = "fioittera_gangster", Flag = "sell_fioittera", Default = false, Callback = function(v) _G.SellFioitteraGangster = v end })
+SellSection:AddToggle({ Name = "udin_din_din_dun", Flag = "sell_udin", Default = false, Callback = function(v) _G.SellUdinDinDinDun = v end })
+SellSection:AddToggle({ Name = "brr_brr_patapim", Flag = "sell_brr", Default = false, Callback = function(v) _G.SellBrrBrrPatapim = v end })
+SellSection:AddToggle({ Name = "asesino_capuchino", Flag = "sell_asesino", Default = false, Callback = function(v) _G.SellAsesinoCapuchino = v end })
+SellSection:AddToggle({ Name = "gorillo_watermellondrillo", Flag = "sell_gorillo", Default = false, Callback = function(v) _G.SellGorilloWatermellondrillo = v end })
+SellSection:AddToggle({ Name = "raccooni_watermelunni", Flag = "sell_raccooni", Default = false, Callback = function(v) _G.SellRaccooniWatermelunni = v end })
+SellSection:AddToggle({ Name = "ta_ta_ta_ta_sahur", Flag = "sell_ta_ta", Default = false, Callback = function(v) _G.SellTaTaTaTaSahur = v end })
+SellSection:AddToggle({ Name = "glorbo_frutodrillo", Flag = "sell_glorbo", Default = false, Callback = function(v) _G.SellGlorboFrutodrillo = v end })
+SellSection:AddToggle({ Name = "frigo_camello", Flag = "sell_frigo", Default = false, Callback = function(v) _G.SellFrigoCamello = v end })
+SellSection:AddToggle({ Name = "orangutini_ananassini", Flag = "sell_orangutini", Default = false, Callback = function(v) _G.SellOrangutiniAnanassini = v end })
+SellSection:AddToggle({ Name = "bailarin_lololo", Flag = "sell_bailarin", Default = false, Callback = function(v) _G.SellBailarinLololo = v end })
+SellSection:AddToggle({ Name = "svinina_bombobardino", Flag = "sell_svinina", Default = false, Callback = function(v) _G.SellSvininaBombobardino = v end })
+SellSection:AddToggle({ Name = "frulli_frula", Flag = "sell_frulli", Default = false, Callback = function(v) _G.SellFrulliFrula = v end })
+SellSection:AddToggle({ Name = "ganganzelli_trulala", Flag = "sell_ganganzelli", Default = false, Callback = function(v) _G.SellGanganzelliTrulala = v end })
+SellSection:AddToggle({ Name = "orcalaro_orcala", Flag = "sell_orcalaro", Default = false, Callback = function(v) _G.SellOrcalaroOrcala = v end })
+SellSection:AddToggle({ Name = "yoni", Flag = "sell_yoni", Default = false, Callback = function(v) _G.SellYoni = v end })
+SellSection:AddToggle({ Name = "lerulerulerule", Flag = "sell_lerulerulerule", Default = false, Callback = function(v) _G.SellLerulerulerule = v end })
+SellSection:AddToggle({ Name = "caballo_virtuoso", Flag = "sell_caballo", Default = false, Callback = function(v) _G.SellCaballoVirtuoso = v end })
+SellSection:AddToggle({ Name = "tostador_rinoceronte", Flag = "sell_tostador", Default = false, Callback = function(v) _G.SellTostadorRinoceronte = v end })
+SellSection:AddToggle({ Name = "te_te_te_te_sahur", Flag = "sell_te_te", Default = false, Callback = function(v) _G.SellTeTeTeTeSahur = v end })
+SellSection:AddToggle({ Name = "mateo", Flag = "sell_mateo", Default = false, Callback = function(v) _G.SellMateo = v end })
+SellSection:AddToggle({ Name = "ti_ti_ti_sahur", Flag = "sell_ti_ti", Default = false, Callback = function(v) _G.SellTiTiTiSahur = v end })
+SellSection:AddToggle({ Name = "burbaloni_luliloli", Flag = "sell_burbaloni", Default = false, Callback = function(v) _G.SellBurbaloniLuliloli = v end })
+SellSection:AddToggle({ Name = "tortuginni", Flag = "sell_tortuginni", Default = false, Callback = function(v) _G.SellTortuginni = v end })
+SellSection:AddToggle({ Name = "dragonfrutinni", Flag = "sell_dragonfrutinni", Default = false, Callback = function(v) _G.SellDragonfrutinni = v end })
+SellSection:AddToggle({ Name = "tralaleritos", Flag = "sell_tralaleritos", Default = false, Callback = function(v) _G.SellTralaleritos = v end })
+SellSection:AddToggle({ Name = "punto_acceso_olla", Flag = "sell_punto", Default = false, Callback = function(v) _G.SellPuntoAccesoOlla = v end })
+SellSection:AddToggle({ Name = "crocodillitos", Flag = "sell_crocodillitos", Default = false, Callback = function(v) _G.SellCrocodillitos = v end })
+SellSection:AddToggle({ Name = "trulimero_trulicina", Flag = "sell_trulimero", Default = false, Callback = function(v) _G.SellTrulimeroTrulicina = v end })
+SellSection:AddToggle({ Name = "vaca_saturno", Flag = "sell_vaca", Default = false, Callback = function(v) _G.SellVacaSaturno = v end })
+SellSection:AddToggle({ Name = "saturnita", Flag = "sell_saturnita", Default = false, Callback = function(v) _G.SellSaturnita = v end })
+SellSection:AddToggle({ Name = "vaquitas_saturnitas", Flag = "sell_vaquitas", Default = false, Callback = function(v) _G.SellVaquitasSaturnitas = v end })
+SellSection:AddToggle({ Name = "agarrini_lapalini", Flag = "sell_agarrini", Default = false, Callback = function(v) _G.SellAgarriniLapalini = v end })
+SellSection:AddToggle({ Name = "patata_pipi", Flag = "sell_patata", Default = false, Callback = function(v) _G.SellPatataPipi = v end })
+SellSection:AddToggle({ Name = "espaguetis_tualetti", Flag = "sell_espaguetis", Default = false, Callback = function(v) _G.SellEspaguetisTualetti = v end })
+SellSection:AddToggle({ Name = "cathinni_sushinni", Flag = "sell_cathinni", Default = false, Callback = function(v) _G.SellCathinniSushinni = v end })
+SellSection:AddToggle({ Name = "graipus_medus", Flag = "sell_graipus", Default = false, Callback = function(v) _G.SellGraipusMedus = v end })
+SellSection:AddToggle({ Name = "tigrrullini_watermellini", Flag = "sell_tigrrullini", Default = false, Callback = function(v) _G.SellTigrrulliniWatermellini = v end })
+SellSection:AddToggle({ Name = "angela_larila", Flag = "sell_angela", Default = false, Callback = function(v) _G.SellAngelaLarila = v end })
+SellSection:AddToggle({ Name = "canneloni_dragon", Flag = "sell_canneloni", Default = false, Callback = function(v) _G.SellCanneloniDragon = v end })
+SellSection:AddToggle({ Name = "angel_disonte_giuppitere", Flag = "sell_angel", Default = false, Callback = function(v) _G.SellAngelDisonteGiuppitere = v end })
+SellSection:AddToggle({ Name = "a_sahur", Flag = "sell_a_sahur", Default = false, Callback = function(v) _G.SellASahur = v end })
 
--- Seccion Recompensas
+-- Seccion Recompensas (MINIMIZADA)
 local RewardSection = MainTab:DrawSection({
     Name = "Recompensas Especiales",
     Position = "full",
@@ -1077,7 +1098,7 @@ local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = true })
 
 InfoSection:AddLabel("BLADEX HUB v4.0 | Be a Lucky Block")
 InfoSection:AddLabel("MEGA UPGRADE (0.1s) | Cash Fisico | UI Hider")
-InfoSection:AddLabel("Anti-bug integrado | Delays optimizados | Velocidad maxima")
+InfoSection:AddLabel("Anti-bug integrado | Delays optimizados")
 
 Window:DrawConfig({
     Name = "Config",
@@ -1085,5 +1106,10 @@ Window:DrawConfig({
     Config = ConfigManager,
 }):Init()
 
-notify("BLADEX HUB v4.0 cargado! MEGA UPGRADE | Cash Fisico | UI Hider", 6)
+-- Guardar configuracion al cerrar
+pcall(function()
+    ConfigManager:Save()
+end)
+
+notify("BLADEX HUB v4.0 cargado!", 6)
 print("[BLADEX HUB v4.0] Script cargado. Usa LeftAlt para mostrar/ocultar la UI.")
