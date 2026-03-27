@@ -1134,7 +1134,7 @@ UISection:AddDropdown({
     Callback = function(v) Compkiller:SetTheme(v) end,
 })
 
-local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = true })
+local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = false })
 
 InfoSection:AddLabel("BLADEX HUB v3.0 | Be a Lucky Block")
 InfoSection:AddLabel("Anti-bug integrado | Bases 1-14 | Auto Sell")
