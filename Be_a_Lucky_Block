@@ -144,6 +144,7 @@ _G.SellCanneloniDragon = _G.SellCanneloniDragon or false
 _G.SellAngelDisonteGiuppitere = _G.SellAngelDisonteGiuppitere or false
 _G.SellASahur = _G.SellASahur or false
 
+-- COORDENADAS CON RUNNER UNIFICADO (base14)
 local BASE_COORDS = {
     base14 = {
         block = CFrame.new(733.21, 37.51, -2153.56),
@@ -166,6 +167,19 @@ local BASE_COORDS = {
     base11 = { block = CFrame.new(1100, 38, -1700), runner = CFrame.new(588.96, 38.18, -2127.26) },
     base12 = { block = CFrame.new(1200, 38, -1850), runner = CFrame.new(588.96, 38.18, -2127.26) },
     base13 = { block = CFrame.new(1300, 38, -2000), runner = CFrame.new(588.96, 38.18, -2127.26) },
+}
+
+local LB_CFG = {
+    MAX_RETRIES = 3,
+    BLOCK_COOLDOWN = 2.5,
+    ANTI_BUG_TIMEOUT = 8,
+    DELAYS = {
+        AFTER_TELEPORT = 0.3,
+        AFTER_OPEN = 1.2,
+        AFTER_RUN = 0.5,
+        CYCLE_END = 1.5,
+        RESPAWN_WAIT = 3.0,
+    },
 }
 
 local function safeInvoke(remote, ...)
