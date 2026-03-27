@@ -710,7 +710,7 @@ FarmSection:AddToggle({
 FarmSection:AddToggle({
     Name = "Auto Colocar Brainrots",
     Flag = "auto_placebest",
-    Default = true,
+    Default = false,
     Callback = function(v) toggle("AutoPlaceBest", v) end,
 })
 
