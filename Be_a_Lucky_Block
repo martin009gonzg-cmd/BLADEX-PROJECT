@@ -602,7 +602,7 @@ task.spawn(function()
                     end
                 else
                     if name == "AutoCollect" then
-                        collectRunning = false
+                        collectRunning = true
                     elseif name == "AutoUpgrades" then
                         if upgradeLoopThread then
                             pcall(task.cancel, upgradeLoopThread)
@@ -697,13 +697,13 @@ LbSection:AddDropdown({
 local FarmSection = MainTab:DrawSection({
     Name = "Auto Farm",
     Position = "left",
-    Minimized = false,
+    Minimized = true,
 })
 
 FarmSection:AddToggle({
     Name = "Auto Collect Cash",
     Flag = "auto_collect",
-    Default = false,
+    Default = true,
     Callback = function(v) toggle("AutoCollect", v) end,
 })
 
@@ -745,7 +745,7 @@ FarmSection:AddToggle({
 local SellSection = MainTab:DrawSection({
     Name = "Auto Sell (Brainrot)",
     Position = "right",
-    Minimized = false,
+    Minimized = tue,
 })
 
 SellSection:AddToggle({
@@ -1134,7 +1134,7 @@ UISection:AddDropdown({
     Callback = function(v) Compkiller:SetTheme(v) end,
 })
 
-local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = false })
+local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = true })
 
 InfoSection:AddLabel("BLADEX HUB v3.0 | Be a Lucky Block")
 InfoSection:AddLabel("Anti-bug integrado | Bases 1-14 | Auto Sell")
