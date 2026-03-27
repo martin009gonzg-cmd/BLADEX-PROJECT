@@ -654,7 +654,7 @@ Window:DrawCategory({ Name = "BeaLuckyBlock" })
 local MainTab = Window:DrawTab({
     Name = "Farm & Recolección",
     Icon = "box",
-    EnableScrolling = true,
+    EnableScrolling = false,
 })
 
 local LbSection = MainTab:DrawSection({
