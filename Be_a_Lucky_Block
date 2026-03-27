@@ -168,19 +168,6 @@ local BASE_COORDS = {
     base13 = { block = CFrame.new(1300, 38, -2000), runner = CFrame.new(588.96, 38.18, -2127.26) },
 }
 
-local LB_CFG = {
-    MAX_RETRIES = 3,
-    BLOCK_COOLDOWN = 2.5,
-    ANTI_BUG_TIMEOUT = 8,
-    DELAYS = {
-        AFTER_TELEPORT = 0.3,
-        AFTER_OPEN = 1.2,
-        AFTER_RUN = 0.5,
-        CYCLE_END = 1.5,
-        RESPAWN_WAIT = 3.0,
-    },
-}
-
 local function safeInvoke(remote, ...)
     if not remote then return false, "Remoto nulo" end
     local ok, res = pcall(remote.InvokeServer, remote, ...)
