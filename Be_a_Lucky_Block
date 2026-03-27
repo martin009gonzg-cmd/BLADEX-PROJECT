@@ -638,6 +638,7 @@ local Window = Compkiller.new({
     Scale = UDim2.new(0, 480, 0, 340),
     TextSize = 15,
 })
+Window.Minimized = false  -- <--- AÑADIDO: la ventana siempre iniciará expandida
 
 local function notify(content, duration)
     Notifier.new({
