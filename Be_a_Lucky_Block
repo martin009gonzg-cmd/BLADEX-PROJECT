@@ -660,7 +660,7 @@ local MainTab = Window:DrawTab({
 local LbSection = MainTab:DrawSection({
     Name = "Lucky Block Farm",
     Position = "left",
-    Minimized = false,
+    Minimized = true,
 })
 
 LbSection:AddToggle({
