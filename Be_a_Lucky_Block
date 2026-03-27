@@ -4,10 +4,14 @@ end
 
 local Compkiller = getgenv().Compkiller
 
+-- Verificar que Compkiller tenga las funciones necesarias
+if not Compkiller.newNotify or not Compkiller.ConfigManager or not Compkiller.new then
+    error("❌ Compkiller está cargada pero falta alguna función. Versión incompatible.")
+end
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local LP = Players.LocalPlayer
 
 local function findKnit()
@@ -33,7 +37,12 @@ end
 local knitServices = findKnit()
 
 if not knitServices then
-    error("❌ No se encontró Knit en ReplicatedStorage. Verifica que el juego esté cargado.")
+    warn("❌ No se encontró Knit. Esperando 5 segundos y reintentando...")
+    task.wait(5)
+    knitServices = findKnit()
+    if not knitServices then
+        error("❌ No se encontró Knit en ReplicatedStorage. Verifica que el juego esté cargado.")
+    end
 end
 
 local function findRemote(serviceName, rfName)
@@ -76,11 +85,13 @@ local rf = {
 local sellRF = findRemote("InventoryService", "SellBrainrot")
 
 local GetRewardRemote = nil
-for _, service in ipairs(knitServices:GetChildren()) do
-    local rfFolder = service:FindFirstChild("RF")
-    if rfFolder and rfFolder:FindFirstChild("GetReward") then
-        GetRewardRemote = rfFolder.GetReward
-        break
+if knitServices then
+    for _, service in ipairs(knitServices:GetChildren()) do
+        local rfFolder = service:FindFirstChild("RF")
+        if rfFolder and rfFolder:FindFirstChild("GetReward") then
+            GetRewardRemote = rfFolder.GetReward
+            break
+        end
     end
 end
 rf.GetReward = GetRewardRemote
@@ -174,7 +185,7 @@ local BASE_COORDS = {
     base13 = { block = CFrame.new(1300, 38, -2000), runner = CFrame.new(1280, 38, -1980) },
 }
 
--- Configuración optimizada
+-- Configuracion optimizada
 local LB_CFG = {
     MAX_RETRIES = 2,
     BLOCK_COOLDOWN = 1.8,
@@ -189,7 +200,7 @@ local LB_CFG = {
     },
 }
 
--- ========== 🚀 MEGA AUTO-UPGRADE (Delay 0.1s) ==========
+-- ========== MEGA AUTO-UPGRADE (Delay 0.1s) ==========
 local upgradeRunning = false
 local upgradeThread = nil
 
@@ -230,11 +241,10 @@ local function stopMegaUpgrade()
     upgradeRunning = false
 end
 
--- ========== 🎨 AUTO HIDE UI ==========
+-- ========== AUTO HIDE UI ==========
 local palabrasClave = {
     ["brainrot"] = true,
     ["dinero"] = true,
-    ["máximo"] = true,
     ["maximo"] = true,
     ["cash"] = true,
     ["money"] = true,
@@ -262,15 +272,22 @@ local function procesarUI(obj)
 end
 
 local function initUIHider()
-    local playerGui = LP:WaitForChild("PlayerGui")
-    playerGui.DescendantAdded:Connect(procesarUI)
-    for _, v in ipairs(playerGui:GetDescendants()) do
-        procesarUI(v)
+    local success, err = pcall(function()
+        local playerGui = LP:WaitForChild("PlayerGui", 10)
+        if playerGui then
+            playerGui.DescendantAdded:Connect(procesarUI)
+            for _, v in ipairs(playerGui:GetDescendants()) do
+                procesarUI(v)
+            end
+            print("--- UI HIDER ACTIVADO ---")
+        end
+    end)
+    if not success then
+        warn("Error al iniciar UI Hider: " .. tostring(err))
     end
-    print("--- UI HIDER ACTIVADO ---")
 end
 
--- ========== 💰 AUTO CASH FÍSICO MEJORADO ==========
+-- ========== AUTO CASH FISICO ==========
 local cashPhysicalRunning = false
 local cashPhysicalThread = nil
 
@@ -302,7 +319,7 @@ local function startCashPhysical()
     cashPhysicalRunning = true
     
     cashPhysicalThread = task.spawn(function()
-        print("--- AUTO CASH FÍSICO ACTIVADO ---")
+        print("--- AUTO CASH FISICO ACTIVADO ---")
         
         while _G.AutoCashPhysical do
             local char = LP.Character
@@ -357,7 +374,7 @@ local function startCashPhysical()
             task.wait(_G.CashPhysicalDelay)
         end
         
-        print("--- AUTO CASH FÍSICO DETENIDO ---")
+        print("--- AUTO CASH FISICO DETENIDO ---")
         cashPhysicalRunning = false
         cashPhysicalThread = nil
     end)
@@ -672,7 +689,7 @@ local LOOP_MAP = {
     AutoPlaceBest = loopAutoPlaceBest,
 }
 
--- Función toggle principal
+-- Funcion toggle principal
 local function toggle(name, val)
     _G[name] = val
     if val then
@@ -761,42 +778,49 @@ local ConfigManager = Compkiller:ConfigManager({
     Config = "BLADEX-BrainrotV4",
 })
 
+-- Cargar configuracion guardada
+pcall(function()
+    ConfigManager:Load()
+end)
+
 Compkiller:Loader(Compkiller.Logo, 2.5).yield()
 
 local Window = Compkiller.new({
     Name = "BLADEX HUB v4.0",
     Keybind = "LeftAlt",
     Logo = Compkiller.Logo,
-    Scale = UDim2.new(0, 520, 0, 450),
+    Scale = UDim2.new(0, 520, 0, 480),
     TextSize = 15,
 })
 
 local function notify(content, duration)
-    Notifier.new({
-        Title = "BLADEX HUB",
-        Content = content,
-        Duration = duration or 4,
-        Icon = Compkiller.Logo,
-    })
+    pcall(function()
+        Notifier.new({
+            Title = "BLADEX HUB",
+            Content = content,
+            Duration = duration or 4,
+            Icon = Compkiller.Logo,
+        })
+    end)
 end
 
 Window:DrawCategory({ Name = "BeaLuckyBlock" })
 
 local MainTab = Window:DrawTab({
-    Name = "Farm & Recolección",
+    Name = "Farm & Recoleccion",
     Icon = "box",
     EnableScrolling = true,
 })
 
--- Sección Lucky Block
+-- Seccion Lucky Block (MINIMIZADA por defecto)
 local LbSection = MainTab:DrawSection({
-    Name = "🎲 Lucky Block Farm (Optimizado)",
+    Name = "Lucky Block Farm (Optimizado)",
     Position = "left",
-    Minimized = false,
+    Minimized = true,
 })
 
 LbSection:AddToggle({
-    Name = "Auto Ciber Farm (Velocidad Máxima)",
+    Name = "Auto Ciber Farm",
     Flag = "lb_farm",
     Default = false,
     Callback = function(v) toggle("AutoLBFarm", v) end,
@@ -826,48 +850,48 @@ LbSection:AddDropdown({
     end,
 })
 
-LbSection:AddLabel("⚡ Delays: 1.8s cooldown | Ciclos ~3-4 segundos")
+LbSection:AddLabel("Delays: 1.8s cooldown | Ciclos 3-4 segundos")
 
--- Sección Mega Upgrades
+-- Seccion Mega Upgrades (MINIMIZADA)
 local MegaSection = MainTab:DrawSection({
-    Name = "⚡ MEGA UPGRADES (Delay 0.1s)",
+    Name = "MEGA UPGRADES (Delay 0.1s)",
     Position = "left",
-    Minimized = false,
+    Minimized = true,
 })
 
 MegaSection:AddToggle({
-    Name = "🔥 MEGA Auto Upgrade Brainrots (Delay 0.1s)",
+    Name = "MEGA Auto Upgrade Brainrots",
     Flag = "mega_upgrade",
     Default = false,
     Callback = function(v) 
         toggle("MegaUpgrade", v)
-        notify(v and "🔥 MEGA UPGRADE ACTIVADO - Delay 0.1s" or "MEGA UPGRADE DESACTIVADO", 3)
+        notify(v and "MEGA UPGRADE ACTIVADO" or "MEGA UPGRADE DESACTIVADO", 3)
     end,
 })
 
 MegaSection:AddToggle({
-    Name = "Auto Upgrade Brainrots (Modo Normal)",
+    Name = "Auto Upgrade Brainrots (Normal)",
     Flag = "auto_upgrades",
     Default = false,
     Callback = function(v) toggle("AutoUpgrades", v) end,
 })
 
-MegaSection:AddLabel("💡 30 slots en paralelo cada 0.1s | Velocidad máxima")
+MegaSection:AddLabel("30 slots en paralelo cada 0.1s")
 
--- Sección Auto Cash Físico
+-- Seccion Auto Cash Fisico (MINIMIZADA)
 local CashPhysicalSection = MainTab:DrawSection({
-    Name = "💰 AUTO CASH FÍSICO",
+    Name = "Auto Cash Fisico",
     Position = "left",
     Minimized = true,
 })
 
 CashPhysicalSection:AddToggle({
-    Name = "Auto Cash Físico (Recolectar dinero del mapa)",
+    Name = "Auto Cash Fisico",
     Flag = "auto_cash_physical",
     Default = false,
     Callback = function(v) 
         toggle("AutoCashPhysical", v)
-        notify(v and "💰 Auto Cash Físico ACTIVADO" or "Auto Cash Físico DESACTIVADO", 3)
+        notify(v and "Auto Cash Fisico ACTIVADO" or "Auto Cash Fisico DESACTIVADO", 3)
     end,
 })
 
@@ -882,7 +906,7 @@ CashPhysicalSection:AddSlider({
 })
 
 CashPhysicalSection:AddSlider({
-    Name = "Rango de búsqueda",
+    Name = "Rango de busqueda",
     Flag = "cash_physical_range",
     Default = 50,
     Min = 20,
@@ -890,30 +914,26 @@ CashPhysicalSection:AddSlider({
     Callback = function(v) _G.CashPhysicalRange = v end,
 })
 
-CashPhysicalSection:AddLabel("💵 Detecta dinero por nombre, color verde y GUI")
-
--- Sección UI Hider
+-- Seccion Auto Hide UI (MINIMIZADA)
 local UIHiderSection = MainTab:DrawSection({
-    Name = "🎨 AUTO HIDE UI",
+    Name = "Auto Hide UI",
     Position = "left",
     Minimized = true,
 })
 
 UIHiderSection:AddToggle({
-    Name = "Ocultar/Destruir textos no deseados",
+    Name = "Ocultar textos no deseados",
     Flag = "hide_ui",
     Default = false,
     Callback = function(v) 
         toggle("HideUI", v)
-        if v then notify("🎨 UI Hider ACTIVADO", 3) end
+        if v then notify("UI Hider ACTIVADO", 3) end
     end,
 })
 
-UIHiderSection:AddLabel("🗑️ Elimina textos con: brainrot, dinero, máximo, cash, upgrade, $")
-
--- Sección Auto Farm
+-- Seccion Auto Farm (MINIMIZADA)
 local FarmSection = MainTab:DrawSection({
-    Name = "🤖 Auto Farm",
+    Name = "Auto Farm",
     Position = "left",
     Minimized = true,
 })
@@ -953,9 +973,9 @@ FarmSection:AddToggle({
     Callback = function(v) toggle("AutoContainer", v) end,
 })
 
--- Sección Auto Sell
+-- Seccion Auto Sell (MINIMIZADA)
 local SellSection = MainTab:DrawSection({
-    Name = "🏷️ Auto Sell (Brainrot)",
+    Name = "Auto Sell (Brainrot)",
     Position = "right",
     Minimized = true,
 })
@@ -966,19 +986,64 @@ SellSection:AddToggle({
     Default = false,
     Callback = function(v)
         if not sellRF and v then
-            notify("⚠ Remoto SellBrainrot no encontrado.", 5)
+            notify("Remoto SellBrainrot no encontrado.", 5)
             return
         end
         toggle("AutoSell", v)
     end,
 })
 
--- (Los toggles de venta individuales se mantienen pero se omiten por brevedad en esta respuesta)
--- Se asume que ya están en el script original
+-- Todos los toggles de venta individuales
+SellSection:AddToggle({ Name = "boneca_ambalabu", Flag = "sell_boneca", Default = false, Callback = function(v) _G.SellBonecaAmbalabu = v end })
+SellSection:AddToggle({ Name = "cacto_hipopotamo", Flag = "sell_cacto", Default = false, Callback = function(v) _G.SellCactoHipopotamo = v end })
+SellSection:AddToggle({ Name = "cocofanto_elefante", Flag = "sell_cocofanto", Default = false, Callback = function(v) _G.SellCocofantoElefante = v end })
+SellSection:AddToggle({ Name = "cappuccina_bailarina", Flag = "sell_cappuccina", Default = false, Callback = function(v) _G.SellCappuccinaBailarina = v end })
+SellSection:AddToggle({ Name = "fioittera_gangster", Flag = "sell_fioittera", Default = false, Callback = function(v) _G.SellFioitteraGangster = v end })
+SellSection:AddToggle({ Name = "udin_din_din_dun", Flag = "sell_udin", Default = false, Callback = function(v) _G.SellUdinDinDinDun = v end })
+SellSection:AddToggle({ Name = "brr_brr_patapim", Flag = "sell_brr", Default = false, Callback = function(v) _G.SellBrrBrrPatapim = v end })
+SellSection:AddToggle({ Name = "asesino_capuchino", Flag = "sell_asesino", Default = false, Callback = function(v) _G.SellAsesinoCapuchino = v end })
+SellSection:AddToggle({ Name = "gorillo_watermellondrillo", Flag = "sell_gorillo", Default = false, Callback = function(v) _G.SellGorilloWatermellondrillo = v end })
+SellSection:AddToggle({ Name = "raccooni_watermelunni", Flag = "sell_raccooni", Default = false, Callback = function(v) _G.SellRaccooniWatermelunni = v end })
+SellSection:AddToggle({ Name = "ta_ta_ta_ta_sahur", Flag = "sell_ta_ta", Default = false, Callback = function(v) _G.SellTaTaTaTaSahur = v end })
+SellSection:AddToggle({ Name = "glorbo_frutodrillo", Flag = "sell_glorbo", Default = false, Callback = function(v) _G.SellGlorboFrutodrillo = v end })
+SellSection:AddToggle({ Name = "frigo_camello", Flag = "sell_frigo", Default = false, Callback = function(v) _G.SellFrigoCamello = v end })
+SellSection:AddToggle({ Name = "orangutini_ananassini", Flag = "sell_orangutini", Default = false, Callback = function(v) _G.SellOrangutiniAnanassini = v end })
+SellSection:AddToggle({ Name = "bailarin_lololo", Flag = "sell_bailarin", Default = false, Callback = function(v) _G.SellBailarinLololo = v end })
+SellSection:AddToggle({ Name = "svinina_bombobardino", Flag = "sell_svinina", Default = false, Callback = function(v) _G.SellSvininaBombobardino = v end })
+SellSection:AddToggle({ Name = "frulli_frula", Flag = "sell_frulli", Default = false, Callback = function(v) _G.SellFrulliFrula = v end })
+SellSection:AddToggle({ Name = "ganganzelli_trulala", Flag = "sell_ganganzelli", Default = false, Callback = function(v) _G.SellGanganzelliTrulala = v end })
+SellSection:AddToggle({ Name = "orcalaro_orcala", Flag = "sell_orcalaro", Default = false, Callback = function(v) _G.SellOrcalaroOrcala = v end })
+SellSection:AddToggle({ Name = "yoni", Flag = "sell_yoni", Default = false, Callback = function(v) _G.SellYoni = v end })
+SellSection:AddToggle({ Name = "lerulerulerule", Flag = "sell_lerulerulerule", Default = false, Callback = function(v) _G.SellLerulerulerule = v end })
+SellSection:AddToggle({ Name = "caballo_virtuoso", Flag = "sell_caballo", Default = false, Callback = function(v) _G.SellCaballoVirtuoso = v end })
+SellSection:AddToggle({ Name = "tostador_rinoceronte", Flag = "sell_tostador", Default = false, Callback = function(v) _G.SellTostadorRinoceronte = v end })
+SellSection:AddToggle({ Name = "te_te_te_te_sahur", Flag = "sell_te_te", Default = false, Callback = function(v) _G.SellTeTeTeTeSahur = v end })
+SellSection:AddToggle({ Name = "mateo", Flag = "sell_mateo", Default = false, Callback = function(v) _G.SellMateo = v end })
+SellSection:AddToggle({ Name = "ti_ti_ti_sahur", Flag = "sell_ti_ti", Default = false, Callback = function(v) _G.SellTiTiTiSahur = v end })
+SellSection:AddToggle({ Name = "burbaloni_luliloli", Flag = "sell_burbaloni", Default = false, Callback = function(v) _G.SellBurbaloniLuliloli = v end })
+SellSection:AddToggle({ Name = "tortuginni", Flag = "sell_tortuginni", Default = false, Callback = function(v) _G.SellTortuginni = v end })
+SellSection:AddToggle({ Name = "dragonfrutinni", Flag = "sell_dragonfrutinni", Default = false, Callback = function(v) _G.SellDragonfrutinni = v end })
+SellSection:AddToggle({ Name = "tralaleritos", Flag = "sell_tralaleritos", Default = false, Callback = function(v) _G.SellTralaleritos = v end })
+SellSection:AddToggle({ Name = "punto_acceso_olla", Flag = "sell_punto", Default = false, Callback = function(v) _G.SellPuntoAccesoOlla = v end })
+SellSection:AddToggle({ Name = "crocodillitos", Flag = "sell_crocodillitos", Default = false, Callback = function(v) _G.SellCrocodillitos = v end })
+SellSection:AddToggle({ Name = "trulimero_trulicina", Flag = "sell_trulimero", Default = false, Callback = function(v) _G.SellTrulimeroTrulicina = v end })
+SellSection:AddToggle({ Name = "vaca_saturno", Flag = "sell_vaca", Default = false, Callback = function(v) _G.SellVacaSaturno = v end })
+SellSection:AddToggle({ Name = "saturnita", Flag = "sell_saturnita", Default = false, Callback = function(v) _G.SellSaturnita = v end })
+SellSection:AddToggle({ Name = "vaquitas_saturnitas", Flag = "sell_vaquitas", Default = false, Callback = function(v) _G.SellVaquitasSaturnitas = v end })
+SellSection:AddToggle({ Name = "agarrini_lapalini", Flag = "sell_agarrini", Default = false, Callback = function(v) _G.SellAgarriniLapalini = v end })
+SellSection:AddToggle({ Name = "patata_pipi", Flag = "sell_patata", Default = false, Callback = function(v) _G.SellPatataPipi = v end })
+SellSection:AddToggle({ Name = "espaguetis_tualetti", Flag = "sell_espaguetis", Default = false, Callback = function(v) _G.SellEspaguetisTualetti = v end })
+SellSection:AddToggle({ Name = "cathinni_sushinni", Flag = "sell_cathinni", Default = false, Callback = function(v) _G.SellCathinniSushinni = v end })
+SellSection:AddToggle({ Name = "graipus_medus", Flag = "sell_graipus", Default = false, Callback = function(v) _G.SellGraipusMedus = v end })
+SellSection:AddToggle({ Name = "tigrrullini_watermellini", Flag = "sell_tigrrullini", Default = false, Callback = function(v) _G.SellTigrrulliniWatermellini = v end })
+SellSection:AddToggle({ Name = "angela_larila", Flag = "sell_angela", Default = false, Callback = function(v) _G.SellAngelaLarila = v end })
+SellSection:AddToggle({ Name = "canneloni_dragon", Flag = "sell_canneloni", Default = false, Callback = function(v) _G.SellCanneloniDragon = v end })
+SellSection:AddToggle({ Name = "angel_disonte_giuppitere", Flag = "sell_angel", Default = false, Callback = function(v) _G.SellAngelDisonteGiuppitere = v end })
+SellSection:AddToggle({ Name = "a_sahur", Flag = "sell_a_sahur", Default = false, Callback = function(v) _G.SellASahur = v end })
 
--- Sección Recompensas
+-- Seccion Recompensas (MINIMIZADA)
 local RewardSection = MainTab:DrawSection({
-    Name = "🎁 Recompensas Especiales",
+    Name = "Recompensas Especiales",
     Position = "full",
     Minimized = true,
 })
@@ -987,11 +1052,11 @@ RewardSection:AddButton({
     Name = "Reclamar Bloque Espiritual",
     Callback = function()
         if not rf.GetReward then
-            notify("⚠ Remoto GetReward no encontrado.", 5)
+            notify("Remoto GetReward no encontrado.", 5)
             return
         end
         local ok, result = safeInvoke(rf.GetReward)
-        notify(ok and "✓ ¡Reclamo enviado con éxito!" or "✗ Error: " .. tostring(result), 5)
+        notify(ok and "Reclamo enviado con exito!" or "Error: " .. tostring(result), 5)
     end,
 })
 
@@ -1032,8 +1097,8 @@ UISection:AddDropdown({
 local InfoSection = SettingsTab:DrawSection({ Name = "Info", Minimized = true })
 
 InfoSection:AddLabel("BLADEX HUB v4.0 | Be a Lucky Block")
-InfoSection:AddLabel("⚡ MEGA UPGRADE (0.1s) | 💰 Cash Físico | 🎨 UI Hider")
-InfoSection:AddLabel("Anti-bug integrado | Delays optimizados | Velocidad máxima")
+InfoSection:AddLabel("MEGA UPGRADE (0.1s) | Cash Fisico | UI Hider")
+InfoSection:AddLabel("Anti-bug integrado | Delays optimizados")
 
 Window:DrawConfig({
     Name = "Config",
@@ -1041,5 +1106,10 @@ Window:DrawConfig({
     Config = ConfigManager,
 }):Init()
 
-notify("✨ BLADEX HUB v4.0 cargado! ⚡ Mega Upgrade | 💰 Cash Físico | 🎨 UI Hider", 6)
+-- Guardar configuracion al cerrar
+pcall(function()
+    ConfigManager:Save()
+end)
+
+notify("BLADEX HUB v4.0 cargado!", 6)
 print("[BLADEX HUB v4.0] Script cargado. Usa LeftAlt para mostrar/ocultar la UI.")
