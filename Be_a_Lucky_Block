@@ -697,7 +697,7 @@ LbSection:AddDropdown({
 local FarmSection = MainTab:DrawSection({
     Name = "Auto Farm",
     Position = "left",
-    Minimized = true,
+    Minimized = false,
 })
 
 FarmSection:AddToggle({
@@ -745,7 +745,7 @@ FarmSection:AddToggle({
 local SellSection = MainTab:DrawSection({
     Name = "Auto Sell (Brainrot)",
     Position = "right",
-    Minimized = true,
+    Minimized = false,
 })
 
 SellSection:AddToggle({
