@@ -8,10 +8,9 @@ local Compkiller = getgenv().Compkiller
 -- ==================== SERVICIOS ====================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 
--- ==================== VARIABLES GLOBALES (Script 2) ====================
+-- ==================== VARIABLES ====================
 local runningFarm = false
 local runningABL = false
 local runningACEPR = false
@@ -69,27 +68,24 @@ local function findEvent(serviceName, reName)
 end
 
 local lbRF = {
-    StartRun = findRemote("RunningService", "StartRun"),
-    StartMove = findRemote("RunningService", "StartMove"),
-    OpenLuckyBlock = findRemote("RunningService", "OpenLuckyBlock"),
-    UpdateCFrame = findRemote("RunningService", "UpdateCFrame"),
-    EndMove = findRemote("RunningService", "EndMove"),
+    StartRun      = findRemote("RunningService", "StartRun"),
+    StartMove     = findRemote("RunningService", "StartMove"),
+    OpenLuckyBlock= findRemote("RunningService", "OpenLuckyBlock"),
+    UpdateCFrame  = findRemote("RunningService", "UpdateCFrame"),
+    EndMove       = findRemote("RunningService", "EndMove"),
 }
 
 local rf = {
-    Brainrot = findRemote("ContainerService", "UpgradeBrainrot"),
-    WorkUpdate = findEvent("ContainerService", "WorkUpdate"),
-    Container = findRemote("ContainerService", "BuyContainer"),
-    PlaceBest = findRemote("ContainerService", "PlaceBest"),
-    CollectCash = findRemote("ContainerService", "CollectCash"),
-    CollectOfflineCash = findRemote("ContainerService", "CollectOfflineCash"),
-    Rebirth = findRemote("RebirthService", "Rebirth"),
-    Speed = findRemote("UpgradesService", "Upgrade"),
-    EquipSkin = findRemote("SkinService", "EquipSkin"),
-    BuySkin = findRemote("SkinService", "BuySkin"),
+    Brainrot          = findRemote("ContainerService", "UpgradeBrainrot"),
+    WorkUpdate        = findEvent("ContainerService", "WorkUpdate"),
+    Container         = findRemote("ContainerService", "BuyContainer"),
+    PlaceBest         = findRemote("ContainerService", "PlaceBest"),
+    CollectCash       = findRemote("ContainerService", "CollectCash"),
+    CollectOfflineCash= findRemote("ContainerService", "CollectOfflineCash"),
+    Rebirth           = findRemote("RebirthService", "Rebirth"),
+    Speed             = findRemote("UpgradesService", "Upgrade"),
+    BuySkin           = findRemote("SkinService", "BuySkin"),
 }
-
-local sellRF = findRemote("InventoryService", "SellBrainrot")
 
 local GetRewardRemote = nil
 for _, service in ipairs(knitServices:GetChildren()) do
@@ -101,59 +97,41 @@ for _, service in ipairs(knitServices:GetChildren()) do
 end
 rf.GetReward = GetRewardRemote
 
--- ==================== VARIABLES GLOBALES (Script 1) ====================
-_G.AutoUpgrades = _G.AutoUpgrades or false
+-- ==================== _G ====================
+_G.AutoUpgrades  = _G.AutoUpgrades  or false
 _G.AutoContainer = _G.AutoContainer or false
-_G.AutoLBFarm = _G.AutoLBFarm or false
-_G.AutoZeus = _G.AutoZeus or false
-_G.AutoSell = _G.AutoSell or false
-_G.AutoRebirth = _G.AutoRebirth or false
-_G.AutoSpeed = _G.AutoSpeed or false
+_G.AutoLBFarm    = _G.AutoLBFarm    or false
+_G.AutoZeus      = _G.AutoZeus      or false
+_G.AutoRebirth   = _G.AutoRebirth   or false
+_G.AutoSpeed     = _G.AutoSpeed     or false
 _G.AutoPlaceBest = _G.AutoPlaceBest or false
-_G.SelectedBase = _G.SelectedBase or "base14"
-_G.AutoCash = _G.AutoCash or false
-
-_G.SellBonecaAmbalabu = false _G.SellCactoHipopotamo = false _G.SellCocofantoElefante = false
-_G.SellCappuccinaBailarina = false _G.SellFioitteraGangster = false _G.SellUdinDinDinDun = false
-_G.SellBrrBrrPatapim = false _G.SellAsesinoCapuchino = false _G.SellGorilloWatermellondrillo = false
-_G.SellRaccooniWatermelunni = false _G.SellTaTaTaTaSahur = false _G.SellGlorboFrutodrillo = false
-_G.SellFrigoCamello = false _G.SellOrangutiniAnanassini = false _G.SellBailarinLololo = false
-_G.SellSvininaBombobardino = false _G.SellFrulliFrula = false _G.SellGanganzelliTrulala = false
-_G.SellOrcalaroOrcala = false _G.SellYoni = false _G.SellLerulerulerule = false
-_G.SellCaballoVirtuoso = false _G.SellTostadorRinoceronte = false _G.SellTeTeTeTeSahur = false
-_G.SellMateo = false _G.SellTiTiTiSahur = false _G.SellBurbaloniLuliloli = false
-_G.SellTortuginni = false _G.SellDragonfrutinni = false _G.SellTralaleritos = false
-_G.SellPuntoAccesoOlla = false _G.SellCrocodillitos = false _G.SellTrulimeroTrulicina = false
-_G.SellVacaSaturno = false _G.SellSaturnita = false _G.SellVaquitasSaturnitas = false
-_G.SellAgarriniLapalini = false _G.SellPatataPipi = false _G.SellEspaguetisTualetti = false
-_G.SellCathinniSushinni = false _G.SellGraipusMedus = false _G.SellTigrrulliniWatermellini = false
-_G.SellAngelaLarila = false _G.SellCanneloniDragon = false _G.SellAngelDisonteGiuppitere = false
-_G.SellASahur = false
+_G.SelectedBase  = _G.SelectedBase  or "base14"
+_G.AutoCash      = _G.AutoCash      or false
 
 -- ==================== COORDENADAS ====================
 local BASE_COORDS = {
     base14 = { block = CFrame.new(-495, 46, -2123), runner = CFrame.new(588.96, 38.18, -2127.26) },
-    ZEUS   = { block = CFrame.new(721, 38, -2173),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base1  = { block = CFrame.new(640, 46, -2035),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base2  = { block = CFrame.new(559, 46, -2208),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base3  = { block = CFrame.new(481, 46, -2035),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base4  = { block = CFrame.new(400, 46, -2211),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base5  = { block = CFrame.new(291, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base6  = { block = CFrame.new(210, 46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base7  = { block = CFrame.new(131, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base8  = { block = CFrame.new(51, 46, -2212),   runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base9  = { block = CFrame.new(-61, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base10 = { block = CFrame.new(-140, 46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base11 = { block = CFrame.new(-218, 46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base12 = { block = CFrame.new(-299, 46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base13 = { block = CFrame.new(-379, 46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    ZEUS   = { block = CFrame.new(721,  38, -2173),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base1  = { block = CFrame.new(640,  46, -2035),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base2  = { block = CFrame.new(559,  46, -2208),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base3  = { block = CFrame.new(481,  46, -2035),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base4  = { block = CFrame.new(400,  46, -2211),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base5  = { block = CFrame.new(291,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base6  = { block = CFrame.new(210,  46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base7  = { block = CFrame.new(131,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base8  = { block = CFrame.new(51,   46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base9  = { block = CFrame.new(-61,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base10 = { block = CFrame.new(-140, 46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base11 = { block = CFrame.new(-218, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base12 = { block = CFrame.new(-299, 46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base13 = { block = CFrame.new(-379, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
 }
 
 local LB_CFG = {
-    MAX_RETRIES = 3,
-    BLOCK_COOLDOWN = 2.5,
-    ANTI_BUG_TIMEOUT = 8,
-    DELAYS = { AFTER_TELEPORT = 0.3, AFTER_OPEN = 1.2, AFTER_RUN = 0.5, CYCLE_END = 1.5, RESPAWN_WAIT = 3.0 },
+    MAX_RETRIES     = 3,
+    BLOCK_COOLDOWN  = 2.5,
+    ANTI_BUG_TIMEOUT= 8,
+    DELAYS = { AFTER_TELEPORT=0.3, AFTER_OPEN=1.2, AFTER_RUN=0.5, CYCLE_END=1.5, RESPAWN_WAIT=3.0 },
 }
 
 -- ==================== HELPERS ====================
@@ -212,12 +190,8 @@ end
 local function stopLoop(name)
     if activeThreads[name] then pcall(task.cancel, activeThreads[name]) activeThreads[name] = nil end
 end
-local function setLoop(name, enabled, fn)
-    if enabled then startLoop(name, fn) else stopLoop(name) end
-end
 
--- parseCash helper (Script 2)
-local suffix = { K=1e3, M=1e6, B=1e9, T=1e12, Qa=1e15, Qi=1e18, Sx=1e21, Sp=1e24, Oc=1e27, No=1e30, Dc=1e33 }
+local suffix = { K=1e3,M=1e6,B=1e9,T=1e12,Qa=1e15,Qi=1e18,Sx=1e21,Sp=1e24,Oc=1e27,No=1e30,Dc=1e33 }
 local function parseCash(text)
     text = text:gsub("%$",""):gsub(",",""):gsub("%s+","")
     local num = tonumber(text:match("[%d%.]+"))
@@ -227,7 +201,6 @@ local function parseCash(text)
     return num
 end
 
--- getMyModel helper (Script 2)
 local function getMyModel()
     local folder = workspace:FindFirstChild("RunningModels")
     if not folder then return nil end
@@ -237,7 +210,6 @@ local function getMyModel()
     return nil
 end
 
--- applySpeed helper (Script 2)
 local function applySpeed()
     local model = getMyModel()
     if not model then currentModel = nil return end
@@ -245,9 +217,7 @@ local function applySpeed()
         currentModel = model
         originalSpeed = model:GetAttribute("MovementSpeed")
     end
-    if runningSpeed then
-        model:SetAttribute("MovementSpeed", sliderValue)
-    end
+    if runningSpeed then model:SetAttribute("MovementSpeed", sliderValue) end
 end
 
 task.spawn(function()
@@ -291,7 +261,7 @@ local function lbFarmCycle()
         if not isNear(coords.runner, 8) then teleportToWithConfirm(coords.runner, 3) end
         task.wait(LB_CFG.DELAYS.AFTER_TELEPORT)
         if lbRF.StartMove then invokeWithRetry(lbRF.StartMove, LB_CFG.MAX_RETRIES) end
-        if lbRF.StartRun then invokeWithRetry(lbRF.StartRun, LB_CFG.MAX_RETRIES) end
+        if lbRF.StartRun  then invokeWithRetry(lbRF.StartRun,  LB_CFG.MAX_RETRIES) end
         task.wait(LB_CFG.DELAYS.AFTER_RUN)
         local currentHrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if lbRF.UpdateCFrame and currentHrp then invokeWithRetry(lbRF.UpdateCFrame, LB_CFG.MAX_RETRIES, currentHrp.CFrame) end
@@ -323,7 +293,9 @@ local function startUpgradeLoop()
         while _G.AutoUpgrades do
             for i = 30, 1, -1 do
                 if not _G.AutoUpgrades then break end
-                task.spawn(function() if rf.Brainrot then pcall(function() rf.Brainrot:InvokeServer(tostring(i)) end) end end)
+                task.spawn(function()
+                    if rf.Brainrot then pcall(function() rf.Brainrot:InvokeServer(tostring(i)) end) end
+                end)
                 if i % 5 == 0 then task.wait(0.01) end
             end
             task.wait(0.4)
@@ -373,7 +345,7 @@ local function startCashLoop()
                 for _, v in pairs(workspace:GetDescendants()) do
                     if v:IsA("BasePart") and v.Transparency < 1 then
                         if v:FindFirstChildOfClass("BillboardGui") or v:FindFirstChildOfClass("SurfaceGui") then
-                            pcall(function() firetouchinterest(hrp, v, 0) task.wait() firetouchinterest(hrp, v, 1) end)
+                            pcall(function() firetouchinterest(hrp,v,0) task.wait() firetouchinterest(hrp,v,1) end)
                         end
                     end
                 end
@@ -384,56 +356,12 @@ local function startCashLoop()
     end)
 end
 
--- ==================== AUTO SELL ====================
-local function executeAutoSell()
-    if not sellRF then return end
-    local backpack = LP:FindFirstChild("Backpack")
-    if not backpack then return end
-    local sellMap = {
-        boneca_ambalabu = "SellBonecaAmbalabu", cacto_hipopotamo = "SellCactoHipopotamo",
-        cocofanto_elefante = "SellCocofantoElefante", cappuccina_bailarina = "SellCappuccinaBailarina",
-        fioittera_gangster = "SellFioitteraGangster", udin_din_din_dun = "SellUdinDinDinDun",
-        brr_brr_patapim = "SellBrrBrrPatapim", asesino_capuchino = "SellAsesinoCapuchino",
-        gorillo_watermellondrillo = "SellGorilloWatermellondrillo", raccooni_watermelunni = "SellRaccooniWatermelunni",
-        ta_ta_ta_ta_sahur = "SellTaTaTaTaSahur", glorbo_frutodrillo = "SellGlorboFrutodrillo",
-        frigo_camello = "SellFrigoCamello", orangutini_ananassini = "SellOrangutiniAnanassini",
-        bailarin_lololo = "SellBailarinLololo", svinina_bombobardino = "SellSvininaBombobardino",
-        frulli_frula = "SellFrulliFrula", ganganzelli_trulala = "SellGanganzelliTrulala",
-        orcalaro_orcala = "SellOrcalaroOrcala", yoni = "SellYoni",
-        lerulerulerule = "SellLerulerulerule", caballo_virtuoso = "SellCaballoVirtuoso",
-        tostador_rinoceronte = "SellTostadorRinoceronte", te_te_te_te_sahur = "SellTeTeTeTeSahur",
-        mateo = "SellMateo", ti_ti_ti_sahur = "SellTiTiTiSahur",
-        burbaloni_luliloli = "SellBurbaloniLuliloli", tortuginni = "SellTortuginni",
-        dragonfrutinni = "SellDragonfrutinni", tralaleritos = "SellTralaleritos",
-        punto_acceso_olla = "SellPuntoAccesoOlla", crocodillitos = "SellCrocodillitos",
-        trulimero_trulicina = "SellTrulimeroTrulicina", vaca_saturno = "SellVacaSaturno",
-        saturnita = "SellSaturnita", vaquitas_saturnitas = "SellVaquitasSaturnitas",
-        agarrini_lapalini = "SellAgarriniLapalini", patata_pipi = "SellPatataPipi",
-        espaguetis_tualetti = "SellEspaguetisTualetti", cathinni_sushinni = "SellCathinniSushinni",
-        graipus_medus = "SellGraipusMedus", tigrrullini_watermellini = "SellTigrrulliniWatermellini",
-        angela_larila = "SellAngelaLarila", canneloni_dragon = "SellCanneloniDragon",
-        angel_disonte_giuppitere = "SellAngelDisonteGiuppitere", a_sahur = "SellASahur",
-    }
-    for _, item in ipairs(backpack:GetChildren()) do
-        if not _G.AutoSell then break end
-        local entityId = item:GetAttribute("EntityId")
-        local brainrotType = item:GetAttribute("BrainrotType")
-        local flagName = brainrotType and sellMap[brainrotType]
-        if flagName and _G[flagName] and entityId then
-            pcall(function() sellRF:InvokeServer(entityId) end)
-            task.wait(0.2)
-        end
-    end
-end
-
-local function loopAutoSell()
-    while _G.AutoSell do executeAutoSell() task.wait(1.5) end
-end
-
 -- ==================== TOGGLE HELPER ====================
 local LOOP_MAP = {
-    AutoContainer = loopAutoContainer, AutoLBFarm = loopAutoLBFarm,
-    AutoSell = loopAutoSell, AutoRebirth = loopAutoRebirth, AutoPlaceBest = loopAutoPlaceBest,
+    AutoContainer = loopAutoContainer,
+    AutoLBFarm    = loopAutoLBFarm,
+    AutoRebirth   = loopAutoRebirth,
+    AutoPlaceBest = loopAutoPlaceBest,
 }
 
 local function toggle(name, val)
@@ -441,15 +369,18 @@ local function toggle(name, val)
     if val then
         if name == "AutoUpgrades" then startUpgradeLoop()
         elseif name == "AutoSpeed" then startSpeedLoop()
-        elseif LOOP_MAP[name] then setLoop(name, val, LOOP_MAP[name]) end
+        elseif LOOP_MAP[name] then startLoop(name, LOOP_MAP[name]) end
     else
-        if name == "AutoUpgrades" then if upgradeLoopThread then pcall(task.cancel, upgradeLoopThread) upgradeLoopThread = nil end
-        elseif name == "AutoSpeed" then speedRunning = false
-        else stopLoop(name) end
+        if name == "AutoUpgrades" then
+            if upgradeLoopThread then pcall(task.cancel, upgradeLoopThread) upgradeLoopThread = nil end
+        elseif name == "AutoSpeed" then
+            speedRunning = false
+        else
+            stopLoop(name)
+        end
     end
 end
 
--- Monitor de cambios
 task.spawn(function()
     local lastState = {}
     while true do
@@ -464,172 +395,104 @@ task.spawn(function()
     end
 end)
 
--- ==================== DIÁLOGO (Script 2) ====================
+-- ==================== DIÁLOGO ====================
 local function showDialog(title, content, confirmCallback, cancelCallback)
-    local dialogWindow = Compkiller.new({
-        Name = title, Keybind = "None", Logo = Compkiller.Logo,
-        Scale = UDim2.new(0, 300, 0, 150)
-    })
-    dialogWindow:SetVisible(true)
-    local tab = dialogWindow:DrawTab({ Name = "Dialog", Icon = "info", Type = "Single" })
-    local section = tab:DrawSection({ Name = "" })
-    section:AddParagraph({ Title = title, Content = content })
-    section:AddButton({ Name = "Confirm", Callback = function()
+    local d = Compkiller.new({ Name=title, Keybind="None", Logo=Compkiller.Logo, Scale=UDim2.new(0,300,0,150) })
+    d:SetVisible(true)
+    local tab = d:DrawTab({ Name="Dialog", Icon="info", Type="Single" })
+    local sec = tab:DrawSection({ Name="" })
+    sec:AddParagraph({ Title=title, Content=content })
+    sec:AddButton({ Name="Confirm", Callback=function()
         if confirmCallback then confirmCallback() end
-        dialogWindow:SetVisible(false) dialogWindow.Root:Destroy()
+        d:SetVisible(false) d.Root:Destroy()
     end })
-    section:AddButton({ Name = "Cancel", Callback = function()
+    sec:AddButton({ Name="Cancel", Callback=function()
         if cancelCallback then cancelCallback() end
-        dialogWindow:SetVisible(false) dialogWindow.Root:Destroy()
+        d:SetVisible(false) d.Root:Destroy()
     end })
-    task.wait(0.1)
-    dialogWindow:SetVisible(true)
+    task.wait(0.1) d:SetVisible(true)
 end
 
--- ==================== INICIALIZAR UI ====================
+-- ==================== UI ====================
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
 
 local ConfigManager = Compkiller:ConfigManager({
     Directory = "BLADEX-HUB",
-    Config = "BLADEX-BrainrotV3",
+    Config    = "BLADEX-BrainrotV3",
 })
 
 Compkiller:Loader(Compkiller.Logo, 2.5).yield()
 
 local Window = Compkiller.new({
-    Name = "BLADEX HUB v3.0",
-    Keybind = "LeftAlt",
-    Logo = Compkiller.Logo,
-    Scale = UDim2.new(0, 480, 0, 340),
+    Name     = "BLADEX HUB v3.0",
+    Keybind  = "LeftAlt",
+    Logo     = Compkiller.Logo,
+    Scale    = UDim2.new(0, 480, 0, 340),
     TextSize = 15,
 })
 Window.Minimized = true
 
 local function notify(content, duration)
-    Notifier.new({
-        Title = "BLADEX HUB",
-        Content = content,
-        Duration = duration or 4,
-        Icon = Compkiller.Logo,
-    })
+    Notifier.new({ Title="BLADEX HUB", Content=content, Duration=duration or 4, Icon=Compkiller.Logo })
 end
 
--- ==================== TAB 1: BE A BRAINROT ====================
+-- ==================== ÚNICA TAB: BE A BRAINROT ====================
 local mainTab = Window:DrawTab({
-    Name = "BE A BRAINROT",
-    Icon = "crown",
-    Type = "Double",
-    EnableScrolling = true,
+    Name           = "BE A BRAINROT",
+    Icon           = "crown",
+    Type           = "Double",
+    EnableScrolling= true,
 })
 
--- Sección: Lucky Block Farm
-local leftSection = mainTab:DrawSection({ Name = "Lucky Block Farm", Position = "left", Minimized = true })
+-- ───────────── IZQUIERDA ─────────────
 
-leftSection:AddToggle({ Name = "Auto Ciber Farm", Flag = "lb_farm", Default = false,
-    Callback = function(v) toggle("AutoLBFarm", v) end })
+-- Lucky Block Farm
+local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
 
-leftSection:AddToggle({ Name = "Auto Zeus Farm", Flag = "auto_zeus", Default = false,
-    Callback = function(v) _G.AutoZeus = v end })
+lbSection:AddToggle({ Name="Auto Ciber Farm", Flag="lb_farm", Default=false,
+    Callback=function(v) toggle("AutoLBFarm", v) end })
 
-leftSection:AddDropdown({
-    Name = "Base a Farmear", Flag = "selected_base", Default = "Base 14",
-    Values = { "Base 1","Base 2","Base 3","Base 4","Base 5","Base 6","Base 7",
-               "Base 8","Base 9","Base 10","Base 11","Base 12","Base 13","Base 14" },
-    Callback = function(v)
+lbSection:AddToggle({ Name="Auto Zeus Farm", Flag="auto_zeus", Default=false,
+    Callback=function(v) _G.AutoZeus = v end })
+
+lbSection:AddDropdown({
+    Name="Base a Farmear", Flag="selected_base", Default="Base 14",
+    Values={"Base 1","Base 2","Base 3","Base 4","Base 5","Base 6","Base 7",
+            "Base 8","Base 9","Base 10","Base 11","Base 12","Base 13","Base 14"},
+    Callback=function(v)
         local num = v:match("Base (%d+)")
-        if num then _G.SelectedBase = "base" .. num notify("Base: " .. v, 3) end
+        if num then _G.SelectedBase = "base"..num notify("Base: "..v, 3) end
     end,
 })
 
--- Sección: Auto Farm
-local autoFarmSection = mainTab:DrawSection({ Name = "Auto Farm", Position = "left", Minimized = true })
+-- Auto Farm (Knit)
+local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
 
-autoFarmSection:AddToggle({ Name = "Auto Cash", Flag = "auto_cash", Default = false,
-    Callback = function(v)
-        _G.AutoCash = v
-        if v then startCashLoop() else cashRunning = false end
-    end })
+afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
+    Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
 
-autoFarmSection:AddToggle({ Name = "Auto Colocar Brainrots", Flag = "auto_placebest", Default = false,
-    Callback = function(v) toggle("AutoPlaceBest", v) end })
+afSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
+    Callback=function(v) toggle("AutoPlaceBest", v) end })
 
-autoFarmSection:AddToggle({ Name = "Auto Rebirth", Flag = "auto_rebirth", Default = false,
-    Callback = function(v) toggle("AutoRebirth", v) end })
+afSection:AddToggle({ Name="Auto Rebirth", Flag="auto_rebirth", Default=false,
+    Callback=function(v) toggle("AutoRebirth", v) end })
 
-autoFarmSection:AddToggle({ Name = "Upgrade Brainrots", Flag = "auto_upgrades", Default = false,
-    Callback = function(v) toggle("AutoUpgrades", v) end })
+afSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
+    Callback=function(v) toggle("AutoUpgrades", v) end })
 
-autoFarmSection:AddToggle({ Name = "Auto Comprar Velocidad", Flag = "auto_speed", Default = false,
-    Callback = function(v) toggle("AutoSpeed", v) end })
+afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=false,
+    Callback=function(v) toggle("AutoSpeed", v) end })
 
-autoFarmSection:AddToggle({ Name = "Auto Mejorar Base", Flag = "auto_container", Default = false,
-    Callback = function(v) toggle("AutoContainer", v) end })
+afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
+    Callback=function(v) toggle("AutoContainer", v) end })
 
--- Sección: Auto Sell
-local sellSection = mainTab:DrawSection({ Name = "Auto Sell (Brainrot)", Position = "right", Minimized = true })
+-- Movement (del script 2)
+local movSection = mainTab:DrawSection({ Name="Movement", Position="left", Minimized=true })
 
-sellSection:AddToggle({ Name = "Auto Sell", Flag = "auto_sell", Default = false,
-    Callback = function(v)
-        if not sellRF and v then notify("⚠ Remoto SellBrainrot no encontrado.", 5) return end
-        toggle("AutoSell", v)
-    end })
-
-local sellToggles = {
-    {"Boneca Ambalabu","sell_boneca","SellBonecaAmbalabu"},{"Cacto Hipopotamo","sell_cacto","SellCactoHipopotamo"},
-    {"Cocofanto Elefante","sell_cocofanto","SellCocofantoElefante"},{"Cappuccina Bailarina","sell_cappuccina","SellCappuccinaBailarina"},
-    {"Fioittera Gangster","sell_fioittera","SellFioitteraGangster"},{"Udin Din Din Dun","sell_udin","SellUdinDinDinDun"},
-    {"Brr Brr Patapim","sell_brr","SellBrrBrrPatapim"},{"Asesino Capuchino","sell_asesino","SellAsesinoCapuchino"},
-    {"Gorillo Watermellondrillo","sell_gorillo","SellGorilloWatermellondrillo"},{"Raccooni Watermelunni","sell_raccooni","SellRaccooniWatermelunni"},
-    {"Ta Ta Ta Ta Sahur","sell_tatata","SellTaTaTaTaSahur"},{"Glorbo Frutodrillo","sell_glorbo","SellGlorboFrutodrillo"},
-    {"Frigo Camello","sell_frigo","SellFrigoCamello"},{"Orangutini Ananassini","sell_orangutini","SellOrangutiniAnanassini"},
-    {"Bailarin Lololo","sell_bailarin","SellBailarinLololo"},{"Svinina Bombobardino","sell_svinina","SellSvininaBombobardino"},
-    {"Frulli Frula","sell_frulli","SellFrulliFrula"},{"Ganganzelli Trulala","sell_ganganzelli","SellGanganzelliTrulala"},
-    {"Orcalaro Orcala","sell_orcalaro","SellOrcalaroOrcala"},{"Yoni","sell_yoni","SellYoni"},
-    {"Lerulerulerule","sell_lerule","SellLerulerulerule"},{"Caballo Virtuoso","sell_caballo","SellCaballoVirtuoso"},
-    {"Tostador Rinoceronte","sell_tostador","SellTostadorRinoceronte"},{"Te Te Te Te Sahur","sell_tetete","SellTeTeTeTeSahur"},
-    {"Mateo","sell_mateo","SellMateo"},{"Ti Ti Ti Sahur","sell_tititi","SellTiTiTiSahur"},
-    {"Burbaloni Luliloli","sell_burbaloni","SellBurbaloniLuliloli"},{"Tortuginni","sell_tortuginni","SellTortuginni"},
-    {"Dragonfrutinni","sell_dragonfrut","SellDragonfrutinni"},{"Tralaleritos","sell_tralaleritos","SellTralaleritos"},
-    {"Punto Acceso Olla","sell_punto","SellPuntoAccesoOlla"},{"Crocodillitos","sell_crocodillitos","SellCrocodillitos"},
-    {"Trulimero Trulicina","sell_trulimero","SellTrulimeroTrulicina"},{"Vaca Saturno","sell_vaca","SellVacaSaturno"},
-    {"Saturnita","sell_saturnita","SellSaturnita"},{"Vaquitas Saturnitas","sell_vaquitas","SellVaquitasSaturnitas"},
-    {"Agarrini Lapalini","sell_agarrini","SellAgarriniLapalini"},{"Patata Pipi","sell_patata","SellPatataPipi"},
-    {"Espaguetis Tualetti","sell_espaguetis","SellEspaguetisTualetti"},{"Cathinni Sushinni","sell_cathinni","SellCathinniSushinni"},
-    {"Graipus Medus","sell_graipus","SellGraipusMedus"},{"Tigrrullini Watermellini","sell_tigrrullini","SellTigrrulliniWatermellini"},
-    {"Angela Larila","sell_angela","SellAngelaLarila"},{"Canneloni Dragon","sell_canneloni","SellCanneloniDragon"},
-    {"Angel Disonte Giuppitere","sell_angel","SellAngelDisonteGiuppitere"},{"A Sahur","sell_asahur","SellASahur"},
-}
-
-for _, t in ipairs(sellToggles) do
-    local name, flag, gvar = t[1], t[2], t[3]
-    sellSection:AddToggle({ Name = "Vender " .. name, Flag = flag, Default = false,
-        Callback = function(v) _G[gvar] = v end })
-end
-
--- Sección: Recompensas
-local rewardSection = mainTab:DrawSection({ Name = "Recompensas Especiales", Position = "full", Minimized = true })
-
-rewardSection:AddButton({ Name = "Reclamar Bloque Espiritual", Callback = function()
-    if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
-    local ok, result = safeInvoke(rf.GetReward)
-    notify(ok and "¡Reclamo enviado!" or "Error: " .. tostring(result), 5)
-end })
-
--- ==================== TAB 2: BLADEX (Script 2) ====================
-local bladexTab = Window:DrawTab({
-    Name = "BLADEX",
-    Icon = "star",
-    Type = "Single",
-    EnableScrolling = true,
-})
-
--- Sección: Movement
-local movementSection = bladexTab:DrawSection({ Name = "Movement" })
-
-local speedToggle = movementSection:AddToggle({
-    Name = "Enable Custom Lucky Block Speed", Default = false,
-    Callback = function(state)
+local speedToggle = movSection:AddToggle({
+    Name="Custom Lucky Block Speed", Default=false,
+    Callback=function(state)
         runningSpeed = state
         if not state then
             local model = getMyModel()
@@ -639,17 +502,19 @@ local speedToggle = movementSection:AddToggle({
     end
 })
 
-movementSection:AddSlider({
-    Name = "Lucky Block Speed", Default = 1000, Min = 50, Max = 3000, Round = 0,
-    Callback = function(value) sliderValue = value end
+movSection:AddSlider({
+    Name="Lucky Block Speed", Default=1000, Min=50, Max=3000, Round=0,
+    Callback=function(value) sliderValue = value end
 })
 
--- Sección: Brainrots
-local brainSection = bladexTab:DrawSection({ Name = "Brainrots" })
+-- ───────────── DERECHA ─────────────
+
+-- Brainrots (del script 2)
+local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="right", Minimized=true })
 
 local autoFarmToggle2 = brainSection:AddToggle({
-    Name = "Auto Farm Best Brainrots", Default = false,
-    Callback = function(state)
+    Name="Auto Farm Best Brainrots", Default=false,
+    Callback=function(state)
         runningFarm = state
         if state then
             task.spawn(function()
@@ -686,18 +551,18 @@ local autoFarmToggle2 = brainSection:AddToggle({
 
                     if ownedModel and ownedModel.Parent == modelsFolder then
                         if ownedModel.PrimaryPart then
-                            ownedModel:SetPrimaryPartCFrame(target.CFrame * CFrame.new(0, -5, 0))
+                            ownedModel:SetPrimaryPartCFrame(target.CFrame * CFrame.new(0,-5,0))
                         else
                             local part = ownedModel:FindFirstChildWhichIsA("BasePart")
-                            if part then part.CFrame = target.CFrame * CFrame.new(0, -5, 0) end
+                            if part then part.CFrame = target.CFrame * CFrame.new(0,-5,0) end
                         end
                     end
 
-                    repeat task.wait(0.3) until not runningFarm or (ownedModel == nil or ownedModel.Parent ~= modelsFolder)
+                    repeat task.wait(0.3) until not runningFarm or (ownedModel==nil or ownedModel.Parent~=modelsFolder)
                     if not runningFarm then break end
 
                     local oldCharacter = LP.Character
-                    repeat task.wait(0.2) until not runningFarm or (LP.Character ~= oldCharacter and LP.Character ~= nil)
+                    repeat task.wait(0.2) until not runningFarm or (LP.Character~=oldCharacter and LP.Character~=nil)
                     if not runningFarm then break end
 
                     task.wait(0.4)
@@ -710,7 +575,7 @@ local autoFarmToggle2 = brainSection:AddToggle({
     end
 })
 
-brainSection:AddButton({ Name = "Teleport to End", Callback = function()
+brainSection:AddButton({ Name="Teleport to End", Callback=function()
     local modelsFolder = workspace:WaitForChild("RunningModels")
     local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
     for _, obj in ipairs(modelsFolder:GetChildren()) do
@@ -723,8 +588,8 @@ end })
 
 local folder2 = workspace:WaitForChild("BossTouchDetectors")
 local rbtToggle = brainSection:AddToggle({
-    Name = "Remove Bad Boss Touch Detectors", Default = false,
-    Callback = function(state)
+    Name="Remove Bad Boss Touch Detectors", Default=false,
+    Callback=function(state)
         if state then
             storedParts = {}
             for _, obj in ipairs(folder2:GetChildren()) do
@@ -737,7 +602,7 @@ local rbtToggle = brainSection:AddToggle({
     end
 })
 
-brainSection:AddButton({ Name = "Pickup All Your Brainrots", Callback = function()
+brainSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     showDialog("Confirm Pickup!", "Pick up all Brainrots?", function()
         local username = LP.Name
         local plotsFolder = workspace:WaitForChild("Plots")
@@ -756,12 +621,13 @@ brainSection:AddButton({ Name = "Pickup All Your Brainrots", Callback = function
         local containers = myPlot:FindFirstChild("Containers")
         if not containers then return end
         for i = 1, 30 do
-            local containerFolder = containers:FindFirstChild(tostring(i))
-            if containerFolder and containerFolder:FindFirstChild(tostring(i)) then
-                local container = containerFolder[tostring(i)]
+            local cf = containers:FindFirstChild(tostring(i))
+            if cf and cf:FindFirstChild(tostring(i)) then
+                local container = cf[tostring(i)]
                 local innerModel = container:FindFirstChild("InnerModel")
                 if innerModel and #innerModel:GetChildren() > 0 then
-                    findRemote("ContainerService", "PickupBrainrot"):InvokeServer(tostring(i))
+                    local remote = findRemote("ContainerService", "PickupBrainrot")
+                    if remote then remote:InvokeServer(tostring(i)) end
                     task.wait(0.1)
                 end
             end
@@ -770,12 +636,12 @@ brainSection:AddButton({ Name = "Pickup All Your Brainrots", Callback = function
     end, function() end)
 end })
 
--- Sección: Automations
-local autoSection = bladexTab:DrawSection({ Name = "Automations" })
+-- Automations (del script 2)
+local autoSection = mainTab:DrawSection({ Name="Automations", Position="right", Minimized=true })
 
 local ablToggle = autoSection:AddToggle({
-    Name = "Auto Buy Best Luckyblock", Default = false,
-    Callback = function(state)
+    Name="Auto Buy Best Luckyblock", Default=false,
+    Callback=function(state)
         runningABL = state
         if state then
             task.spawn(function()
@@ -785,8 +651,8 @@ local ablToggle = autoSection:AddToggle({
                     if gui then
                         local pickaxeShop = gui:FindFirstChild("PickaxeShop")
                         if pickaxeShop then
-                            local scrollingFrame = pickaxeShop:FindFirstChild("ShopContainer") and
-                                pickaxeShop.ShopContainer:FindFirstChild("ScrollingFrame")
+                            local shopContainer = pickaxeShop:FindFirstChild("ShopContainer")
+                            local scrollingFrame = shopContainer and shopContainer:FindFirstChild("ScrollingFrame")
                             if scrollingFrame then
                                 local cash = LP.leaderstats.Cash.Value
                                 local bestSkin, bestPrice = nil, 0
@@ -818,19 +684,16 @@ local ablToggle = autoSection:AddToggle({
     end
 })
 
-autoSection:AddButton({ Name = "Redeem All Codes", Callback = function()
+autoSection:AddButton({ Name="Redeem All Codes", Callback=function()
     local redeem = findRemote("CodesService", "RedeemCode")
     if not redeem then notify("⚠ Remoto RedeemCode no encontrado.", 5) return end
-    for _, code in ipairs(codes) do
-        pcall(function() redeem:InvokeServer(code) end)
-        task.wait(1)
-    end
+    for _, code in ipairs(codes) do pcall(function() redeem:InvokeServer(code) end) task.wait(1) end
     notify("Códigos canjeados.", 4)
 end })
 
 local aceprToggle = autoSection:AddToggle({
-    Name = "Auto Claim Event Pass Rewards", Default = false,
-    Callback = function(state)
+    Name="Auto Claim Event Pass Rewards", Default=false,
+    Callback=function(state)
         runningACEPR = state
         if state then
             task.spawn(function()
@@ -848,7 +711,7 @@ local aceprToggle = autoSection:AddToggle({
                             local item = gui:FindFirstChild(tostring(i))
                             if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
                                 local free = item.Frame.Free
-                                local locked = free:FindFirstChild("Locked")
+                                local locked  = free:FindFirstChild("Locked")
                                 local claimed = free:FindFirstChild("Claimed")
                                 while runningACEPR and locked and locked.Visible do task.wait(0.2) end
                                 if runningACEPR and not (claimed and claimed.Visible) and locked and not locked.Visible then
@@ -865,8 +728,8 @@ local aceprToggle = autoSection:AddToggle({
 })
 
 local acprToggle = autoSection:AddToggle({
-    Name = "Auto Claim Playtime Rewards", Default = false,
-    Callback = function(state)
+    Name="Auto Claim Playtime Rewards", Default=false,
+    Callback=function(state)
         runningACPR = state
         if state then
             task.spawn(function()
@@ -884,30 +747,34 @@ local acprToggle = autoSection:AddToggle({
     end
 })
 
--- ==================== TAB 3: AJUSTES ====================
-local settingsTab = Window:DrawTab({ Name = "Ajustes", Icon = "settings", Type = "Single" })
-local settingsSection = settingsTab:DrawSection({ Name = "Configuración", Position = "full" })
+-- Recompensas Especiales
+local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
 
-settingsSection:AddToggle({ Name = "Always Show Frame", Default = false,
-    Callback = function(v) Window.AlwayShowTab = v end })
+rewardSection:AddButton({ Name="Reclamar Bloque Espiritual", Callback=function()
+    if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
+    local ok, result = safeInvoke(rf.GetReward)
+    notify(ok and "¡Reclamo enviado!" or "Error: "..tostring(result), 5)
+end })
 
-settingsSection:AddColorPicker({ Name = "Color Highlight", Default = Compkiller.Colors.Highlight,
-    Callback = function(v)
-        Compkiller.Colors.Highlight = v
-        Compkiller:RefreshCurrentColor()
-    end })
+-- ==================== AJUSTES (pestaña aparte) ====================
+local settingsTab = Window:DrawTab({ Name="Ajustes", Icon="settings", Type="Single" })
+local settingsSection = settingsTab:DrawSection({ Name="Configuración", Position="full" })
 
-settingsSection:AddDropdown({ Name = "Tema", Default = "Default",
-    Values = { "Default", "Dark Green", "Dark Blue", "Purple Rose", "Skeet" },
-    Callback = function(v) Compkiller:SetTheme(v) end })
+settingsSection:AddToggle({ Name="Always Show Frame", Default=false,
+    Callback=function(v) Window.AlwayShowTab = v end })
+
+settingsSection:AddColorPicker({ Name="Color Highlight", Default=Compkiller.Colors.Highlight,
+    Callback=function(v) Compkiller.Colors.Highlight=v Compkiller:RefreshCurrentColor() end })
+
+settingsSection:AddDropdown({ Name="Tema", Default="Default",
+    Values={"Default","Dark Green","Dark Blue","Purple Rose","Skeet"},
+    Callback=function(v) Compkiller:SetTheme(v) end })
 
 settingsSection:AddLabel("BLADEX HUB v3.0 | Be a Lucky Block")
-settingsSection:AddLabel("Tab 1: Farm + Sell  |  Tab 2: BLADEX extras")
 
 -- ==================== CONFIG + INICIO ====================
-Window:DrawConfig({ Name = "Config", Icon = "folder", Config = ConfigManager }):Init()
+Window:DrawConfig({ Name="Config", Icon="folder", Config=ConfigManager }):Init()
 
--- Inicializar estados (Script 2)
 speedToggle:SetValue(false)
 autoFarmToggle2:SetValue(false)
 rbtToggle:SetValue(false)
@@ -915,5 +782,5 @@ ablToggle:SetValue(false)
 aceprToggle:SetValue(false)
 acprToggle:SetValue(false)
 
-notify("¡BLADEX HUB v3.0 cargado! Knit: " .. (knitServices and "✓" or "✗"), 6)
+notify("¡BLADEX HUB v3.0 cargado! Knit: "..(knitServices and "✓" or "✗"), 6)
 print("[BLADEX HUB v3.0] Cargado. LeftAlt para mostrar/ocultar.")
