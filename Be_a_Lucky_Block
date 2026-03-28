@@ -1,12 +1,15 @@
--- Script principal que usa la librería Compkiller
--- Asegúrate de que Compkiller esté cargado globalmente antes de ejecutar esto.
+-- Verificar que la librería Compkiller esté disponible
+if not Compkiller or type(Compkiller.new) ~= "function" then
+    warn("[BLADEX] Error: La librería Compkiller no está cargada. Asegúrate de cargarla antes de ejecutar este script.")
+    return
+end
 
+-- El resto del script solo se ejecuta si la librería está presente
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- ==================== VARIABLES GLOBALES ====================
--- Variables para el control de estados
 local runningFarm = false
 local runningABL = false
 local runningACEPR = false
@@ -19,7 +22,7 @@ local currentModel = nil
 -- Para los detectores "bad boss"
 local storedParts = {}
 
--- Para el auto buy best luckyblock
+-- Skins para auto buy
 local skins = {
     "prestige_mogging_luckyblock",
     "mogging_luckyblock",
@@ -35,14 +38,12 @@ local skins = {
     "fairy_luckyblock"
 }
 
--- Para los códigos
+-- Códigos
 local codes = {
     "release"
-    -- puedes agregar más
-end
+}
 
 -- ==================== FUNCIONES AUXILIARES ====================
--- Función para obtener el modelo del jugador actual (RunningModels)
 local function getMyModel()
     local folder = workspace:FindFirstChild("RunningModels")
     if not folder then return nil end
@@ -54,7 +55,6 @@ local function getMyModel()
     return nil
 end
 
--- Función para aplicar la velocidad al modelo
 local function applySpeed()
     local model = getMyModel()
     if not model then
@@ -70,7 +70,6 @@ local function applySpeed()
     end
 end
 
--- Bucle de actualización de velocidad (se ejecuta constantemente)
 task.spawn(function()
     while true do
         if runningSpeed then
@@ -80,7 +79,6 @@ task.spawn(function()
     end
 end)
 
--- Función para parsear texto de dinero (ej. "1.2K" -> 1200)
 local suffix = { K = 1e3, M = 1e6, B = 1e9, T = 1e12, Qa = 1e15, Qi = 1e18, Sx = 1e21, Sp = 1e24, Oc = 1e27, No = 1e30, Dc = 1e33 }
 local function parseCash(text)
     text = text:gsub("%$", ""):gsub(",", ""):gsub("%s+", "")
@@ -93,38 +91,28 @@ local function parseCash(text)
     return num
 end
 
--- Función para mostrar un diálogo con dos botones usando Compkiller
+-- Diálogo simple usando Compkiller
 local function showDialog(title, content, confirmCallback, cancelCallback)
-    -- Crear una ventana temporal
     local dialogWindow = Compkiller.new({
         Name = title,
-        Keybind = "None",  -- sin keybind
+        Keybind = "None",
         Logo = Compkiller.Logo,
         Scale = UDim2.new(0, 300, 0, 150)
     })
-    dialogWindow:SetVisible(true) -- asegurar que se muestre
-
-    -- Crear una pestaña única
+    dialogWindow:SetVisible(true)
     local tab = dialogWindow:DrawTab({ Name = "Dialog", Icon = "info", Type = "Single" })
     local section = tab:DrawSection({ Name = "" })
-
-    -- Agregar el contenido como un párrafo (usando AddParagraph)
     local para = section:AddParagraph({ Title = title, Content = content })
-
-    -- Agregar dos botones: Confirmar y Cancelar
     local confirmBtn = section:AddButton({ Name = "Confirm", Callback = function()
         if confirmCallback then confirmCallback() end
         dialogWindow:SetVisible(false)
         dialogWindow.Root:Destroy()
     end })
-
     local cancelBtn = section:AddButton({ Name = "Cancel", Callback = function()
         if cancelCallback then cancelCallback() end
         dialogWindow:SetVisible(false)
         dialogWindow.Root:Destroy()
     end })
-
-    -- Ajustar tamaño de la ventana
     task.wait(0.1)
     dialogWindow:SetVisible(true)
 end
@@ -140,7 +128,6 @@ local window = Compkiller.new({
 local statsTab = window:DrawTab({ Name = "Stats", Icon = "activity", Type = "Single" })
 local statsSection = statsTab:DrawSection({ Name = "Movement" })
 
--- Toggle de velocidad
 local speedToggle = statsSection:AddToggle({
     Name = "Enable Custom Lucky Block Speed",
     Default = false,
@@ -157,7 +144,6 @@ local speedToggle = statsSection:AddToggle({
     end
 })
 
--- Slider de velocidad
 local speedSlider = statsSection:AddSlider({
     Name = "Lucky Block Speed",
     Default = 1000,
@@ -173,7 +159,6 @@ local speedSlider = statsSection:AddSlider({
 local brainrotsTab = window:DrawTab({ Name = "Brainrots", Icon = "brain", Type = "Single" })
 local brainSection = brainrotsTab:DrawSection({ Name = "Auto Farm" })
 
--- Toggle Auto Farm Brainrots
 local autoFarmToggle = brainSection:AddToggle({
     Name = "Auto Farm Best Brainrots",
     Default = false,
@@ -190,12 +175,10 @@ local autoFarmToggle = brainSection:AddToggle({
                     local modelsFolder = workspace:WaitForChild("RunningModels")
                     local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
 
-                    -- Teletransportar al jugador cerca del final
                     root.CFrame = CFrame.new(715, 39, -2122)
                     task.wait(0.3)
                     humanoid:MoveTo(Vector3.new(710, 39, -2122))
 
-                    -- Esperar a que aparezca su brainrot
                     local ownedModel = nil
                     repeat
                         task.wait(0.3)
@@ -208,7 +191,6 @@ local autoFarmToggle = brainSection:AddToggle({
                     until ownedModel ~= nil or not runningFarm
                     if not runningFarm then break end
 
-                    -- Mover el brainrot al final
                     if ownedModel.PrimaryPart then
                         ownedModel:SetPrimaryPartCFrame(target.CFrame)
                     else
@@ -219,7 +201,6 @@ local autoFarmToggle = brainSection:AddToggle({
                     end
                     task.wait(0.7)
 
-                    -- Hundir un poco para que "termine"
                     if ownedModel and ownedModel.Parent == modelsFolder then
                         if ownedModel.PrimaryPart then
                             ownedModel:SetPrimaryPartCFrame(target.CFrame * CFrame.new(0, -5, 0))
@@ -231,13 +212,11 @@ local autoFarmToggle = brainSection:AddToggle({
                         end
                     end
 
-                    -- Esperar a que desaparezca (carrera terminada)
                     repeat
                         task.wait(0.3)
                     until not runningFarm or (ownedModel == nil or ownedModel.Parent ~= modelsFolder)
                     if not runningFarm then break end
 
-                    -- Esperar a que el jugador reaparezca
                     local oldCharacter = player.Character
                     repeat
                         task.wait(0.2)
@@ -255,7 +234,6 @@ local autoFarmToggle = brainSection:AddToggle({
     end
 })
 
--- Botón Teleport to End
 brainSection:AddButton({
     Name = "Teleport to End",
     Callback = function()
@@ -278,7 +256,6 @@ brainSection:AddButton({
     end
 })
 
--- Toggle Remove Bad Boss Touch Detectors
 local folder = workspace:WaitForChild("BossTouchDetectors")
 local rbtToggle = brainSection:AddToggle({
     Name = "Remove Bad Boss Touch Detectors",
@@ -303,7 +280,6 @@ local rbtToggle = brainSection:AddToggle({
     end
 })
 
--- Botón Pickup All Your Brainrots (con diálogo)
 brainSection:AddButton({
     Name = "Pickup All Your Brainrots",
     Callback = function()
@@ -334,7 +310,7 @@ brainSection:AddButton({
                     local container = containerFolder[tostring(i)]
                     local innerModel = container:FindFirstChild("InnerModel")
                     if innerModel and #innerModel:GetChildren() > 0 then
-                        game:GetService("ReplicatedStorage")
+                        ReplicatedStorage
                             :WaitForChild("Packages")
                             :WaitForChild("_Index")
                             :WaitForChild("sleitnick_knit@1.7.0")
@@ -348,16 +324,13 @@ brainSection:AddButton({
                     end
                 end
             end
-            -- Mostrar notificación
             local notif = Compkiller.newNotify()
             notif.new({
                 Title = "Done!",
                 Content = "Picked up all Brainrots",
                 Duration = 5
             })
-        end, function()
-            -- Cancelar, no hacer nada
-        end)
+        end, function() end)
     end
 })
 
@@ -365,7 +338,6 @@ brainSection:AddButton({
 local mainTab = window:DrawTab({ Name = "Main", Icon = "home", Type = "Single" })
 local mainSection = mainTab:DrawSection({ Name = "Automations" })
 
--- Auto Buy Best Luckyblock
 local ablToggle = mainSection:AddToggle({
     Name = "Auto Buy Best Luckyblock",
     Default = false,
@@ -433,7 +405,6 @@ local ablToggle = mainSection:AddToggle({
     end
 })
 
--- Botón Redeem All Codes
 mainSection:AddButton({
     Name = "Redeem All Codes",
     Callback = function()
@@ -455,7 +426,6 @@ mainSection:AddButton({
     end
 })
 
--- Auto Claim Event Pass Rewards
 local aceprToggle = mainSection:AddToggle({
     Name = "Auto Claim Event Pass Rewards",
     Default = false,
@@ -509,7 +479,6 @@ local aceprToggle = mainSection:AddToggle({
     end
 })
 
--- Auto Claim Playtime Rewards
 local acprToggle = mainSection:AddToggle({
     Name = "Auto Claim Playtime Rewards",
     Default = false,
@@ -541,13 +510,10 @@ local acprToggle = mainSection:AddToggle({
     end
 })
 
--- Establecer estados iniciales de los toggles (apagados)
+-- Establecer estados iniciales (todos false)
 speedToggle:SetValue(false)
 autoFarmToggle:SetValue(false)
 rbtToggle:SetValue(false)
 ablToggle:SetValue(false)
 aceprToggle:SetValue(false)
 acprToggle:SetValue(false)
-
--- Nota: los toggles ya tienen su estado inicial en false por defecto,
--- pero por si acaso los dejamos así.
