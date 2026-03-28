@@ -4,7 +4,7 @@ if not Compkiller or type(Compkiller.new) ~= "function" then
     return
 end
 
--- El resto del script solo se ejecuta si la librería está presente
+-- ==================== CONFIGURACIÓN INICIAL ====================
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -117,18 +117,20 @@ local function showDialog(title, content, confirmCallback, cancelCallback)
     dialogWindow:SetVisible(true)
 end
 
--- ==================== CREACIÓN DE LA INTERFAZ ====================
+-- ==================== CREACIÓN DE LA INTERFAZ (ÚNICA PESTAÑA) ====================
 local window = Compkiller.new({
-    Name = "My Script",
+    Name = "BLADEX Hub",
     Keybind = "LeftAlt",
     Logo = "rbxassetid://125064196202041"
 })
 
--- Pestaña Stats
-local statsTab = window:DrawTab({ Name = "Stats", Icon = "activity", Type = "Single" })
-local statsSection = statsTab:DrawSection({ Name = "Movement" })
+-- Crear una sola pestaña llamada "BLADEX"
+local mainTab = window:DrawTab({ Name = "BLADEX", Icon = "crown", Type = "Single" })
 
-local speedToggle = statsSection:AddToggle({
+-- ==================== SECCIÓN MOVIMIENTO ====================
+local movementSection = mainTab:DrawSection({ Name = "Movement" })
+
+local speedToggle = movementSection:AddToggle({
     Name = "Enable Custom Lucky Block Speed",
     Default = false,
     Callback = function(state)
@@ -144,7 +146,7 @@ local speedToggle = statsSection:AddToggle({
     end
 })
 
-local speedSlider = statsSection:AddSlider({
+local speedSlider = movementSection:AddSlider({
     Name = "Lucky Block Speed",
     Default = 1000,
     Min = 50,
@@ -155,9 +157,8 @@ local speedSlider = statsSection:AddSlider({
     end
 })
 
--- Pestaña Brainrots
-local brainrotsTab = window:DrawTab({ Name = "Brainrots", Icon = "brain", Type = "Single" })
-local brainSection = brainrotsTab:DrawSection({ Name = "Auto Farm" })
+-- ==================== SECCIÓN BRAINROTS ====================
+local brainSection = mainTab:DrawSection({ Name = "Brainrots" })
 
 local autoFarmToggle = brainSection:AddToggle({
     Name = "Auto Farm Best Brainrots",
@@ -334,11 +335,10 @@ brainSection:AddButton({
     end
 })
 
--- Pestaña Main
-local mainTab = window:DrawTab({ Name = "Main", Icon = "home", Type = "Single" })
-local mainSection = mainTab:DrawSection({ Name = "Automations" })
+-- ==================== SECCIÓN AUTOMATIONS ====================
+local autoSection = mainTab:DrawSection({ Name = "Automations" })
 
-local ablToggle = mainSection:AddToggle({
+local ablToggle = autoSection:AddToggle({
     Name = "Auto Buy Best Luckyblock",
     Default = false,
     Callback = function(state)
@@ -405,7 +405,7 @@ local ablToggle = mainSection:AddToggle({
     end
 })
 
-mainSection:AddButton({
+autoSection:AddButton({
     Name = "Redeem All Codes",
     Callback = function()
         local redeem = ReplicatedStorage
@@ -426,7 +426,7 @@ mainSection:AddButton({
     end
 })
 
-local aceprToggle = mainSection:AddToggle({
+local aceprToggle = autoSection:AddToggle({
     Name = "Auto Claim Event Pass Rewards",
     Default = false,
     Callback = function(state)
@@ -479,7 +479,7 @@ local aceprToggle = mainSection:AddToggle({
     end
 })
 
-local acprToggle = mainSection:AddToggle({
+local acprToggle = autoSection:AddToggle({
     Name = "Auto Claim Playtime Rewards",
     Default = false,
     Callback = function(state)
