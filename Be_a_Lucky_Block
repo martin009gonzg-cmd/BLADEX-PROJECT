@@ -1,6 +1,39 @@
--- ==================== VERIFICACIÓN DE LIBRERÍA ====================
+-- ==================== LOADER COMPKILLER ====================
 if not getgenv().Compkiller then
-    error("❌ Compkiller no está cargada. Precárgala antes de ejecutar este script.")
+    print("[BLADEX] Cargando Compkiller...")
+    local src = game:HttpGet(
+        "https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/BLADEX_LIBRALY",
+        true -- nocache
+    )
+
+    -- Verificar que descargó código Lua real (no HTML de error)
+    if not src or #src < 100 then
+        error("❌ HttpGet devolvió contenido vacío o inválido. Verifica que el archivo existe en GitHub.")
+    end
+    if src:sub(1,15):lower():find("<!doctype") or src:sub(1,6):lower() == "<html>" then
+        error("❌ HttpGet devolvió una página HTML (404). Verifica la URL del repositorio.")
+    end
+
+    local fn, compileErr = loadstring(src)
+    if not fn then
+        error("❌ loadstring falló al compilar BLADEX_LIBRALY: " .. tostring(compileErr))
+    end
+
+    local ok, result = pcall(fn)
+    if not ok then
+        error("❌ Error al ejecutar BLADEX_LIBRALY: " .. tostring(result))
+    end
+
+    -- La librería puede retornar el objeto o asignarse sola a getgenv()
+    if type(result) == "table" and result.new then
+        getgenv().Compkiller = result
+    end
+
+    if not getgenv().Compkiller then
+        error("❌ Compkiller no se registró. Agrega 'getgenv().Compkiller = Compkiller' al final de BLADEX_LIBRALY.")
+    end
+
+    print("[BLADEX] Compkiller cargada correctamente ✓")
 end
 
 local Compkiller = getgenv().Compkiller
@@ -826,19 +859,32 @@ local settingsTab = Window:DrawTab({ Name="Ajustes", Icon="settings", Type="Sing
 local settingsSection = settingsTab:DrawSection({ Name="Configuración", Position="full" })
 
 settingsSection:AddToggle({ Name="Always Show Frame", Default=false,
-    Callback=function(v) Window.AlwayShowTab = v end })
+    Callback=function(v) pcall(function() Window.AlwaysShowTab = v end) end })
 
 settingsSection:AddColorPicker({ Name="Color Highlight", Default=Compkiller.Colors.Highlight,
-    Callback=function(v) Compkiller.Colors.Highlight=v Compkiller:RefreshCurrentColor() end })
+    Callback=function(v) Compkiller:ChangeHighlightColor(v) end })
 
+local themes = {
+    Default      = Color3.fromRGB(90, 110, 160),
+    ["Dark Green"]   = Color3.fromRGB(60, 150, 90),
+    ["Dark Blue"]    = Color3.fromRGB(50, 90, 200),
+    ["Purple Rose"]  = Color3.fromRGB(160, 80, 160),
+    Skeet        = Color3.fromRGB(200, 60, 60),
+}
 settingsSection:AddDropdown({ Name="Tema", Default="Default",
     Values={"Default","Dark Green","Dark Blue","Purple Rose","Skeet"},
-    Callback=function(v) Compkiller:SetTheme(v) end })
+    Callback=function(v)
+        local color = themes[v] or themes.Default
+        Compkiller:ChangeHighlightColor(color)
+    end })
 
 settingsSection:AddLabel("BLADEX HUB v3.0 | Be a Lucky Block")
 
 -- ==================== CONFIG + INICIO ====================
-Window:DrawConfig({ Name="Config", Icon="folder", Config=ConfigManager }):Init()
+-- Config tab (compatible con Compkiller 2.6)
+pcall(function()
+    Window:DrawConfig({ Name="Config", Icon="folder", Config=ConfigManager }):Init()
+end)
 
 speedToggle:SetValue(false)
 autoFarmToggle2:SetValue(false)
