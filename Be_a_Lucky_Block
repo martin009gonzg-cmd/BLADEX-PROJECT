@@ -6,17 +6,17 @@ end
 local Compkiller = getgenv().Compkiller
 
 -- ==================== SERVICIOS ====================
-local Players = game:GetService("Players")
+local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LP = Players.LocalPlayer
+local LP                = Players.LocalPlayer
 
 -- ==================== VARIABLES ====================
-local runningFarm = false
+local runningFarm  = false
 local runningSpeed = false
-local sliderValue = 1000
+local sliderValue  = 1000
 local originalSpeed = nil
-local currentModel = nil
-local storedParts = {}
+local currentModel  = nil
+local storedParts   = {}
 
 local skins = {
     "prestige_mogging_luckyblock", "mogging_luckyblock", "colossus _luckyblock",
@@ -27,7 +27,7 @@ local skins = {
 
 local codes = { "release" }
 
--- ==================== MULTI-BASE SELECTION ====================
+-- ==================== MULTI-BASE ====================
 local selectedLBBases = {}
 for i = 1, 14 do selectedLBBases[i] = false end
 local lbBaseIndex = 1
@@ -57,9 +57,7 @@ local function findKnit()
 end
 
 local knitServices = findKnit()
-if not knitServices then
-    error("❌ No se encontró Knit en ReplicatedStorage.")
-end
+if not knitServices then error("❌ No se encontró Knit en ReplicatedStorage.") end
 
 local function findRemote(serviceName, rfName)
     local service = knitServices:FindFirstChild(serviceName)
@@ -161,24 +159,12 @@ local function safeInvoke(remote, ...)
 end
 
 local function invokeWithRetry(remote, maxRetries, ...)
-    maxRetries = maxRetries or LB_CFG.MAX_RETRIES
-    for i = 1, maxRetries do
+    for i = 1, (maxRetries or 3) do
         local ok, res = safeInvoke(remote, ...)
         if ok then return true, res end
         task.wait(0.5)
     end
     return false, nil
-end
-
-local function waitForCharacter()
-    local char = LP.Character or LP.CharacterAdded:Wait()
-    local hum = char:WaitForChild("Humanoid", 10)
-    if hum and hum.Health <= 0 then
-        char = LP.CharacterAdded:Wait()
-        task.wait(LB_CFG.DELAYS.RESPAWN_WAIT)
-        char = LP.Character
-    end
-    return char, char and char:FindFirstChild("HumanoidRootPart")
 end
 
 local function teleportToWithConfirm(cf, maxWait)
@@ -245,28 +231,14 @@ task.spawn(function()
     end
 end)
 
--- ==================== LUCKY BLOCK FARM (MULTI-BASE) ====================
+-- ==================== LUCKY BLOCK FARM ====================
 local lastBlockOpen = 0
 
-local function lbFarmCycle()
+local function lbFarmCycle(baseName)
     local cycleCompleted = false
-    local char, hrp = waitForCharacter()
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local hrp  = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return false, "Sin HRP" end
-
-    -- Selección de base: Zeus > bases seleccionadas > base14 fallback
-    local baseName
-    if _G.AutoZeus then
-        baseName = "ZEUS"
-    else
-        local activeBases = getSelectedLBBases()
-        if #activeBases == 0 then
-            baseName = "base14"
-        else
-            if lbBaseIndex > #activeBases then lbBaseIndex = 1 end
-            baseName = activeBases[lbBaseIndex]
-            lbBaseIndex = (lbBaseIndex % #activeBases) + 1
-        end
-    end
 
     local coords = BASE_COORDS[baseName] or BASE_COORDS["base14"]
 
@@ -283,33 +255,24 @@ local function lbFarmCycle()
     local ok, err = pcall(function()
         if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
         task.wait(0.2)
-
         if not isNear(coords.block, 8) then teleportToWithConfirm(coords.block, 3) end
-
-        local now = tick()
-        local waitTime = LB_CFG.BLOCK_COOLDOWN - (now - lastBlockOpen)
+        local waitTime = LB_CFG.BLOCK_COOLDOWN - (tick() - lastBlockOpen)
         if waitTime > 0 then task.wait(waitTime) end
-
-        local blockParam = (baseName == "ZEUS") and "ZEUS" or baseName
-        if not invokeWithRetry(lbRF.OpenLuckyBlock, LB_CFG.MAX_RETRIES, blockParam) then
+        if not invokeWithRetry(lbRF.OpenLuckyBlock, LB_CFG.MAX_RETRIES, baseName) then
             error("Falló OpenLuckyBlock en " .. baseName)
         end
         lastBlockOpen = tick()
         task.wait(LB_CFG.DELAYS.AFTER_OPEN)
-
         if not isNear(coords.runner, 8) then teleportToWithConfirm(coords.runner, 3) end
         task.wait(LB_CFG.DELAYS.AFTER_TELEPORT)
-
         if lbRF.StartMove then invokeWithRetry(lbRF.StartMove, LB_CFG.MAX_RETRIES) end
         if lbRF.StartRun  then invokeWithRetry(lbRF.StartRun,  LB_CFG.MAX_RETRIES) end
         task.wait(LB_CFG.DELAYS.AFTER_RUN)
-
         local currentHrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if lbRF.UpdateCFrame and currentHrp then
             invokeWithRetry(lbRF.UpdateCFrame, LB_CFG.MAX_RETRIES, currentHrp.CFrame)
         end
         task.wait(0.8)
-
         if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
         task.wait(0.2)
     end)
@@ -324,13 +287,21 @@ end
 local function loopAutoLBFarm()
     lbBaseIndex = 1
     while _G.AutoLBFarm do
-        local activeBases = getSelectedLBBases()
-        if #activeBases == 0 and not _G.AutoZeus then
-            warn("[BLADEX] No hay bases seleccionadas para LB Farm.")
+        local bases = getSelectedLBBases()
+        if #bases == 0 and not _G.AutoZeus then
+            warn("[BLADEX] No hay bases seleccionadas.")
             task.wait(2)
         else
-            local ok, err = pcall(lbFarmCycle)
-            if not ok then warn("[LBFarm] Error: " .. tostring(err)) task.wait(2) end
+            local baseName = _G.AutoZeus and "ZEUS" or bases[lbBaseIndex]
+            local ok, err = pcall(lbFarmCycle, baseName)
+            if not ok then
+                warn("[LBFarm] Error: " .. tostring(err))
+                task.wait(2)
+            else
+                if not _G.AutoZeus then
+                    lbBaseIndex = (lbBaseIndex % #bases) + 1
+                end
+            end
         end
     end
     if lbRF.EndMove then pcall(lbRF.EndMove.InvokeServer, lbRF.EndMove) end
@@ -389,9 +360,9 @@ local function loopAutoBuyLuckyblock()
     while _G.AutoBuyLuckyblock do
         if buy then
             local gui = LP.PlayerGui:FindFirstChild("Windows")
-            local pickaxeShop = gui and gui:FindFirstChild("PickaxeShop")
-            local shopContainer = pickaxeShop and pickaxeShop:FindFirstChild("ShopContainer")
-            local scrollingFrame = shopContainer and shopContainer:FindFirstChild("ScrollingFrame")
+            local scrollingFrame = gui and gui:FindFirstChild("PickaxeShop") and
+                gui.PickaxeShop:FindFirstChild("ShopContainer") and
+                gui.PickaxeShop.ShopContainer:FindFirstChild("ScrollingFrame")
             if scrollingFrame then
                 local cash = LP.leaderstats.Cash.Value
                 local bestSkin, bestPrice = nil, 0
@@ -438,7 +409,7 @@ local function loopAutoClaimEventPass()
                     local item = gui:FindFirstChild(tostring(i))
                     if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
                         local free = item.Frame.Free
-                        local locked = free:FindFirstChild("Locked")
+                        local locked    = free:FindFirstChild("Locked")
                         local claimedEl = free:FindFirstChild("Claimed")
                         if locked and not locked.Visible and not (claimedEl and claimedEl.Visible) then
                             pcall(function() claim:InvokeServer("Free", i) end)
@@ -519,20 +490,6 @@ local function toggle(name, val)
     end
 end
 
-task.spawn(function()
-    local lastState = {}
-    while true do
-        for name, fn in pairs(LOOP_MAP) do
-            local current = _G[name]
-            if current ~= lastState[name] then
-                if current then startLoop(name, fn) else stopLoop(name) end
-                lastState[name] = current
-            end
-        end
-        task.wait(0.5)
-    end
-end)
-
 -- ==================== UI ====================
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
@@ -557,7 +514,7 @@ local function notify(content, duration)
     Notifier.new({ Title="BLADEX HUB", Content=content, Duration=duration or 4, Icon=Compkiller.Logo })
 end
 
--- ==================== TAB PRINCIPAL ====================
+-- ==================== TAB: BE A BRAINROT ====================
 local mainTab = Window:DrawTab({
     Name           = "BE A BRAINROT",
     Icon           = "crown",
@@ -566,15 +523,12 @@ local mainTab = Window:DrawTab({
 })
 
 -- ───────────── IZQUIERDA ─────────────
-
--- Lucky Block Farm
-local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
+local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=false })
 
 lbSection:AddToggle({ Name="Auto Ciber Farm", Flag="lb_farm", Default=false,
     Callback=function(v)
-        -- Validar que haya bases seleccionadas si Zeus está apagado
         if v and not _G.AutoZeus and #getSelectedLBBases() == 0 then
-            notify("Selecciona al menos una base (1-14) antes de iniciar.", 5)
+            notify("Selecciona al menos una base en la pestaña 'Bases LB'.", 5)
             return
         end
         toggle("AutoLBFarm", v)
@@ -585,25 +539,7 @@ lbSection:AddToggle({ Name="Auto Zeus Farm", Flag="auto_zeus", Default=false,
     Callback=function(v) _G.AutoZeus = v end
 })
 
--- Separador visual
-lbSection:AddLabel("— Seleccionar Bases (base1 → base14) —")
-
--- Toggles base1-base14
-for i = 1, 14 do
-    lbSection:AddToggle({
-        Name     = "Base " .. i,
-        Flag     = "lb_base_" .. i,
-        Default  = false,
-        Callback = function(v)
-            selectedLBBases[i] = v
-            lbBaseIndex = 1 -- reinicia el ciclo al cambiar selección
-            notify("Base " .. i .. (v and " activada" or " desactivada"), 2)
-        end,
-    })
-end
-
--- Auto Farm (Knit)
-local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
+local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=false })
 
 afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
     Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
@@ -623,8 +559,7 @@ afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=
 afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
     Callback=function(v) toggle("AutoContainer", v) end })
 
--- Movement
-local movSection = mainTab:DrawSection({ Name="Movement", Position="left", Minimized=true })
+local movSection = mainTab:DrawSection({ Name="Movement", Position="left", Minimized=false })
 
 local speedToggle = movSection:AddToggle({
     Name="Custom Lucky Block Speed", Default=false,
@@ -644,9 +579,7 @@ movSection:AddSlider({
 })
 
 -- ───────────── DERECHA ─────────────
-
--- Brainrots
-local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="right", Minimized=true })
+local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="right", Minimized=false })
 
 local autoFarmToggle2 = brainSection:AddToggle({
     Name="Auto Farm Best Brainrots", Default=false,
@@ -697,8 +630,8 @@ local autoFarmToggle2 = brainSection:AddToggle({
                     repeat task.wait(0.3) until not runningFarm or (ownedModel==nil or ownedModel.Parent~=modelsFolder)
                     if not runningFarm then break end
 
-                    local oldCharacter = LP.Character
-                    repeat task.wait(0.2) until not runningFarm or (LP.Character~=oldCharacter and LP.Character~=nil)
+                    local oldChar = LP.Character
+                    repeat task.wait(0.2) until not runningFarm or (LP.Character~=oldChar and LP.Character~=nil)
                     if not runningFarm then break end
 
                     task.wait(0.4)
@@ -769,8 +702,7 @@ brainSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     notify("Picked up all Brainrots!", 5)
 end })
 
--- Recompensas Especiales
-local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
+local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=false })
 
 rewardSection:AddButton({ Name="Reclamar Bloque Espiritual", Callback=function()
     if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
@@ -796,37 +728,27 @@ rewardSection:AddButton({ Name="Buy Best Luckyblock", Callback=function()
     local buy = findRemote("SkinService", "BuySkin")
     if not buy then notify("⚠ Remoto BuySkin no encontrado.", 5) return end
     local gui = LP.PlayerGui:FindFirstChild("Windows")
-    if not gui then notify("⚠ GUI no encontrada.", 5) return end
-    local pickaxeShop = gui:FindFirstChild("PickaxeShop")
-    if not pickaxeShop then notify("⚠ PickaxeShop no encontrado.", 5) return end
-    local shopContainer = pickaxeShop:FindFirstChild("ShopContainer")
-    local scrollingFrame = shopContainer and shopContainer:FindFirstChild("ScrollingFrame")
+    local scrollingFrame = gui and gui:FindFirstChild("PickaxeShop") and
+        gui.PickaxeShop:FindFirstChild("ShopContainer") and
+        gui.PickaxeShop.ShopContainer:FindFirstChild("ScrollingFrame")
     if not scrollingFrame then notify("⚠ ScrollingFrame no encontrado.", 5) return end
     local cash = LP.leaderstats.Cash.Value
     local bestSkin, bestPrice = nil, 0
     for _, name in ipairs(skins) do
         local item = scrollingFrame:FindFirstChild(name)
         if item then
-            local buyButton = item:FindFirstChild("Main") and
-                item.Main:FindFirstChild("Buy") and
-                item.Main.Buy:FindFirstChild("BuyButton")
+            local buyButton = item:FindFirstChild("Main") and item.Main:FindFirstChild("Buy") and item.Main.Buy:FindFirstChild("BuyButton")
             if buyButton and buyButton.Visible then
                 local cashLabel = buyButton:FindFirstChild("Cash")
                 if cashLabel then
                     local price = parseCash(cashLabel.Text)
-                    if cash >= price and price > bestPrice then
-                        bestSkin = name bestPrice = price
-                    end
+                    if cash >= price and price > bestPrice then bestSkin = name bestPrice = price end
                 end
             end
         end
     end
-    if bestSkin then
-        pcall(function() buy:InvokeServer(bestSkin) end)
-        notify("Comprado: " .. bestSkin, 4)
-    else
-        notify("No hay skin disponible para comprar.", 4)
-    end
+    if bestSkin then pcall(function() buy:InvokeServer(bestSkin) end) notify("Comprado: " .. bestSkin, 4)
+    else notify("No hay skin disponible.", 4) end
 end })
 
 rewardSection:AddButton({ Name="Claim Event Pass Rewards", Callback=function()
@@ -835,8 +757,7 @@ rewardSection:AddButton({ Name="Claim Event Pass Rewards", Callback=function()
     local ok, gui = pcall(function()
         return LP:WaitForChild("PlayerGui"):WaitForChild("Windows")
             :WaitForChild("Event"):WaitForChild("Frame"):WaitForChild("Frame")
-            :WaitForChild("Windows"):WaitForChild("Pass"):WaitForChild("Main")
-            :WaitForChild("ScrollingFrame")
+            :WaitForChild("Windows"):WaitForChild("Pass"):WaitForChild("Main"):WaitForChild("ScrollingFrame")
     end)
     if not ok or not gui then notify("⚠ GUI de evento no encontrada.", 5) return end
     local claimed = 0
@@ -844,7 +765,7 @@ rewardSection:AddButton({ Name="Claim Event Pass Rewards", Callback=function()
         local item = gui:FindFirstChild(tostring(i))
         if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
             local free = item.Frame.Free
-            local locked   = free:FindFirstChild("Locked")
+            local locked = free:FindFirstChild("Locked")
             local claimedEl = free:FindFirstChild("Claimed")
             if locked and not locked.Visible and not (claimedEl and claimedEl.Visible) then
                 pcall(function() claim:InvokeServer("Free", i) end)
@@ -859,14 +780,48 @@ end })
 rewardSection:AddButton({ Name="Claim Playtime Rewards", Callback=function()
     local claimGift = findRemote("PlaytimeRewardService", "ClaimGift")
     if not claimGift then notify("⚠ Remoto ClaimGift no encontrado.", 5) return end
-    for reward = 1, 12 do
-        pcall(function() claimGift:InvokeServer(reward) end)
-        task.wait(0.25)
-    end
+    for reward = 1, 12 do pcall(function() claimGift:InvokeServer(reward) end) task.wait(0.25) end
     notify("Playtime rewards reclamados.", 4)
 end })
 
--- ==================== AJUSTES ====================
+-- ==================== TAB: BASES LB ====================
+local basesTab = Window:DrawTab({
+    Name           = "Bases LB",
+    Icon           = "map-pin",
+    Type           = "Double",
+    EnableScrolling= true,
+})
+
+local basesLeft  = basesTab:DrawSection({ Name="Base 1 — 7",  Position="left",  Minimized=false })
+local basesRight = basesTab:DrawSection({ Name="Base 8 — 14", Position="right", Minimized=false })
+
+for i = 1, 7 do
+    basesLeft:AddToggle({
+        Name     = "Base " .. i,
+        Flag     = "lb_base_" .. i,
+        Default  = false,
+        Callback = function(v)
+            selectedLBBases[i] = v
+            lbBaseIndex = 1
+            notify("Base " .. i .. (v and " activada" or " desactivada"), 2)
+        end,
+    })
+end
+
+for i = 8, 14 do
+    basesRight:AddToggle({
+        Name     = "Base " .. i,
+        Flag     = "lb_base_" .. i,
+        Default  = false,
+        Callback = function(v)
+            selectedLBBases[i] = v
+            lbBaseIndex = 1
+            notify("Base " .. i .. (v and " activada" or " desactivada"), 2)
+        end,
+    })
+end
+
+-- ==================== TAB: AJUSTES ====================
 local settingsTab = Window:DrawTab({ Name="Ajustes", Icon="settings", Type="Single" })
 local settingsSection = settingsTab:DrawSection({ Name="Configuración", Position="full" })
 
