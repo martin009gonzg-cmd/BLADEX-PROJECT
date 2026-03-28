@@ -4,7 +4,7 @@
 local Window = Compkiller.new({
     Name = "Be a Lucky Block",
     Keybind = "LeftAlt",
-    Logo = "rbxassetid://125064196202041",
+    Logo = "rbxassetid://125064196202041", -- Logo por defecto (puedes cambiarlo)
     Scale = UDim2.new(0, 485, 0, 565),
     TextSize = 15
 })
@@ -94,7 +94,7 @@ MainSection:AddToggle({
 
 -- Redeem Codes
 local redeem = game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("CodesService"):WaitForChild("RF"):WaitForChild("RedeemCode")
-local codes = { "release" }
+local codes = { "release" } -- Puedes agregar más códigos aquí
 MainSection:AddButton({
     Name = "Redeem All Codes",
     Callback = function()
@@ -180,78 +180,94 @@ MainSection:AddToggle({
 MainSection:AddButton({
     Name = "Sell Held Brainrot",
     Callback = function()
-        local dialog = Compkiller.new({ Name = "Confirm Sale", Keybind = "None", Scale = UDim2.new(0,300,0,150) })
+        local dialog = Compkiller.new({ Name = "Confirm Sale", Keybind = "None", Scale = UDim2.new(0,300,0,150), TextSize = 14 })
         local tab = dialog:DrawTab({ Name = "Confirm", Type = "Single" })
-        local sec = tab:DrawSection({ Name = "Are you sure?" })
-        sec:AddButton({ Name = "Confirm", Callback = function()
-            local player = game.Players.LocalPlayer
-            local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
-            if not tool then
-                Compkiller.newNotify().new({ Title = "ERROR!", Content = "Equip the Brainrot you want to Sell", Duration = 5 })
+        local sec = tab:DrawSection({ Name = "Are you sure you want to sell this held Brainrot?" })
+        sec:AddButton({
+            Name = "Confirm",
+            Callback = function()
+                local player = game.Players.LocalPlayer
+                local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+                if not tool then
+                    Compkiller.newNotify().new({ Title = "ERROR!", Content = "Equip the Brainrot you want to Sell", Duration = 5, Icon = "alert-triangle" })
+                    dialog:SetVisible(false)
+                    return
+                end
+                local entityId = tool:GetAttribute("EntityId")
+                if entityId then
+                    pcall(function()
+                        game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("InventoryService"):WaitForChild("RF"):WaitForChild("SellBrainrot"):InvokeServer(entityId)
+                    end)
+                    Compkiller.newNotify().new({ Title = "SOLD!", Content = "Sold: " .. tool.Name, Duration = 5, Icon = "check" })
+                end
                 dialog:SetVisible(false)
-                return
             end
-            local entityId = tool:GetAttribute("EntityId")
-            if entityId then
-                pcall(function()
-                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("InventoryService"):WaitForChild("RF"):WaitForChild("SellBrainrot"):InvokeServer(entityId)
-                end)
-                Compkiller.newNotify().new({ Title = "SOLD!", Content = "Sold: " .. tool.Name, Duration = 5 })
+        })
+        sec:AddButton({
+            Name = "Cancel",
+            Callback = function()
+                dialog:SetVisible(false)
             end
-            dialog:SetVisible(false)
-        end })
-        sec:AddButton({ Name = "Cancel", Callback = function() dialog:SetVisible(false) end })
+        })
         dialog:SetVisible(true)
     end
 })
 
--- Pickup All Brainrots
+-- Pickup All Brainrots (diálogo)
 MainSection:AddButton({
     Name = "Pickup All Your Brainrots",
     Callback = function()
-        local dialog = Compkiller.new({ Name = "Confirm Pickup", Keybind = "None", Scale = UDim2.new(0,300,0,120) })
+        local dialog = Compkiller.new({ Name = "Confirm Pickup", Keybind = "None", Scale = UDim2.new(0,300,0,120), TextSize = 14 })
         local tab = dialog:DrawTab({ Name = "Confirm", Type = "Single" })
         local sec = tab:DrawSection({ Name = "Pick up all Brainrots?" })
-        sec:AddButton({ Name = "Confirm", Callback = function()
-            local player = game.Players.LocalPlayer
-            local username = player.Name
-            local plotsFolder = workspace:WaitForChild("Plots")
-            local myPlot
-            for i = 1, 5 do
-                local plot = plotsFolder:FindFirstChild(tostring(i))
-                if plot and plot:FindFirstChild(tostring(i)) then
-                    local inner = plot[tostring(i)]
-                    for _, v in pairs(inner:GetDescendants()) do
-                        if v:IsA("BillboardGui") and string.find(v.Name, username) then
-                            myPlot = inner
-                            break
+        sec:AddButton({
+            Name = "Confirm",
+            Callback = function()
+                local player = game.Players.LocalPlayer
+                local username = player.Name
+                local plotsFolder = workspace:WaitForChild("Plots")
+                local myPlot
+                for i = 1, 5 do
+                    local plot = plotsFolder:FindFirstChild(tostring(i))
+                    if plot and plot:FindFirstChild(tostring(i)) then
+                        local inner = plot[tostring(i)]
+                        for _, v in pairs(inner:GetDescendants()) do
+                            if v:IsA("BillboardGui") and string.find(v.Name, username) then
+                                myPlot = inner
+                                break
+                            end
                         end
                     end
+                    if myPlot then break end
                 end
-                if myPlot then break end
-            end
-            if myPlot then
-                local containers = myPlot:FindFirstChild("Containers")
-                if containers then
-                    for i = 1, 30 do
-                        local containerFolder = containers:FindFirstChild(tostring(i))
-                        if containerFolder and containerFolder:FindFirstChild(tostring(i)) then
-                            local container = containerFolder[tostring(i)]
-                            local innerModel = container:FindFirstChild("InnerModel")
-                            if innerModel and #innerModel:GetChildren() > 0 then
-                                pcall(function()
-                                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("ContainerService"):WaitForChild("RF"):WaitForChild("PickupBrainrot"):InvokeServer(tostring(i))
-                                end)
-                                task.wait(0.1)
+                if myPlot then
+                    local containers = myPlot:FindFirstChild("Containers")
+                    if containers then
+                        for i = 1, 30 do
+                            local containerFolder = containers:FindFirstChild(tostring(i))
+                            if containerFolder and containerFolder:FindFirstChild(tostring(i)) then
+                                local container = containerFolder[tostring(i)]
+                                local innerModel = container:FindFirstChild("InnerModel")
+                                if innerModel and #innerModel:GetChildren() > 0 then
+                                    pcall(function()
+                                        game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("ContainerService"):WaitForChild("RF"):WaitForChild("PickupBrainrot"):InvokeServer(tostring(i))
+                                    end)
+                                    task.wait(0.1)
+                                end
                             end
                         end
                     end
                 end
+                Compkiller.newNotify().new({ Title = "Done!", Content = "Picked up all Brainrots", Duration = 5, Icon = "check" })
+                dialog:SetVisible(false)
             end
-            Compkiller.newNotify().new({ Title = "Done!", Content = "Picked up all Brainrots", Duration = 5 })
-            dialog:SetVisible(false)
-        end })
-        sec:AddButton({ Name = "Cancel", Callback = function() dialog:SetVisible(false) end })
+        })
+        sec:AddButton({
+            Name = "Cancel",
+            Callback = function()
+                dialog:SetVisible(false)
+            end
+        })
         dialog:SetVisible(true)
     end
 })
@@ -459,11 +475,17 @@ StatsSection:AddSlider({
 local SettingsSection = SettingsTab:DrawSection({ Name = "UI Settings", Position = "left" })
 SettingsSection:AddButton({
     Name = "Reload UI (Close and reopen)",
-    Callback = function() Window:Toggle(false); task.wait(0.2); Window:Toggle(true) end
+    Callback = function()
+        Window:Toggle(false)
+        task.wait(0.2)
+        Window:Toggle(true)
+    end
 })
 SettingsSection:AddButton({
     Name = "Close Window",
-    Callback = function() Window:Toggle(false) end
+    Callback = function()
+        Window:Toggle(false)
+    end
 })
 
 -- Mostrar ventana
@@ -474,5 +496,5 @@ Compkiller.newNotify().new({
     Title = "Be a Lucky Block",
     Content = "Script cargado correctamente",
     Duration = 3,
-    Icon = "lucide-check"
+    Icon = "check"
 })
