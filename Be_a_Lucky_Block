@@ -727,7 +727,7 @@ basesSection:AddDropdown({
     end
 })
 
-brainSection:AddButton({ Name="Teleport to End", Callback=function()
+basesSection:AddButton({ Name="Teleport to End", Callback=function()
     local modelsFolder = workspace:WaitForChild("RunningModels")
     local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
     for _, obj in ipairs(modelsFolder:GetChildren()) do
@@ -739,7 +739,7 @@ brainSection:AddButton({ Name="Teleport to End", Callback=function()
 end })
 
 local folder2 = workspace:WaitForChild("BossTouchDetectors")
-local rbtToggle = brainSection:AddToggle({
+local rbtToggle = basesSection:AddToggle({
     Name="Remove Bad Boss Touch Detectors", Default=false,
     Callback=function(state)
         if state then
@@ -754,7 +754,9 @@ local rbtToggle = brainSection:AddToggle({
     end
 })
 
-brainSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
+local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
+
+rewardSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     local username = LP.Name
     local plotsFolder = workspace:WaitForChild("Plots")
     local myPlot = nil
@@ -785,8 +787,6 @@ brainSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     end
     notify("Picked up all Brainrots!", 5)
 end })
-
-local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
 
 rewardSection:AddButton({ Name="Reclamar Bloque Espiritual", Callback=function()
     if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
