@@ -549,7 +549,7 @@ local mainTab = Window:DrawTab({
 })
 
 -- ───────────── IZQUIERDA ─────────────
-local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=false })
+local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
 
 lbSection:AddToggle({ Name="Auto Ciber Farm", Flag="lb_farm", Default=false,
     Callback=function(v) toggle("AutoLBFarm", v) end
@@ -577,7 +577,7 @@ lbSection:AddDropdown({
     end
 })
 
-local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=false })
+local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
 
 afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
     Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
@@ -597,7 +597,7 @@ afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=
 afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
     Callback=function(v) toggle("AutoContainer", v) end })
 
-local movSection = mainTab:DrawSection({ Name="Movement", Position="left", Minimized=false })
+local movSection = mainTab:DrawSection({ Name="Movement", Position="left", Minimized=true })
 
 local speedToggle = movSection:AddToggle({
     Name="Custom Lucky Block Speed", Default=false,
@@ -617,7 +617,7 @@ movSection:AddSlider({
 })
 
 -- ───────────── DERECHA ─────────────
-local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="left", Minimized=false })
+local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="left", Minimized=true })
 
 local autoFarmToggle2 = brainSection:AddToggle({
     Name="Auto Farm Best Brainrots", Default=false,
@@ -710,6 +710,51 @@ local autoFarmToggle2 = brainSection:AddToggle({
 
 local basesSection = mainTab:DrawSection({ Name="Bases", Position="right", Minimized=true })
 
+-- Etiqueta que muestra la base activa
+local baseDisplayLabel = basesSection:AddLabel("Base activa: Ninguna")
+
+local function updateBaseDisplay()
+    local active = {}
+    for i = 1, 14 do
+        if selectedBases[i] then table.insert(active, "Base " .. i) end
+    end
+    local text = #active > 0 and table.concat(active, ", ") or "Ninguna"
+    if baseDisplayLabel and baseDisplayLabel.SetText then
+        baseDisplayLabel:SetText("Base activa: " .. text)
+    end
+end
+
+basesSection:AddButton({
+    Name = "Cambiar base ▼",
+    Callback = function()
+        local popup = Compkiller.new({
+            Name  = "Seleccionar Base",
+            Scale = UDim2.new(0, 200, 0, 300),
+        })
+        local tab = popup:DrawTab({ Name="Bases", Type="Single" })
+        local sec = tab:DrawSection({ Name="Elige", Position="full" })
+        for i = 1, 14 do
+            sec:AddButton({
+                Name = "Base " .. i,
+                Callback = function()
+                    -- Desmarca todas y marca solo esta
+                    for j = 1, 14 do
+                        selectedBases[j] = (j == i)
+                        local tog = basesSection:GetToggle("farm_base_" .. j)
+                        if tog then tog:SetValue(j == i) end
+                    end
+                    selectedBase = "base" .. i
+                    updateBaseDisplay()
+                    notify("Base " .. i .. " seleccionada.", 3)
+                    popup:Destroy()
+                end
+            })
+        end
+        popup:Center()
+        popup.Minimized = false
+    end
+})
+
 for i = 1, 14 do
     basesSection:AddToggle({
         Name     = "Base " .. i,
@@ -717,6 +762,7 @@ for i = 1, 14 do
         Default  = false,
         Callback = function(v)
             selectedBases[i] = v
+            updateBaseDisplay()
         end,
     })
 end
@@ -780,7 +826,7 @@ brainSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     notify("Picked up all Brainrots!", 5)
 end })
 
-local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=false })
+local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
 
 rewardSection:AddButton({ Name="Reclamar Bloque Espiritual", Callback=function()
     if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
