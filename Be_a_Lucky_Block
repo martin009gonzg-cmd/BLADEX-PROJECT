@@ -698,14 +698,48 @@ basesSection:AddDropdown({
 })
 
 basesSection:AddButton({ Name="Teleport to End", Callback=function()
-    local modelsFolder = workspace:WaitForChild("RunningModels")
-    local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
-    for _, obj in ipairs(modelsFolder:GetChildren()) do
-        if obj:IsA("Model") then
-            if obj.PrimaryPart then obj:SetPrimaryPartCFrame(target.CFrame)
-            else local part = obj:FindFirstChildWhichIsA("BasePart") if part then part.CFrame = target.CFrame end end
-        elseif obj:IsA("BasePart") then obj.CFrame = target.CFrame end
-    end
+    local ok, err = pcall(function()
+        local modelsFolder = workspace:WaitForChild("RunningModels", 5)
+        if not modelsFolder then notify("⚠ RunningModels no encontrado.", 4) return end
+
+        -- Usa la base seleccionada actualmente, no siempre base14
+        local targetName = selectedBase or "base14"
+        local collectZones = workspace:WaitForChild("CollectZones", 5)
+        local target = collectZones and collectZones:FindFirstChild(targetName)
+        if not target then notify("⚠ CollectZone '" .. targetName .. "' no encontrada.", 4) return end
+
+        local targetCF = target.CFrame
+        local moved = 0
+
+        -- Teleporta solo el modelo del jugador local
+        for _, obj in ipairs(modelsFolder:GetChildren()) do
+            if obj:GetAttribute("OwnerId") == LP.UserId then
+                if obj:IsA("Model") then
+                    if obj.PrimaryPart then
+                        obj:SetPrimaryPartCFrame(targetCF)
+                    else
+                        local part = obj:FindFirstChildWhichIsA("BasePart")
+                        if part then part.CFrame = targetCF end
+                    end
+                elseif obj:IsA("BasePart") then
+                    obj.CFrame = targetCF
+                end
+                moved = moved + 1
+            end
+        end
+
+        -- También teleporta al personaje del jugador
+        local char = LP.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.CFrame = targetCF * CFrame.new(0, 3, 0) end
+
+        if moved > 0 then
+            notify("✓ Teleportado a " .. targetName .. ".", 3)
+        else
+            notify("⚠ No se encontró tu modelo en la carrera.", 4)
+        end
+    end)
+    if not ok then notify("⚠ Error en Teleport to End: " .. tostring(err), 5) end
 end })
 
 local folder2 = workspace:WaitForChild("BossTouchDetectors")
