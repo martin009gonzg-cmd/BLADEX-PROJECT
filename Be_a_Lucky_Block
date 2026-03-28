@@ -619,7 +619,9 @@ movSection:AddSlider({
 -- ───────────── DERECHA ─────────────
 local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="left", Minimized=true })
 
-local autoFarmToggle2 = brainSection:AddToggle({
+local basesSection = mainTab:DrawSection({ Name="Bases", Position="right", Minimized=true })
+
+local autoFarmToggle2 = basesSection:AddToggle({
     Name="Auto Farm Best Brainrots", Default=false,
     Callback=function(state)
         runningFarm = state
@@ -707,8 +709,6 @@ local autoFarmToggle2 = brainSection:AddToggle({
         end
     end
 })
-
-local basesSection = mainTab:DrawSection({ Name="Bases", Position="right", Minimized=true })
 
 local baseDropValues = {}
 for i = 1, 14 do table.insert(baseDropValues, "Base " .. i) end
