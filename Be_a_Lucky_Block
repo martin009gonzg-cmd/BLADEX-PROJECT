@@ -12,6 +12,7 @@ local sliderValue  = 1000
 local originalSpeed = nil
 local currentModel  = nil
 local storedParts   = {}
+local selectedBase  = "base14"
 
 local skins = {
     "prestige_mogging_luckyblock", "mogging_luckyblock", "colossus _luckyblock",
@@ -561,10 +562,18 @@ lbSection:AddToggle({ Name="Auto Zeus Farm", Flag="auto_zeus", Default=false,
 local baseValues = {}
 for i = 1, 14 do table.insert(baseValues, "Base " .. i) end
 
-lbSection:AddDropdown({ Name="Base a Farmear", Default="Base 14", Values=baseValues,
-    Callback=function(v)
-        local num = v:match("%d+")
-        if num then selectedBase = "base" .. num end
+lbSection:AddDropdown({
+    Name     = "Base a Farmear",
+    Default  = "Base 14",
+    Values   = baseValues,
+    Callback = function(v)
+        local num = tonumber(v:match("%d+"))
+        if num and num >= 1 and num <= 14 then
+            selectedBase = "base" .. num
+            -- sincronizar también el array de bases activas
+            for i = 1, 14 do selectedBases[i] = (i == num) end
+            notify("Base seleccionada: Base " .. num, 3)
+        end
     end
 })
 
@@ -608,7 +617,7 @@ movSection:AddSlider({
 })
 
 -- ───────────── DERECHA ─────────────
-local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="right", Minimized=false })
+local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="left", Minimized=false })
 
 local autoFarmToggle2 = brainSection:AddToggle({
     Name="Auto Farm Best Brainrots", Default=false,
