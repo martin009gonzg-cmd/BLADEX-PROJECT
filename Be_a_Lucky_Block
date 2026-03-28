@@ -27,6 +27,19 @@ local skins = {
 
 local codes = { "release" }
 
+-- ==================== MULTI-BASE SELECTION ====================
+local selectedLBBases = {}
+for i = 1, 14 do selectedLBBases[i] = false end
+local lbBaseIndex = 1
+
+local function getSelectedLBBases()
+    local result = {}
+    for i, sel in ipairs(selectedLBBases) do
+        if sel then table.insert(result, "base" .. i) end
+    end
+    return result
+end
+
 -- ==================== KNIT ====================
 local function findKnit()
     local ok, idx = pcall(function() return ReplicatedStorage.Packages._Index end)
@@ -65,23 +78,23 @@ local function findEvent(serviceName, reName)
 end
 
 local lbRF = {
-    StartRun      = findRemote("RunningService", "StartRun"),
-    StartMove     = findRemote("RunningService", "StartMove"),
-    OpenLuckyBlock= findRemote("RunningService", "OpenLuckyBlock"),
-    UpdateCFrame  = findRemote("RunningService", "UpdateCFrame"),
-    EndMove       = findRemote("RunningService", "EndMove"),
+    StartRun       = findRemote("RunningService", "StartRun"),
+    StartMove      = findRemote("RunningService", "StartMove"),
+    OpenLuckyBlock = findRemote("RunningService", "OpenLuckyBlock"),
+    UpdateCFrame   = findRemote("RunningService", "UpdateCFrame"),
+    EndMove        = findRemote("RunningService", "EndMove"),
 }
 
 local rf = {
-    Brainrot          = findRemote("ContainerService", "UpgradeBrainrot"),
-    WorkUpdate        = findEvent("ContainerService", "WorkUpdate"),
-    Container         = findRemote("ContainerService", "BuyContainer"),
-    PlaceBest         = findRemote("ContainerService", "PlaceBest"),
-    CollectCash       = findRemote("ContainerService", "CollectCash"),
-    CollectOfflineCash= findRemote("ContainerService", "CollectOfflineCash"),
-    Rebirth           = findRemote("RebirthService", "Rebirth"),
-    Speed             = findRemote("UpgradesService", "Upgrade"),
-    BuySkin           = findRemote("SkinService", "BuySkin"),
+    Brainrot           = findRemote("ContainerService", "UpgradeBrainrot"),
+    WorkUpdate         = findEvent("ContainerService", "WorkUpdate"),
+    Container          = findRemote("ContainerService", "BuyContainer"),
+    PlaceBest          = findRemote("ContainerService", "PlaceBest"),
+    CollectCash        = findRemote("ContainerService", "CollectCash"),
+    CollectOfflineCash = findRemote("ContainerService", "CollectOfflineCash"),
+    Rebirth            = findRemote("RebirthService", "Rebirth"),
+    Speed              = findRemote("UpgradesService", "Upgrade"),
+    BuySkin            = findRemote("SkinService", "BuySkin"),
 }
 
 local GetRewardRemote = nil
@@ -95,43 +108,48 @@ end
 rf.GetReward = GetRewardRemote
 
 -- ==================== _G ====================
-_G.AutoUpgrades  = _G.AutoUpgrades  or false
-_G.AutoContainer = _G.AutoContainer or false
-_G.AutoLBFarm    = _G.AutoLBFarm    or false
-_G.AutoZeus      = _G.AutoZeus      or false
-_G.AutoRebirth   = _G.AutoRebirth   or false
-_G.AutoSpeed     = _G.AutoSpeed     or false
-_G.AutoPlaceBest = _G.AutoPlaceBest or false
-_G.SelectedBase  = _G.SelectedBase  or "base14"
-_G.AutoCash           = _G.AutoCash           or false
-_G.AutoBuyLuckyblock  = _G.AutoBuyLuckyblock  or false
-_G.AutoClaimEventPass = _G.AutoClaimEventPass or false
-_G.AutoPlaytimeRewards= _G.AutoPlaytimeRewards or false
+_G.AutoUpgrades         = _G.AutoUpgrades         or false
+_G.AutoContainer        = _G.AutoContainer        or false
+_G.AutoLBFarm           = _G.AutoLBFarm           or false
+_G.AutoZeus             = _G.AutoZeus             or false
+_G.AutoRebirth          = _G.AutoRebirth          or false
+_G.AutoSpeed            = _G.AutoSpeed            or false
+_G.AutoPlaceBest        = _G.AutoPlaceBest        or false
+_G.AutoCash             = _G.AutoCash             or false
+_G.AutoBuyLuckyblock    = _G.AutoBuyLuckyblock    or false
+_G.AutoClaimEventPass   = _G.AutoClaimEventPass   or false
+_G.AutoPlaytimeRewards  = _G.AutoPlaytimeRewards  or false
 
 -- ==================== COORDENADAS ====================
 local BASE_COORDS = {
+    ZEUS   = { block = CFrame.new(721,  38, -2173), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base1  = { block = CFrame.new(640,  46, -2035), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base2  = { block = CFrame.new(559,  46, -2208), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base3  = { block = CFrame.new(481,  46, -2035), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base4  = { block = CFrame.new(400,  46, -2211), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base5  = { block = CFrame.new(291,  46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base6  = { block = CFrame.new(210,  46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base7  = { block = CFrame.new(131,  46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base8  = { block = CFrame.new(51,   46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base9  = { block = CFrame.new(-61,  46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base10 = { block = CFrame.new(-140, 46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base11 = { block = CFrame.new(-218, 46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base12 = { block = CFrame.new(-299, 46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base13 = { block = CFrame.new(-379, 46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
     base14 = { block = CFrame.new(-495, 46, -2123), runner = CFrame.new(588.96, 38.18, -2127.26) },
-    ZEUS   = { block = CFrame.new(721,  38, -2173),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base1  = { block = CFrame.new(640,  46, -2035),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base2  = { block = CFrame.new(559,  46, -2208),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base3  = { block = CFrame.new(481,  46, -2035),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base4  = { block = CFrame.new(400,  46, -2211),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base5  = { block = CFrame.new(291,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base6  = { block = CFrame.new(210,  46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base7  = { block = CFrame.new(131,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base8  = { block = CFrame.new(51,   46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base9  = { block = CFrame.new(-61,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base10 = { block = CFrame.new(-140, 46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base11 = { block = CFrame.new(-218, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base12 = { block = CFrame.new(-299, 46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base13 = { block = CFrame.new(-379, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
 }
 
 local LB_CFG = {
-    MAX_RETRIES     = 3,
-    BLOCK_COOLDOWN  = 2.5,
-    ANTI_BUG_TIMEOUT= 8,
-    DELAYS = { AFTER_TELEPORT=0.3, AFTER_OPEN=1.2, AFTER_RUN=0.5, CYCLE_END=1.5, RESPAWN_WAIT=3.0 },
+    MAX_RETRIES      = 3,
+    BLOCK_COOLDOWN   = 2.5,
+    ANTI_BUG_TIMEOUT = 8,
+    DELAYS = {
+        AFTER_TELEPORT = 0.3,
+        AFTER_OPEN     = 1.2,
+        AFTER_RUN      = 0.5,
+        CYCLE_END      = 1.5,
+        RESPAWN_WAIT   = 3.0,
+    },
 }
 
 -- ==================== HELPERS ====================
@@ -227,14 +245,29 @@ task.spawn(function()
     end
 end)
 
--- ==================== LUCKY BLOCK FARM ====================
+-- ==================== LUCKY BLOCK FARM (MULTI-BASE) ====================
 local lastBlockOpen = 0
 
 local function lbFarmCycle()
     local cycleCompleted = false
     local char, hrp = waitForCharacter()
     if not hrp then return false, "Sin HRP" end
-    local baseName = _G.AutoZeus and "ZEUS" or (_G.SelectedBase or "base14")
+
+    -- Selección de base: Zeus > bases seleccionadas > base14 fallback
+    local baseName
+    if _G.AutoZeus then
+        baseName = "ZEUS"
+    else
+        local activeBases = getSelectedLBBases()
+        if #activeBases == 0 then
+            baseName = "base14"
+        else
+            if lbBaseIndex > #activeBases then lbBaseIndex = 1 end
+            baseName = activeBases[lbBaseIndex]
+            lbBaseIndex = (lbBaseIndex % #activeBases) + 1
+        end
+    end
+
     local coords = BASE_COORDS[baseName] or BASE_COORDS["base14"]
 
     local antiBugTask = task.spawn(function()
@@ -250,37 +283,55 @@ local function lbFarmCycle()
     local ok, err = pcall(function()
         if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
         task.wait(0.2)
+
         if not isNear(coords.block, 8) then teleportToWithConfirm(coords.block, 3) end
+
         local now = tick()
         local waitTime = LB_CFG.BLOCK_COOLDOWN - (now - lastBlockOpen)
         if waitTime > 0 then task.wait(waitTime) end
+
         local blockParam = (baseName == "ZEUS") and "ZEUS" or baseName
-        if not invokeWithRetry(lbRF.OpenLuckyBlock, LB_CFG.MAX_RETRIES, blockParam) then error("Falló OpenLuckyBlock") end
+        if not invokeWithRetry(lbRF.OpenLuckyBlock, LB_CFG.MAX_RETRIES, blockParam) then
+            error("Falló OpenLuckyBlock en " .. baseName)
+        end
         lastBlockOpen = tick()
         task.wait(LB_CFG.DELAYS.AFTER_OPEN)
+
         if not isNear(coords.runner, 8) then teleportToWithConfirm(coords.runner, 3) end
         task.wait(LB_CFG.DELAYS.AFTER_TELEPORT)
+
         if lbRF.StartMove then invokeWithRetry(lbRF.StartMove, LB_CFG.MAX_RETRIES) end
         if lbRF.StartRun  then invokeWithRetry(lbRF.StartRun,  LB_CFG.MAX_RETRIES) end
         task.wait(LB_CFG.DELAYS.AFTER_RUN)
+
         local currentHrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-        if lbRF.UpdateCFrame and currentHrp then invokeWithRetry(lbRF.UpdateCFrame, LB_CFG.MAX_RETRIES, currentHrp.CFrame) end
+        if lbRF.UpdateCFrame and currentHrp then
+            invokeWithRetry(lbRF.UpdateCFrame, LB_CFG.MAX_RETRIES, currentHrp.CFrame)
+        end
         task.wait(0.8)
+
         if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
         task.wait(0.2)
     end)
 
     cycleCompleted = true
     pcall(task.cancel, antiBugTask)
-    if not ok then warn("[LBFarm] Error: " .. tostring(err)) return false, err end
+    if not ok then warn("[LBFarm] Error en " .. baseName .. ": " .. tostring(err)) return false, err end
     task.wait(LB_CFG.DELAYS.CYCLE_END)
     return true
 end
 
 local function loopAutoLBFarm()
+    lbBaseIndex = 1
     while _G.AutoLBFarm do
-        local ok, err = pcall(lbFarmCycle)
-        if not ok then warn("[LBFarm] Error: " .. tostring(err)) task.wait(2) end
+        local activeBases = getSelectedLBBases()
+        if #activeBases == 0 and not _G.AutoZeus then
+            warn("[BLADEX] No hay bases seleccionadas para LB Farm.")
+            task.wait(2)
+        else
+            local ok, err = pcall(lbFarmCycle)
+            if not ok then warn("[LBFarm] Error: " .. tostring(err)) task.wait(2) end
+        end
     end
     if lbRF.EndMove then pcall(lbRF.EndMove.InvokeServer, lbRF.EndMove) end
 end
@@ -304,7 +355,7 @@ local function startUpgradeLoop()
     end)
 end
 
--- ==================== AUTO SPEED (Knit) ====================
+-- ==================== AUTO SPEED ====================
 local speedRunning = false
 local function startSpeedLoop()
     if speedRunning then return end
@@ -363,7 +414,7 @@ local function loopAutoBuyLuckyblock()
                 end
                 if bestSkin then
                     pcall(function() buy:InvokeServer(bestSkin) end)
-                    notify("Auto comprado: "..bestSkin, 3)
+                    notify("Auto comprado: " .. bestSkin, 3)
                 end
             end
         end
@@ -396,7 +447,7 @@ local function loopAutoClaimEventPass()
                         end
                     end
                 end
-                if claimed > 0 then notify("Event Pass reclamadas: "..claimed, 3) end
+                if claimed > 0 then notify("Event Pass reclamadas: " .. claimed, 3) end
             end
         end
         task.wait(30)
@@ -482,7 +533,6 @@ task.spawn(function()
     end
 end)
 
-
 -- ==================== UI ====================
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
@@ -507,7 +557,7 @@ local function notify(content, duration)
     Notifier.new({ Title="BLADEX HUB", Content=content, Duration=duration or 4, Icon=Compkiller.Logo })
 end
 
--- ==================== ÚNICA TAB: BE A BRAINROT ====================
+-- ==================== TAB PRINCIPAL ====================
 local mainTab = Window:DrawTab({
     Name           = "BE A BRAINROT",
     Icon           = "crown",
@@ -521,20 +571,36 @@ local mainTab = Window:DrawTab({
 local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
 
 lbSection:AddToggle({ Name="Auto Ciber Farm", Flag="lb_farm", Default=false,
-    Callback=function(v) toggle("AutoLBFarm", v) end })
+    Callback=function(v)
+        -- Validar que haya bases seleccionadas si Zeus está apagado
+        if v and not _G.AutoZeus and #getSelectedLBBases() == 0 then
+            notify("Selecciona al menos una base (1-14) antes de iniciar.", 5)
+            return
+        end
+        toggle("AutoLBFarm", v)
+    end
+})
 
 lbSection:AddToggle({ Name="Auto Zeus Farm", Flag="auto_zeus", Default=false,
-    Callback=function(v) _G.AutoZeus = v end })
-
-lbSection:AddDropdown({
-    Name="Base a Farmear", Flag="selected_base", Default="Base 14",
-    Values={"Base 1","Base 2","Base 3","Base 4","Base 5","Base 6","Base 7",
-            "Base 8","Base 9","Base 10","Base 11","Base 12","Base 13","Base 14"},
-    Callback=function(v)
-        local num = v:match("Base (%d+)")
-        if num then _G.SelectedBase = "base"..num notify("Base: "..v, 3) end
-    end,
+    Callback=function(v) _G.AutoZeus = v end
 })
+
+-- Separador visual
+lbSection:AddLabel("— Seleccionar Bases (base1 → base14) —")
+
+-- Toggles base1-base14
+for i = 1, 14 do
+    lbSection:AddToggle({
+        Name     = "Base " .. i,
+        Flag     = "lb_base_" .. i,
+        Default  = false,
+        Callback = function(v)
+            selectedLBBases[i] = v
+            lbBaseIndex = 1 -- reinicia el ciclo al cambiar selección
+            notify("Base " .. i .. (v and " activada" or " desactivada"), 2)
+        end,
+    })
+end
 
 -- Auto Farm (Knit)
 local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
@@ -557,7 +623,7 @@ afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=
 afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
     Callback=function(v) toggle("AutoContainer", v) end })
 
--- Movement (del script 2)
+-- Movement
 local movSection = mainTab:DrawSection({ Name="Movement", Position="left", Minimized=true })
 
 local speedToggle = movSection:AddToggle({
@@ -579,7 +645,7 @@ movSection:AddSlider({
 
 -- ───────────── DERECHA ─────────────
 
--- Brainrots (del script 2)
+-- Brainrots
 local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="right", Minimized=true })
 
 local autoFarmToggle2 = brainSection:AddToggle({
@@ -590,11 +656,11 @@ local autoFarmToggle2 = brainSection:AddToggle({
             task.spawn(function()
                 while runningFarm do
                     local character = LP.Character or LP.CharacterAdded:Wait()
-                    local root = character:WaitForChild("HumanoidRootPart")
-                    local humanoid = character:WaitForChild("Humanoid")
-                    local userId = LP.UserId
+                    local root      = character:WaitForChild("HumanoidRootPart")
+                    local humanoid  = character:WaitForChild("Humanoid")
+                    local userId    = LP.UserId
                     local modelsFolder = workspace:WaitForChild("RunningModels")
-                    local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
+                    local target    = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
 
                     root.CFrame = CFrame.new(715, 39, -2122)
                     task.wait(0.3)
@@ -636,8 +702,7 @@ local autoFarmToggle2 = brainSection:AddToggle({
                     if not runningFarm then break end
 
                     task.wait(0.4)
-                    local newRoot = LP.Character:WaitForChild("HumanoidRootPart")
-                    newRoot.CFrame = CFrame.new(737, 39, -2118)
+                    LP.Character:WaitForChild("HumanoidRootPart").CFrame = CFrame.new(737, 39, -2118)
                     task.wait(2.1)
                 end
             end)
@@ -710,7 +775,7 @@ local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Posit
 rewardSection:AddButton({ Name="Reclamar Bloque Espiritual", Callback=function()
     if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
     local ok, result = safeInvoke(rf.GetReward)
-    notify(ok and "¡Reclamo enviado!" or "Error: "..tostring(result), 5)
+    notify(ok and "¡Reclamo enviado!" or "Error: " .. tostring(result), 5)
 end })
 
 rewardSection:AddButton({ Name="Redeem All Codes", Callback=function()
@@ -758,7 +823,7 @@ rewardSection:AddButton({ Name="Buy Best Luckyblock", Callback=function()
     end
     if bestSkin then
         pcall(function() buy:InvokeServer(bestSkin) end)
-        notify("Comprado: "..bestSkin, 4)
+        notify("Comprado: " .. bestSkin, 4)
     else
         notify("No hay skin disponible para comprar.", 4)
     end
@@ -779,7 +844,7 @@ rewardSection:AddButton({ Name="Claim Event Pass Rewards", Callback=function()
         local item = gui:FindFirstChild(tostring(i))
         if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
             local free = item.Frame.Free
-            local locked  = free:FindFirstChild("Locked")
+            local locked   = free:FindFirstChild("Locked")
             local claimedEl = free:FindFirstChild("Claimed")
             if locked and not locked.Visible and not (claimedEl and claimedEl.Visible) then
                 pcall(function() claim:InvokeServer("Free", i) end)
@@ -788,7 +853,7 @@ rewardSection:AddButton({ Name="Claim Event Pass Rewards", Callback=function()
             end
         end
     end
-    notify("Recompensas reclamadas: "..claimed, 4)
+    notify("Recompensas reclamadas: " .. claimed, 4)
 end })
 
 rewardSection:AddButton({ Name="Claim Playtime Rewards", Callback=function()
@@ -801,7 +866,7 @@ rewardSection:AddButton({ Name="Claim Playtime Rewards", Callback=function()
     notify("Playtime rewards reclamados.", 4)
 end })
 
--- ==================== AJUSTES (pestaña aparte) ====================
+-- ==================== AJUSTES ====================
 local settingsTab = Window:DrawTab({ Name="Ajustes", Icon="settings", Type="Single" })
 local settingsSection = settingsTab:DrawSection({ Name="Configuración", Position="full" })
 
@@ -824,5 +889,5 @@ speedToggle:SetValue(false)
 autoFarmToggle2:SetValue(false)
 rbtToggle:SetValue(false)
 
-notify("¡BLADEX HUB v3.0 cargado! Knit: "..(knitServices and "✓" or "✗"), 6)
+notify("¡BLADEX HUB v3.0 cargado! Knit: " .. (knitServices and "✓" or "✗"), 6)
 print("[BLADEX HUB v3.0] Cargado. LeftAlt para mostrar/ocultar.")
