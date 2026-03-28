@@ -22,12 +22,47 @@ local skins = {
 
 local codes = { "release" }
 
--- ==================== BASE SELECCIONADA ====================
-local selectedBase = "base14"
-local lbBaseIndex = 1
+-- ==================== MULTI-BASE FARM ====================
+local ALL_BASES = {}
+for i = 1, 14 do
+    ALL_BASES[i] = {
+        name     = "base" .. i,
+        teleport = Vector3.new(715, 39, -2122),
+        move     = Vector3.new(710, 39, -2122),
+        respawn  = Vector3.new(737, 39, -2118),
+    }
+end
+
+local selectedBases = {}
+for i = 1, 14 do selectedBases[i] = false end
+
+local farmRunCount  = 0
+local farmBaseIndex = 1
+local lbBaseIndex   = 1
 
 local function getSelectedLBBases()
-    return { selectedBase }
+    local result = {}
+    for i, sel in ipairs(selectedBases) do
+        if sel then table.insert(result, "base" .. i) end
+    end
+    return result
+end
+
+local function getActiveBases()
+    local result = {}
+    for i, sel in ipairs(selectedBases) do
+        if sel then table.insert(result, ALL_BASES[i]) end
+    end
+    return result
+end
+
+local function setModelCFrame(model, cf)
+    if model.PrimaryPart then
+        model:SetPrimaryPartCFrame(cf)
+    else
+        local part = model:FindFirstChildWhichIsA("BasePart")
+        if part then part.CFrame = cf end
+    end
 end
 
 -- ==================== KNIT ====================
@@ -580,19 +615,47 @@ local autoFarmToggle2 = brainSection:AddToggle({
     Callback=function(state)
         runningFarm = state
         if state then
+            local bases = getActiveBases()
+            if #bases == 0 then
+                notify("Selecciona al menos una base en la sección Bases.", 4)
+                autoFarmToggle2:SetValue(false)
+                return
+            end
+
+            farmRunCount  = 0
+            farmBaseIndex = 1
+
             task.spawn(function()
                 while runningFarm do
-                    local character = LP.Character or LP.CharacterAdded:Wait()
-                    local root      = character:WaitForChild("HumanoidRootPart")
-                    local humanoid  = character:WaitForChild("Humanoid")
-                    local userId    = LP.UserId
+                    bases = getActiveBases()
+                    if #bases == 0 then
+                        warn("[BLADEX] No hay bases seleccionadas.")
+                        break
+                    end
+                    if farmBaseIndex > #bases then farmBaseIndex = 1 end
+
+                    local currentBase  = bases[farmBaseIndex]
+                    local character    = LP.Character or LP.CharacterAdded:Wait()
+                    local root         = character:WaitForChild("HumanoidRootPart")
+                    local humanoid     = character:WaitForChild("Humanoid")
+                    local userId       = LP.UserId
                     local modelsFolder = workspace:WaitForChild("RunningModels")
-                    local target    = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
+                    local collectZones = workspace:WaitForChild("CollectZones")
+                    local target       = collectZones:FindFirstChild(currentBase.name)
 
-                    root.CFrame = CFrame.new(715, 39, -2122)
+                    if not target then
+                        warn("[BLADEX] Base no encontrada: " .. currentBase.name .. " — saltando.")
+                        farmBaseIndex = (farmBaseIndex % #bases) + 1
+                        task.wait(0.5)
+                        continue
+                    end
+
+                    -- 1. Teleport
+                    root.CFrame = CFrame.new(currentBase.teleport)
                     task.wait(0.3)
-                    humanoid:MoveTo(Vector3.new(710, 39, -2122))
+                    humanoid:MoveTo(currentBase.move)
 
+                    -- 2. Esperar brainrot propio
                     local ownedModel = nil
                     repeat
                         task.wait(0.3)
@@ -604,38 +667,50 @@ local autoFarmToggle2 = brainSection:AddToggle({
                     until ownedModel ~= nil or not runningFarm
                     if not runningFarm then break end
 
-                    if ownedModel.PrimaryPart then
-                        ownedModel:SetPrimaryPartCFrame(target.CFrame)
-                    else
-                        local part = ownedModel:FindFirstChildWhichIsA("BasePart")
-                        if part then part.CFrame = target.CFrame end
-                    end
+                    -- 3. Mover al final
+                    setModelCFrame(ownedModel, target.CFrame)
                     task.wait(0.7)
 
+                    -- 4. Hundir
                     if ownedModel and ownedModel.Parent == modelsFolder then
-                        if ownedModel.PrimaryPart then
-                            ownedModel:SetPrimaryPartCFrame(target.CFrame * CFrame.new(0,-5,0))
-                        else
-                            local part = ownedModel:FindFirstChildWhichIsA("BasePart")
-                            if part then part.CFrame = target.CFrame * CFrame.new(0,-5,0) end
-                        end
+                        setModelCFrame(ownedModel, target.CFrame * CFrame.new(0, -5, 0))
                     end
 
+                    -- 5. Esperar que desaparezca
                     repeat task.wait(0.3) until not runningFarm or (ownedModel==nil or ownedModel.Parent~=modelsFolder)
                     if not runningFarm then break end
 
+                    -- 6. Esperar respawn
                     local oldChar = LP.Character
                     repeat task.wait(0.2) until not runningFarm or (LP.Character~=oldChar and LP.Character~=nil)
                     if not runningFarm then break end
 
                     task.wait(0.4)
-                    LP.Character:WaitForChild("HumanoidRootPart").CFrame = CFrame.new(737, 39, -2118)
+                    LP.Character:WaitForChild("HumanoidRootPart").CFrame = CFrame.new(currentBase.respawn)
                     task.wait(2.1)
+
+                    -- 7. Siguiente base
+                    farmRunCount  = farmRunCount + 1
+                    farmBaseIndex = (farmBaseIndex % #bases) + 1
+                    print("[BLADEX] Run #" .. farmRunCount .. " completado en " .. currentBase.name)
                 end
             end)
         end
     end
 })
+
+local basesSection = mainTab:DrawSection({ Name="Bases", Position="right", Minimized=true })
+
+for i = 1, 14 do
+    basesSection:AddToggle({
+        Name     = "Base " .. i,
+        Flag     = "farm_base_" .. i,
+        Default  = false,
+        Callback = function(v)
+            selectedBases[i] = v
+        end,
+    })
+end
 
 brainSection:AddButton({ Name="Teleport to End", Callback=function()
     local modelsFolder = workspace:WaitForChild("RunningModels")
