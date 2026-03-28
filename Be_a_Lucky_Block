@@ -528,7 +528,7 @@ local ConfigManager = Compkiller:ConfigManager({
 Compkiller:Loader(Compkiller.Logo, 2.5).yield()
 
 local Window = Compkiller.new({
-    Name     = "BLADEX HUB v3.0",
+    Name     = "BLADEX HUD",
     Keybind  = "LeftAlt",
     Logo     = Compkiller.Logo,
     Scale    = UDim2.new(0, 480, 0, 340),
@@ -537,7 +537,7 @@ local Window = Compkiller.new({
 Window.Minimized = true
 
 local function notify(content, duration)
-    Notifier.new({ Title="BLADEX HUB", Content=content, Duration=duration or 4, Icon=Compkiller.Logo })
+    Notifier.new({ Title="BLADEX HUD", Content=content, Duration=duration or 4, Icon=Compkiller.Logo })
 end
 
 -- ==================== TAB: BE A BRAINROT ====================
@@ -549,34 +549,6 @@ local mainTab = Window:DrawTab({
 })
 
 -- ───────────── IZQUIERDA ─────────────
-local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
-
-lbSection:AddToggle({ Name="Auto Ciber Farm", Flag="lb_farm", Default=false,
-    Callback=function(v) toggle("AutoLBFarm", v) end
-})
-
-lbSection:AddToggle({ Name="Auto Zeus Farm", Flag="auto_zeus", Default=false,
-    Callback=function(v) _G.AutoZeus = v end
-})
-
-local baseValues = {}
-for i = 1, 14 do table.insert(baseValues, "Base " .. i) end
-
-lbSection:AddDropdown({
-    Name     = "Base a Farmear",
-    Default  = "Base 14",
-    Values   = baseValues,
-    Callback = function(v)
-        local num = tonumber(v:match("%d+"))
-        if num and num >= 1 and num <= 14 then
-            selectedBase = "base" .. num
-            -- sincronizar también el array de bases activas
-            for i = 1, 14 do selectedBases[i] = (i == num) end
-            notify("Base seleccionada: Base " .. num, 3)
-        end
-    end
-})
-
 local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
 
 afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
@@ -617,9 +589,7 @@ movSection:AddSlider({
 })
 
 -- ───────────── DERECHA ─────────────
-local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="left", Minimized=true })
-
-local basesSection = mainTab:DrawSection({ Name="Bases", Position="right", Minimized=true })
+local basesSection = mainTab:DrawSection({ Name="Farm Brainrots", Position="right", Minimized=true })
 
 local autoFarmToggle2 = basesSection:AddToggle({
     Name="Auto Farm Best Brainrots", Default=false,
@@ -798,14 +768,8 @@ rewardSection:AddButton({ Name="Redeem All Codes", Callback=function()
     local redeem = findRemote("CodesService", "RedeemCode")
     if not redeem then notify("⚠ Remoto RedeemCode no encontrado.", 5) return end
     for _, code in ipairs(codes) do pcall(function() redeem:InvokeServer(code) end) task.wait(1) end
-    notify("Códigos canjeados.", 4)
-end })
-
-rewardSection:AddButton({ Name="Redeem Code: DEVIL", Callback=function()
-    local redeem = findRemote("CodesService", "RedeemCode")
-    if not redeem then notify("⚠ Remoto RedeemCode no encontrado.", 5) return end
     pcall(function() redeem:InvokeServer("DEVIL") end)
-    notify("Código DEVIL canjeado.", 4)
+    notify("Códigos canjeados.", 4)
 end })
 
 rewardSection:AddButton({ Name="Buy Best Luckyblock", Callback=function()
@@ -892,7 +856,7 @@ settingsSection:AddDropdown({ Name="Tema", Default="Default",
         Compkiller:ChangeHighlightColor(color)
     end })
 
-settingsSection:AddLabel("BLADEX HUB v3.0 | Be a Lucky Block")
+settingsSection:AddLabel("BLADEX HUD | Be a Lucky Block")
 
 -- ==================== CONFIG + INICIO ====================
 -- Config tab (compatible con Compkiller 2.6)
@@ -904,5 +868,5 @@ speedToggle:SetValue(false)
 autoFarmToggle2:SetValue(false)
 rbtToggle:SetValue(false)
 
-notify("¡BLADEX HUB v3.0 cargado! Knit: " .. (knitServices and "✓" or "✗"), 6)
-print("[BLADEX HUB v3.0] Cargado. LeftAlt para mostrar/ocultar.")
+notify("¡BLADEX HUD cargado! Knit: " .. (knitServices and "✓" or "✗"), 6)
+print("[BLADEX HUD] Cargado. LeftAlt para mostrar/ocultar.")
