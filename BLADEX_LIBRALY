@@ -6327,7 +6327,7 @@ function Compkiller.new(Config : Window)
 	end;
 
 	Config = Compkiller.__CONFIG(Config , {
-		Name = "BLADEX HUB",
+		Name = "BBLADEX HUD",
 		Keybind = "LeftAlt",
 		Logo = Compkiller.Logo;
 		Scale = UDim2.new(0, 460, 0, 320),
