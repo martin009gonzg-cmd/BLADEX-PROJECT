@@ -549,47 +549,7 @@ local mainTab = Window:DrawTab({
 })
 
 -- ───────────── IZQUIERDA ─────────────
-local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
-
-afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
-    Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
-
-afSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
-    Callback=function(v) toggle("AutoPlaceBest", v) end })
-
-afSection:AddToggle({ Name="Auto Rebirth", Flag="auto_rebirth", Default=false,
-    Callback=function(v) toggle("AutoRebirth", v) end })
-
-afSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
-    Callback=function(v) toggle("AutoUpgrades", v) end })
-
-afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=false,
-    Callback=function(v) toggle("AutoSpeed", v) end })
-
-afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
-    Callback=function(v) toggle("AutoContainer", v) end })
-
-local movSection = mainTab:DrawSection({ Name="Movement", Position="left", Minimized=true })
-
-local speedToggle = movSection:AddToggle({
-    Name="Custom Lucky Block Speed", Default=false,
-    Callback=function(state)
-        runningSpeed = state
-        if not state then
-            local model = getMyModel()
-            if model and originalSpeed ~= nil then model:SetAttribute("MovementSpeed", originalSpeed) end
-            originalSpeed = nil currentModel = nil
-        end
-    end
-})
-
-movSection:AddSlider({
-    Name="Lucky Block Speed", Default=1000, Min=50, Max=3000, Round=0,
-    Callback=function(value) sliderValue = value end
-})
-
--- ───────────── DERECHA ─────────────
-local basesSection = mainTab:DrawSection({ Name="Farm Brainrots", Position="right", Minimized=true })
+local basesSection = mainTab:DrawSection({ Name="Farm Brainrots", Position="left", Minimized=true })
 
 local autoFarmToggle2 = basesSection:AddToggle({
     Name="Auto Farm Best Brainrots", Default=false,
@@ -702,7 +662,6 @@ basesSection:AddButton({ Name="Teleport to End", Callback=function()
         local modelsFolder = workspace:WaitForChild("RunningModels", 5)
         if not modelsFolder then notify("⚠ RunningModels no encontrado.", 4) return end
 
-        -- Usa la base seleccionada actualmente, no siempre base14
         local targetName = selectedBase or "base14"
         local collectZones = workspace:WaitForChild("CollectZones", 5)
         local target = collectZones and collectZones:FindFirstChild(targetName)
@@ -711,7 +670,6 @@ basesSection:AddButton({ Name="Teleport to End", Callback=function()
         local targetCF = target.CFrame
         local moved = 0
 
-        -- Teleporta solo el modelo del jugador local
         for _, obj in ipairs(modelsFolder:GetChildren()) do
             if obj:GetAttribute("OwnerId") == LP.UserId then
                 if obj:IsA("Model") then
@@ -728,7 +686,6 @@ basesSection:AddButton({ Name="Teleport to End", Callback=function()
             end
         end
 
-        -- También teleporta al personaje del jugador
         local char = LP.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then hrp.CFrame = targetCF * CFrame.new(0, 3, 0) end
@@ -758,6 +715,46 @@ local rbtToggle = basesSection:AddToggle({
     end
 })
 
+local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
+
+afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
+    Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
+
+afSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
+    Callback=function(v) toggle("AutoPlaceBest", v) end })
+
+afSection:AddToggle({ Name="Auto Rebirth", Flag="auto_rebirth", Default=false,
+    Callback=function(v) toggle("AutoRebirth", v) end })
+
+afSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
+    Callback=function(v) toggle("AutoUpgrades", v) end })
+
+afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=false,
+    Callback=function(v) toggle("AutoSpeed", v) end })
+
+afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
+    Callback=function(v) toggle("AutoContainer", v) end })
+
+local movSection = mainTab:DrawSection({ Name="Movement", Position="right", Minimized=true })
+
+local speedToggle = movSection:AddToggle({
+    Name="Custom Lucky Block Speed", Default=false,
+    Callback=function(state)
+        runningSpeed = state
+        if not state then
+            local model = getMyModel()
+            if model and originalSpeed ~= nil then model:SetAttribute("MovementSpeed", originalSpeed) end
+            originalSpeed = nil currentModel = nil
+        end
+    end
+})
+
+movSection:AddSlider({
+    Name="Lucky Block Speed", Default=1000, Min=50, Max=3000, Round=0,
+    Callback=function(value) sliderValue = value end
+})
+
+-- ───────────── DERECHA ─────────────
 local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
 
 rewardSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
