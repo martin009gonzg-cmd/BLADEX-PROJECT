@@ -25,7 +25,7 @@ local skins = {
     "lava_luckyblock", "freezy_luckyblock", "fairy_luckyblock"
 }
 
-local codes = { "release", "DEVIL" }
+local codes = { "release" }
 
 -- ==================== KNIT ====================
 local function findKnit()
@@ -727,14 +727,79 @@ rewardSection:AddButton({ Name="Redeem Code: DEVIL", Callback=function()
     notify("Código DEVIL canjeado.", 4)
 end })
 
-rewardSection:AddToggle({ Name="Auto Buy Best Luckyblock", Flag="auto_buy_luckyblock", Default=false,
-    Callback=function(v) toggle("AutoBuyLuckyblock", v) end })
+rewardSection:AddButton({ Name="Buy Best Luckyblock", Callback=function()
+    local buy = findRemote("SkinService", "BuySkin")
+    if not buy then notify("⚠ Remoto BuySkin no encontrado.", 5) return end
+    local gui = LP.PlayerGui:FindFirstChild("Windows")
+    if not gui then notify("⚠ GUI no encontrada.", 5) return end
+    local pickaxeShop = gui:FindFirstChild("PickaxeShop")
+    if not pickaxeShop then notify("⚠ PickaxeShop no encontrado.", 5) return end
+    local shopContainer = pickaxeShop:FindFirstChild("ShopContainer")
+    local scrollingFrame = shopContainer and shopContainer:FindFirstChild("ScrollingFrame")
+    if not scrollingFrame then notify("⚠ ScrollingFrame no encontrado.", 5) return end
+    local cash = LP.leaderstats.Cash.Value
+    local bestSkin, bestPrice = nil, 0
+    for _, name in ipairs(skins) do
+        local item = scrollingFrame:FindFirstChild(name)
+        if item then
+            local buyButton = item:FindFirstChild("Main") and
+                item.Main:FindFirstChild("Buy") and
+                item.Main.Buy:FindFirstChild("BuyButton")
+            if buyButton and buyButton.Visible then
+                local cashLabel = buyButton:FindFirstChild("Cash")
+                if cashLabel then
+                    local price = parseCash(cashLabel.Text)
+                    if cash >= price and price > bestPrice then
+                        bestSkin = name bestPrice = price
+                    end
+                end
+            end
+        end
+    end
+    if bestSkin then
+        pcall(function() buy:InvokeServer(bestSkin) end)
+        notify("Comprado: "..bestSkin, 4)
+    else
+        notify("No hay skin disponible para comprar.", 4)
+    end
+end })
 
-rewardSection:AddToggle({ Name="Auto Claim Event Pass Reward", Flag="auto_claim_eventpass", Default=false,
-    Callback=function(v) toggle("AutoClaimEventPass", v) end })
+rewardSection:AddButton({ Name="Claim Event Pass Rewards", Callback=function()
+    local claim = findRemote("SeasonPassService", "ClaimPassReward")
+    if not claim then notify("⚠ Remoto ClaimPassReward no encontrado.", 5) return end
+    local ok, gui = pcall(function()
+        return LP:WaitForChild("PlayerGui"):WaitForChild("Windows")
+            :WaitForChild("Event"):WaitForChild("Frame"):WaitForChild("Frame")
+            :WaitForChild("Windows"):WaitForChild("Pass"):WaitForChild("Main")
+            :WaitForChild("ScrollingFrame")
+    end)
+    if not ok or not gui then notify("⚠ GUI de evento no encontrada.", 5) return end
+    local claimed = 0
+    for i = 1, 10 do
+        local item = gui:FindFirstChild(tostring(i))
+        if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
+            local free = item.Frame.Free
+            local locked  = free:FindFirstChild("Locked")
+            local claimedEl = free:FindFirstChild("Claimed")
+            if locked and not locked.Visible and not (claimedEl and claimedEl.Visible) then
+                pcall(function() claim:InvokeServer("Free", i) end)
+                claimed = claimed + 1
+                task.wait(0.1)
+            end
+        end
+    end
+    notify("Recompensas reclamadas: "..claimed, 4)
+end })
 
-rewardSection:AddToggle({ Name="Auto Claim Playtime Rewards", Flag="auto_playtime_rewards", Default=false,
-    Callback=function(v) toggle("AutoPlaytimeRewards", v) end })
+rewardSection:AddButton({ Name="Claim Playtime Rewards", Callback=function()
+    local claimGift = findRemote("PlaytimeRewardService", "ClaimGift")
+    if not claimGift then notify("⚠ Remoto ClaimGift no encontrado.", 5) return end
+    for reward = 1, 12 do
+        pcall(function() claimGift:InvokeServer(reward) end)
+        task.wait(0.25)
+    end
+    notify("Playtime rewards reclamados.", 4)
+end })
 
 -- ==================== AJUSTES (pestaña aparte) ====================
 local settingsTab = Window:DrawTab({ Name="Ajustes", Icon="settings", Type="Single" })
