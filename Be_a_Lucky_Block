@@ -1,137 +1,125 @@
--- Script usando la librería BLADEX (Compkiller)
--- Cargar la librería
+-- Cargar la librería Compkiller (código proporcionado)
 local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/BLADEX_LIBRALY"))()
 
--- Crear la ventana principal
-local Window = Compkiller:CreateWindow({
-    Title = "Be a Lucky Block",
-    SubTitle = "by Phemonaz | BLADEX",
-    Size = UDim2.new(0, 550, 0, 430),
-    Theme = "Darker",
-    Acrylic = false,
-    MinimizeKey = Enum.KeyCode.LeftControl
+-- Configuración opcional de seguridad (descomentar si se desea usar caché de imágenes)
+-- Compkiller:Security("CompkillerCache", { BlurEnabled = true, ImageScale = 150 })
+
+-- Crear ventana principal
+local Window = Compkiller.new({
+    Name = "Be a Lucky Block",
+    Keybind = "LeftAlt",
+    Logo = "rbxassetid://125064196202041", -- Logo por defecto (puedes cambiarlo)
+    Scale = UDim2.new(0, 485, 0, 565),
+    TextSize = 15
 })
 
--- Pestañas
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "box" }),
-    Upgrades = Window:AddTab({ Title = "Upgrades", Icon = "gauge" }),
-    Brainrots = Window:AddTab({ Title = "Brainrots", Icon = "bot" }),
-    Stats = Window:AddTab({ Title = "Stats", Icon = "chart-column" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
-}
+-- Crear los tabs principales
+local MainTab = Window:DrawTab({ Name = "Main", Icon = "box", Type = "Single" })
+local UpgradesTab = Window:DrawTab({ Name = "Upgrades", Icon = "gauge", Type = "Single" })
+local BrainrotsTab = Window:DrawTab({ Name = "Brainrots", Icon = "bot", Type = "Single" })
+local StatsTab = Window:DrawTab({ Name = "Stats", Icon = "chart-column", Type = "Single" })
+local SettingsTab = Window:DrawTab({ Name = "Settings", Icon = "settings", Type = "Single" })
 
--- ========== Lógica principal (igual que antes) ==========
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+-- ------------------------------------------------------------
+-- Sección: MainTab
+-- ------------------------------------------------------------
+local MainSection = MainTab:DrawSection({ Name = "Main Features", Position = "left" })
 
--- Referencias a los remotos (igual que en la versión anterior)
-local claimGift = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("PlaytimeRewardService"):WaitForChild("RF"):WaitForChild("ClaimGift")
-local rebirthRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("RebirthService"):WaitForChild("RF"):WaitForChild("Rebirth")
-local claimPassReward = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("SeasonPassService"):WaitForChild("RF"):WaitForChild("ClaimPassReward")
-local redeemCode = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("CodesService"):WaitForChild("RF"):WaitForChild("RedeemCode")
-local upgradeRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("UpgradesService"):WaitForChild("RF"):WaitForChild("Upgrade")
-local buySkin = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("SkinService"):WaitForChild("RF"):WaitForChild("BuySkin")
-local sellBrainrotRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("InventoryService"):WaitForChild("RF"):WaitForChild("SellBrainrot")
-local pickupBrainrotRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("ContainerService"):WaitForChild("RF"):WaitForChild("PickupBrainrot")
-
--- Variables de control
-local autoClaimRewards = false
-local autoRebirth = false
-local autoClaimEventPass = false
-local autoUpgradeSpeed = false
-local upgradeAmount = 1
-local upgradeDelay = 0.5
-local autoBuyBest = false
-local autoFarm = false
-
--- Funciones de las tareas automáticas (igual que antes)
-local function startAutoClaimRewards()
-    autoClaimRewards = true
-    task.spawn(function()
-        while autoClaimRewards do
-            for reward = 1, 12 do
-                if not autoClaimRewards then break end
-                pcall(function() claimGift:InvokeServer(reward) end)
-                task.wait(0.25)
+-- Auto Claim Playtime Rewards
+local claimGift = game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("PlaytimeRewardService"):WaitForChild("RF"):WaitForChild("ClaimGift")
+local autoClaiming = false
+local ACPR = MainSection:AddToggle({
+    Name = "Auto Claim Playtime Rewards",
+    Default = false,
+    Callback = function(state)
+        autoClaiming = state
+        if not state then return end
+        task.spawn(function()
+            while autoClaiming do
+                for reward = 1, 12 do
+                    if not autoClaiming then break end
+                    pcall(function() claimGift:InvokeServer(reward) end)
+                    task.wait(0.25)
+                end
+                task.wait(1)
             end
-            task.wait(1)
-        end
-    end)
-end
+        end)
+    end
+})
 
-local function stopAutoClaimRewards()
-    autoClaimRewards = false
-end
+-- Auto Rebirth
+local rebirth = game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("RebirthService"):WaitForChild("RF"):WaitForChild("Rebirth")
+local autoRebirth = false
+local AR = MainSection:AddToggle({
+    Name = "Auto Rebirth",
+    Default = false,
+    Callback = function(state)
+        autoRebirth = state
+        if not state then return end
+        task.spawn(function()
+            while autoRebirth do
+                pcall(function() rebirth:InvokeServer() end)
+                task.wait(1)
+            end
+        end)
+    end
+})
 
-local function startAutoRebirth()
-    autoRebirth = true
-    task.spawn(function()
-        while autoRebirth do
-            pcall(function() rebirthRemote:InvokeServer() end)
-            task.wait(1)
-        end
-    end)
-end
-
-local function stopAutoRebirth()
-    autoRebirth = false
-end
-
-local function startAutoClaimEventPass()
-    autoClaimEventPass = true
-    task.spawn(function()
-        while autoClaimEventPass do
-            local gui = player:WaitForChild("PlayerGui"):WaitForChild("Windows"):WaitForChild("Event"):WaitForChild("Frame"):WaitForChild("Frame"):WaitForChild("Windows"):WaitForChild("Pass"):WaitForChild("Main"):WaitForChild("ScrollingFrame")
-            for i = 1, 10 do
-                if not autoClaimEventPass then break end
-                local item = gui:FindFirstChild(tostring(i))
-                if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
-                    local free = item.Frame.Free
-                    local locked = free:FindFirstChild("Locked")
-                    local claimed = free:FindFirstChild("Claimed")
-                    while autoClaimEventPass and locked and locked.Visible do task.wait(0.2) end
-                    if autoClaimEventPass and claimed and claimed.Visible then continue end
-                    if autoClaimEventPass and locked and not locked.Visible then
-                        pcall(function() claimPassReward:InvokeServer("Free", i) end)
+-- Auto Claim Event Pass Rewards
+local claimPass = game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("SeasonPassService"):WaitForChild("RF"):WaitForChild("ClaimPassReward")
+local autoPass = false
+local ACEPR = MainSection:AddToggle({
+    Name = "Auto Claim Event Pass Rewards",
+    Default = false,
+    Callback = function(state)
+        autoPass = state
+        if not state then return end
+        task.spawn(function()
+            while autoPass do
+                local player = game.Players.LocalPlayer
+                local gui = player:WaitForChild("PlayerGui"):WaitForChild("Windows"):WaitForChild("Event"):WaitForChild("Frame"):WaitForChild("Frame"):WaitForChild("Windows"):WaitForChild("Pass"):WaitForChild("Main"):WaitForChild("ScrollingFrame")
+                for i = 1, 10 do
+                    if not autoPass then break end
+                    local item = gui:FindFirstChild(tostring(i))
+                    if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
+                        local free = item.Frame.Free
+                        local locked = free:FindFirstChild("Locked")
+                        local claimed = free:FindFirstChild("Claimed")
+                        while autoPass and locked and locked.Visible do task.wait(0.2) end
+                        if autoPass and claimed and claimed.Visible then continue end
+                        if autoPass and locked and not locked.Visible then
+                            pcall(function() claimPass:InvokeServer("Free", i) end)
+                        end
                     end
                 end
+                task.wait(0.5)
             end
-            task.wait(0.5)
-        end
-    end)
-end
-
-local function stopAutoClaimEventPass()
-    autoClaimEventPass = false
-end
-
-local function redeemAllCodes()
-    local codes = { "release" } -- añade más aquí
-    for _, code in ipairs(codes) do
-        pcall(function() redeemCode:InvokeServer(code) end)
-        task.wait(1)
+        end)
     end
-    Compkiller:Notify({ Title = "Códigos", Content = "Todos los códigos redimidos", Duration = 5 })
-end
+})
 
-local function startAutoUpgradeSpeed()
-    autoUpgradeSpeed = true
-    task.spawn(function()
-        while autoUpgradeSpeed do
-            pcall(function() upgradeRemote:InvokeServer("MovementSpeed", upgradeAmount) end)
-            task.wait(upgradeDelay)
+-- Redeem All Codes (button)
+local redeem = game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("CodesService"):WaitForChild("RF"):WaitForChild("RedeemCode")
+local codes = { "release" } -- Puedes agregar más códigos aquí
+MainSection:AddButton({
+    Name = "Redeem All Codes",
+    Callback = function()
+        for _, code in ipairs(codes) do
+            pcall(function() redeem:InvokeServer(code) end)
+            task.wait(1)
         end
-    end)
-end
+    end
+})
 
-local function stopAutoUpgradeSpeed()
-    autoUpgradeSpeed = false
-end
-
+-- Auto Buy Best Luckyblock
+local buySkin = game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("SkinService"):WaitForChild("RF"):WaitForChild("BuySkin")
+local skins = {
+    "prestige_mogging_luckyblock", "mogging_luckyblock", "colossus _luckyblock",
+    "inferno_luckyblock", "divine_luckyblock", "spirit_luckyblock", "cyborg_luckyblock",
+    "void_luckyblock", "gliched_luckyblock", "lava_luckyblock", "freezy_luckyblock", "fairy_luckyblock"
+}
+local suffix = { K = 1e3, M = 1e6, B = 1e9, T = 1e12, Qa = 1e15, Qi = 1e18, Sx = 1e21, Sp = 1e24, Oc = 1e27, No = 1e30, Dc = 1e33 }
 local function parseCash(text)
-    local suffix = { K = 1e3, M = 1e6, B = 1e9, T = 1e12, Qa = 1e15, Qi = 1e18, Sx = 1e21, Sp = 1e24, Oc = 1e27, No = 1e30, Dc = 1e33 }
     text = text:gsub("%$", ""):gsub(",", ""):gsub("%s+", "")
     local num = tonumber(text:match("[%d%.]+"))
     local suf = text:match("%a+")
@@ -139,315 +127,455 @@ local function parseCash(text)
     if suf and suffix[suf] then return num * suffix[suf] end
     return num
 end
-
-local function startAutoBuyBest()
-    autoBuyBest = true
-    task.spawn(function()
-        local skins = {
-            "prestige_mogging_luckyblock", "mogging_luckyblock", "colossus _luckyblock",
-            "inferno_luckyblock", "divine_luckyblock", "spirit_luckyblock",
-            "cyborg_luckyblock", "void_luckyblock", "gliched_luckyblock",
-            "lava_luckyblock", "freezy_luckyblock", "fairy_luckyblock"
-        }
-        while autoBuyBest do
-            local gui = player.PlayerGui:FindFirstChild("Windows")
-            if not gui then task.wait(1) continue end
-            local pickaxeShop = gui:FindFirstChild("PickaxeShop")
-            if not pickaxeShop then task.wait(1) continue end
-            local shopContainer = pickaxeShop:FindFirstChild("ShopContainer")
-            if not shopContainer then task.wait(1) continue end
-            local scrollingFrame = shopContainer:FindFirstChild("ScrollingFrame")
-            if not scrollingFrame then task.wait(1) continue end
-
-            local cash = player.leaderstats.Cash.Value
-            local bestSkin = nil
-            local bestPrice = 0
-            for _, name in ipairs(skins) do
-                local item = scrollingFrame:FindFirstChild(name)
-                if item then
-                    local main = item:FindFirstChild("Main")
-                    if main then
-                        local buyFolder = main:FindFirstChild("Buy")
-                        if buyFolder then
-                            local buyButton = buyFolder:FindFirstChild("BuyButton")
-                            if buyButton and buyButton.Visible then
-                                local cashLabel = buyButton:FindFirstChild("Cash")
-                                if cashLabel then
-                                    local price = parseCash(cashLabel.Text)
-                                    if cash >= price and price > bestPrice then
-                                        bestSkin = name
-                                        bestPrice = price
+local autoBuy = false
+local ABL = MainSection:AddToggle({
+    Name = "Auto Buy Best Luckyblock",
+    Default = false,
+    Callback = function(state)
+        autoBuy = state
+        if not state then return end
+        task.spawn(function()
+            while autoBuy do
+                local player = game.Players.LocalPlayer
+                local gui = player.PlayerGui:FindFirstChild("Windows")
+                if gui then
+                    local pickaxeShop = gui:FindFirstChild("PickaxeShop")
+                    if pickaxeShop then
+                        local shopContainer = pickaxeShop:FindFirstChild("ShopContainer")
+                        if shopContainer then
+                            local scrollingFrame = shopContainer:FindFirstChild("ScrollingFrame")
+                            if scrollingFrame then
+                                local cash = player.leaderstats.Cash.Value
+                                local bestSkin, bestPrice = nil, 0
+                                for _, name in ipairs(skins) do
+                                    local item = scrollingFrame:FindFirstChild(name)
+                                    if item then
+                                        local main = item:FindFirstChild("Main")
+                                        if main then
+                                            local buyFolder = main:FindFirstChild("Buy")
+                                            if buyFolder then
+                                                local buyButton = buyFolder:FindFirstChild("BuyButton")
+                                                if buyButton and buyButton.Visible then
+                                                    local cashLabel = buyButton:FindFirstChild("Cash")
+                                                    if cashLabel then
+                                                        local price = parseCash(cashLabel.Text)
+                                                        if cash >= price and price > bestPrice then
+                                                            bestSkin = name
+                                                            bestPrice = price
+                                                        end
+                                                    end
+                                                end
+                                            end
+                                        end
                                     end
+                                end
+                                if bestSkin then
+                                    pcall(function() buySkin:InvokeServer(bestSkin) end)
                                 end
                             end
                         end
                     end
                 end
+                task.wait(0.5)
             end
-            if bestSkin then pcall(function() buySkin:InvokeServer(bestSkin) end) end
-            task.wait(0.5)
-        end
-    end)
-end
-
-local function stopAutoBuyBest()
-    autoBuyBest = false
-end
-
-local function sellHeldBrainrot()
-    local character = player.Character or player.CharacterAdded:Wait()
-    local tool = character:FindFirstChildOfClass("Tool")
-    if not tool then
-        Compkiller:Notify({ Title = "Error", Content = "Equipa el Brainrot que quieres vender", Duration = 5 })
-        return
-    end
-    local entityId = tool:GetAttribute("EntityId")
-    if not entityId then return end
-    pcall(function() sellBrainrotRemote:InvokeServer(entityId) end)
-    Compkiller:Notify({ Title = "Vendido", Content = "Vendiste: " .. tool.Name, Duration = 5 })
-end
-
-local function pickupAllBrainrots()
-    local username = player.Name
-    local plotsFolder = workspace:WaitForChild("Plots")
-    local myPlot = nil
-    for i = 1, 5 do
-        local plot = plotsFolder:FindFirstChild(tostring(i))
-        if plot and plot:FindFirstChild(tostring(i)) then
-            local inner = plot[tostring(i)]
-            for _, v in pairs(inner:GetDescendants()) do
-                if v:IsA("BillboardGui") and string.find(v.Name, username) then
-                    myPlot = inner
-                    break
-                end
-            end
-        end
-        if myPlot then break end
-    end
-    if not myPlot then return end
-    local containers = myPlot:FindFirstChild("Containers")
-    if not containers then return end
-    for i = 1, 30 do
-        local containerFolder = containers:FindFirstChild(tostring(i))
-        if containerFolder and containerFolder:FindFirstChild(tostring(i)) then
-            local container = containerFolder[tostring(i)]
-            local innerModel = container:FindFirstChild("InnerModel")
-            if innerModel and #innerModel:GetChildren() > 0 then
-                pcall(function() pickupBrainrotRemote:InvokeServer(tostring(i)) end)
-                task.wait(0.1)
-            end
-        end
-    end
-    Compkiller:Notify({ Title = "Recogido", Content = "Recogiste todos tus Brainrots", Duration = 5 })
-end
-
--- Remover detectores de boss malos
-local storedParts = {}
-local folder = workspace:WaitForChild("BossTouchDetectors")
-local function enableOnlyLastBoss()
-    storedParts = {}
-    for _, obj in ipairs(folder:GetChildren()) do
-        if obj.Name ~= "base14" then
-            table.insert(storedParts, obj)
-            obj.Parent = nil
-        end
-    end
-end
-local function restoreBossDetectors()
-    for _, obj in ipairs(storedParts) do
-        if obj then obj.Parent = folder end
-    end
-    storedParts = {}
-end
-
--- Teletransportar al final
-local function teleportToEnd()
-    local modelsFolder = workspace:WaitForChild("RunningModels")
-    local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
-    for _, obj in ipairs(modelsFolder:GetChildren()) do
-        if obj:IsA("Model") then
-            if obj.PrimaryPart then obj:SetPrimaryPartCFrame(target.CFrame)
-            else local part = obj:FindFirstChildWhichIsA("BasePart") if part then part.CFrame = target.CFrame end end
-        elseif obj:IsA("BasePart") then obj.CFrame = target.CFrame end
-    end
-end
-
--- Auto Farm
-local function startAutoFarm()
-    autoFarm = true
-    task.spawn(function()
-        while autoFarm do
-            local character = player.Character or player.CharacterAdded:Wait()
-            local root = character:WaitForChild("HumanoidRootPart")
-            local humanoid = character:WaitForChild("Humanoid")
-            local userId = player.UserId
-            local modelsFolder = workspace:WaitForChild("RunningModels")
-            local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
-
-            root.CFrame = CFrame.new(715, 39, -2122)
-            task.wait(0.3)
-            humanoid:MoveTo(Vector3.new(710, 39, -2122))
-
-            local ownedModel = nil
-            repeat
-                task.wait(0.3)
-                for _, obj in ipairs(modelsFolder:GetChildren()) do
-                    if obj:IsA("Model") and obj:GetAttribute("OwnerId") == userId then
-                        ownedModel = obj
-                        break
-                    end
-                end
-            until ownedModel ~= nil or not autoFarm
-            if not autoFarm then break end
-
-            if ownedModel.PrimaryPart then ownedModel:SetPrimaryPartCFrame(target.CFrame)
-            else local part = ownedModel:FindFirstChildWhichIsA("BasePart") if part then part.CFrame = target.CFrame end end
-            task.wait(0.7)
-            if ownedModel and ownedModel.Parent == modelsFolder then
-                if ownedModel.PrimaryPart then ownedModel.PrimaryPart.CFrame = target.CFrame
-                else local part = ownedModel:FindFirstChildWhichIsA("BasePart") if part then part.CFrame = target.CFrame end end
-            end
-            task.wait(0.2)
-        end
-    end)
-end
-
-local function stopAutoFarm()
-    autoFarm = false
-end
-
--- ========== UI usando Compkiller ==========
-
--- Pestaña Main
-Tabs.Main:AddToggle({
-    Name = "Auto Claim Playtime Rewards",
-    Default = false,
-    Callback = function(state)
-        if state then startAutoClaimRewards() else stopAutoClaimRewards() end
+        end)
     end
 })
 
-Tabs.Main:AddToggle({
-    Name = "Auto Rebirth",
-    Default = false,
-    Callback = function(state)
-        if state then startAutoRebirth() else stopAutoRebirth() end
-    end
-})
-
-Tabs.Main:AddToggle({
-    Name = "Auto Claim Event Pass Rewards",
-    Default = false,
-    Callback = function(state)
-        if state then startAutoClaimEventPass() else stopAutoClaimEventPass() end
-    end
-})
-
-Tabs.Main:AddButton({
-    Name = "Redeem All Codes",
-    Callback = redeemAllCodes
-})
-
-Tabs.Main:AddToggle({
-    Name = "Auto Buy Best Luckyblock",
-    Default = false,
-    Callback = function(state)
-        if state then startAutoBuyBest() else stopAutoBuyBest() end
-    end
-})
-
-Tabs.Main:AddButton({
+-- Sell Held Brainrot (button with dialog)
+MainSection:AddButton({
     Name = "Sell Held Brainrot",
     Callback = function()
-        Compkiller:Dialog({
-            Title = "Confirmar venta",
-            Content = "¿Seguro que quieres vender el Brainrot equipado?",
-            Buttons = {
-                { Title = "Confirmar", Callback = sellHeldBrainrot },
-                { Title = "Cancelar", Callback = function() end }
-            }
+        -- Crear un diálogo simple con Compkiller
+        local dialogWindow = Compkiller.new({
+            Name = "Confirm Sale",
+            Keybind = "None",
+            Logo = "rbxassetid://125064196202041",
+            Scale = UDim2.new(0, 300, 0, 150),
+            TextSize = 14
         })
+        local dialogTab = dialogWindow:DrawTab({ Name = "Confirm", Type = "Single" })
+        local dialogSection = dialogTab:DrawSection({ Name = "Are you sure you want to sell this held Brainrot?" })
+        dialogSection:AddButton({
+            Name = "Confirm",
+            Callback = function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local tool = character:FindFirstChildOfClass("Tool")
+                if not tool then
+                    Compkiller.newNotify().new({
+                        Title = "ERROR!",
+                        Content = "Equip the Brainrot you want to Sell",
+                        Duration = 5
+                    })
+                    dialogWindow:SetVisible(false)
+                    return
+                end
+                local entityId = tool:GetAttribute("EntityId")
+                if entityId then
+                    pcall(function()
+                        game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("InventoryService"):WaitForChild("RF"):WaitForChild("SellBrainrot"):InvokeServer(entityId)
+                    end)
+                    Compkiller.newNotify().new({
+                        Title = "SOLD!",
+                        Content = "Sold: " .. tool.Name,
+                        Duration = 5
+                    })
+                end
+                dialogWindow:SetVisible(false)
+            end
+        })
+        dialogSection:AddButton({
+            Name = "Cancel",
+            Callback = function()
+                dialogWindow:SetVisible(false)
+            end
+        })
+        dialogWindow:SetVisible(true)
     end
 })
 
-Tabs.Main:AddButton({
+-- Pickup All Your Brainrots (button with dialog)
+MainSection:AddButton({
     Name = "Pickup All Your Brainrots",
     Callback = function()
-        Compkiller:Dialog({
-            Title = "Confirmar recogida",
-            Content = "¿Recoger todos tus Brainrots?",
-            Buttons = {
-                { Title = "Confirmar", Callback = pickupAllBrainrots },
-                { Title = "Cancelar", Callback = function() end }
-            }
+        local dialogWindow = Compkiller.new({
+            Name = "Confirm Pickup",
+            Keybind = "None",
+            Logo = "rbxassetid://125064196202041",
+            Scale = UDim2.new(0, 300, 0, 120),
+            TextSize = 14
         })
+        local dialogTab = dialogWindow:DrawTab({ Name = "Confirm", Type = "Single" })
+        local dialogSection = dialogTab:DrawSection({ Name = "Pick up all Brainrots?" })
+        dialogSection:AddButton({
+            Name = "Confirm",
+            Callback = function()
+                local player = game.Players.LocalPlayer
+                local username = player.Name
+                local plotsFolder = workspace:WaitForChild("Plots")
+                local myPlot
+                for i = 1, 5 do
+                    local plot = plotsFolder:FindFirstChild(tostring(i))
+                    if plot and plot:FindFirstChild(tostring(i)) then
+                        local inner = plot[tostring(i)]
+                        for _, v in pairs(inner:GetDescendants()) do
+                            if v:IsA("BillboardGui") and string.find(v.Name, username) then
+                                myPlot = inner
+                                break
+                            end
+                        end
+                    end
+                    if myPlot then break end
+                end
+                if myPlot then
+                    local containers = myPlot:FindFirstChild("Containers")
+                    if containers then
+                        for i = 1, 30 do
+                            local containerFolder = containers:FindFirstChild(tostring(i))
+                            if containerFolder and containerFolder:FindFirstChild(tostring(i)) then
+                                local container = containerFolder[tostring(i)]
+                                local innerModel = container:FindFirstChild("InnerModel")
+                                if innerModel and #innerModel:GetChildren() > 0 then
+                                    pcall(function()
+                                        game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("ContainerService"):WaitForChild("RF"):WaitForChild("PickupBrainrot"):InvokeServer(tostring(i))
+                                    end)
+                                    task.wait(0.1)
+                                end
+                            end
+                        end
+                    end
+                end
+                Compkiller.newNotify().new({
+                    Title = "Done!",
+                    Content = "Picked up all Brainrots",
+                    Duration = 5
+                })
+                dialogWindow:SetVisible(false)
+            end
+        })
+        dialogSection:AddButton({
+            Name = "Cancel",
+            Callback = function()
+                dialogWindow:SetVisible(false)
+            end
+        })
+        dialogWindow:SetVisible(true)
     end
 })
 
--- Pestaña Upgrades
-Tabs.Upgrades:AddSection("Speed Upgrades")
+-- ------------------------------------------------------------
+-- Sección: UpgradesTab
+-- ------------------------------------------------------------
+local UpgradesSection = UpgradesTab:DrawSection({ Name = "Speed Upgrades", Position = "left" })
 
-Tabs.Upgrades:AddInput({
+local upgrade = game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("UpgradesService"):WaitForChild("RF"):WaitForChild("Upgrade")
+local amount = 1
+local delayTime = 0.5
+local autoUpgrade = false
+
+local amountInput = UpgradesSection:AddTextBox({
     Name = "Speed Amount",
     Default = "1",
-    Placeholder = "Número",
+    Placeholder = "Number",
     Numeric = true,
     Callback = function(value)
-        upgradeAmount = tonumber(value) or 1
+        amount = tonumber(value) or 1
     end
 })
 
-Tabs.Upgrades:AddSlider({
-    Name = "Upgrade Interval",
+local slider = UpgradesSection:AddSlider({
+    Name = "Upgrade Interval (seconds)",
     Min = 0,
     Max = 5,
     Default = 1,
     Round = 1,
     Callback = function(value)
-        upgradeDelay = value
+        delayTime = value
     end
 })
 
-Tabs.Upgrades:AddToggle({
+local autoUpgradeToggle = UpgradesSection:AddToggle({
     Name = "Auto Upgrade Speed",
     Default = false,
     Callback = function(state)
-        if state then startAutoUpgradeSpeed() else stopAutoUpgradeSpeed() end
+        autoUpgrade = state
+        if not state then return end
+        task.spawn(function()
+            while autoUpgrade do
+                pcall(function() upgrade:InvokeServer("MovementSpeed", amount) end)
+                task.wait(delayTime)
+            end
+        end)
     end
 })
 
--- Pestaña Brainrots
-Tabs.Brainrots:AddToggle({
+-- ------------------------------------------------------------
+-- Sección: BrainrotsTab
+-- ------------------------------------------------------------
+local BrainrotsSection = BrainrotsTab:DrawSection({ Name = "Boss & Farming", Position = "left" })
+
+-- Remove Bad Boss Touch Detectors
+local folder = workspace:WaitForChild("BossTouchDetectors")
+local storedParts = {}
+local RBTD = BrainrotsSection:AddToggle({
     Name = "Remove Bad Boss Touch Detectors",
-    Description = "Hará que solo el último jefe te capture",
     Default = false,
     Callback = function(state)
-        if state then enableOnlyLastBoss() else restoreBossDetectors() end
+        if state then
+            storedParts = {}
+            for _, obj in ipairs(folder:GetChildren()) do
+                if obj.Name ~= "base14" then
+                    table.insert(storedParts, obj)
+                    obj.Parent = nil
+                end
+            end
+        else
+            for _, obj in ipairs(storedParts) do
+                if obj then obj.Parent = folder end
+            end
+            storedParts = {}
+        end
     end
 })
 
-Tabs.Brainrots:AddButton({
+-- Teleport to End
+BrainrotsSection:AddButton({
     Name = "Teleport to End",
-    Callback = teleportToEnd
+    Callback = function()
+        local modelsFolder = workspace:WaitForChild("RunningModels")
+        local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
+        for _, obj in ipairs(modelsFolder:GetChildren()) do
+            if obj:IsA("Model") then
+                if obj.PrimaryPart then
+                    obj:SetPrimaryPartCFrame(target.CFrame)
+                else
+                    local part = obj:FindFirstChildWhichIsA("BasePart")
+                    if part then part.CFrame = target.CFrame end
+                end
+            elseif obj:IsA("BasePart") then
+                obj.CFrame = target.CFrame
+            end
+        end
+    end
 })
 
-Tabs.Brainrots:AddSection("Farming")
-
-Tabs.Brainrots:AddToggle({
+-- Auto Farm Best Brainrots
+local autoFarm = false
+local AutoFarmToggle = BrainrotsSection:AddToggle({
     Name = "Auto Farm Best Brainrots",
     Default = false,
     Callback = function(state)
-        if state then startAutoFarm() else stopAutoFarm() end
+        autoFarm = state
+        if state then
+            task.spawn(function()
+                while autoFarm do
+                    local player = game.Players.LocalPlayer
+                    local character = player.Character or player.CharacterAdded:Wait()
+                    local root = character:WaitForChild("HumanoidRootPart")
+                    local humanoid = character:WaitForChild("Humanoid")
+                    local userId = player.UserId
+                    local modelsFolder = workspace:WaitForChild("RunningModels")
+                    local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
+
+                    root.CFrame = CFrame.new(715, 39, -2122)
+                    task.wait(0.3)
+                    humanoid:MoveTo(Vector3.new(710, 39, -2122))
+
+                    local ownedModel = nil
+                    repeat
+                        task.wait(0.3)
+                        for _, obj in ipairs(modelsFolder:GetChildren()) do
+                            if obj:IsA("Model") and obj:GetAttribute("OwnerId") == userId then
+                                ownedModel = obj
+                                break
+                            end
+                        end
+                    until ownedModel ~= nil or not autoFarm
+                    if not autoFarm then break end
+
+                    if ownedModel.PrimaryPart then
+                        ownedModel:SetPrimaryPartCFrame(target.CFrame)
+                    else
+                        local part = ownedModel:FindFirstChildWhichIsA("BasePart")
+                        if part then part.CFrame = target.CFrame end
+                    end
+                    task.wait(0.7)
+
+                    if ownedModel and ownedModel.Parent == modelsFolder then
+                        if ownedModel.PrimaryPart then
+                            ownedModel:SetPrimaryPartCFrame(target.CFrame * CFrame.new(0, -5, 0))
+                        else
+                            local part = ownedModel:FindFirstChildWhichIsA("BasePart")
+                            if part then part.CFrame = target.CFrame * CFrame.new(0, -5, 0) end
+                        end
+                    end
+
+                    repeat
+                        task.wait(0.3)
+                    until not autoFarm or (ownedModel == nil or ownedModel.Parent ~= modelsFolder)
+                    if not autoFarm then break end
+
+                    local oldCharacter = player.Character
+                    repeat
+                        task.wait(0.2)
+                    until not autoFarm or (player.Character ~= oldCharacter and player.Character ~= nil)
+                    if not autoFarm then break end
+
+                    task.wait(0.4)
+                    local newChar = player.Character
+                    local newRoot = newChar:WaitForChild("HumanoidRootPart")
+                    newRoot.CFrame = CFrame.new(737, 39, -2118)
+                    task.wait(2.1)
+                end
+            end)
+        end
     end
 })
 
--- Pestañas Stats y Settings vacías por ahora
-Tabs.Stats:AddParagraph({ Title = "Estadísticas", Content = "Próximamente" })
-Tabs.Settings:AddParagraph({ Title = "Ajustes", Content = "Próximamente" })
+-- ------------------------------------------------------------
+-- Sección: StatsTab
+-- ------------------------------------------------------------
+local StatsSection = StatsTab:DrawSection({ Name = "Lucky Block Speed", Position = "left" })
 
--- Notificación de inicio
-Compkiller:Notify({
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local runningSpeed = false
+local sliderValue = 1000
+local originalSpeed = nil
+local currentModel = nil
+
+local function getMyModel()
+    local folder = workspace:FindFirstChild("RunningModels")
+    if not folder then return nil end
+    for _, model in ipairs(folder:GetChildren()) do
+        if model:GetAttribute("OwnerId") == player.UserId then
+            return model
+        end
+    end
+    return nil
+end
+
+local function applySpeed()
+    local model = getMyModel()
+    if not model then
+        currentModel = nil
+        return
+    end
+    if model ~= currentModel then
+        currentModel = model
+        originalSpeed = model:GetAttribute("MovementSpeed")
+    end
+    if runningSpeed then
+        if originalSpeed == nil then
+            originalSpeed = model:GetAttribute("MovementSpeed")
+        end
+        model:SetAttribute("MovementSpeed", sliderValue)
+    end
+end
+
+task.spawn(function()
+    while true do
+        if runningSpeed then applySpeed() end
+        task.wait(0.2)
+    end
+end)
+
+local speedToggle = StatsSection:AddToggle({
+    Name = "Enable Custom Lucky Block Speed",
+    Default = false,
+    Callback = function(state)
+        runningSpeed = state
+        if not runningSpeed then
+            local model = getMyModel()
+            if model and originalSpeed ~= nil then
+                model:SetAttribute("MovementSpeed", originalSpeed)
+            end
+            originalSpeed = nil
+            currentModel = nil
+        end
+    end
+})
+
+local speedSlider = StatsSection:AddSlider({
+    Name = "Lucky Block Speed",
+    Min = 50,
+    Max = 3000,
+    Default = 1000,
+    Round = 0,
+    Callback = function(value)
+        sliderValue = value
+    end
+})
+
+-- ------------------------------------------------------------
+-- Sección: SettingsTab (opcional)
+-- ------------------------------------------------------------
+local SettingsSection = SettingsTab:DrawSection({ Name = "UI Settings", Position = "left" })
+
+SettingsSection:AddButton({
+    Name = "Reload UI (Close and reopen)",
+    Callback = function()
+        Window:Toggle(false)
+        task.wait(0.2)
+        Window:Toggle(true)
+    end
+})
+
+SettingsSection:AddButton({
+    Name = "Close Window",
+    Callback = function()
+        Window:Toggle(false)
+    end
+})
+
+-- Mostrar la ventana
+Window:Toggle(true)
+
+-- Notificaciones iniciales (opcional)
+Compkiller.newNotify().new({
     Title = "Be a Lucky Block",
     Content = "Script cargado correctamente",
-    Duration = 3
+    Duration = 3,
+    Icon = "lucide-check"
 })
