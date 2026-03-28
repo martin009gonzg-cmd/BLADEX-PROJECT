@@ -1,41 +1,3 @@
--- ==================== LOADER COMPKILLER ====================
-if not getgenv().Compkiller then
-    print("[BLADEX] Cargando Compkiller...")
-    local src = game:HttpGet(
-        "https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/BLADEX_LIBRALY",
-        true -- nocache
-    )
-
-    -- Verificar que descargó código Lua real (no HTML de error)
-    if not src or #src < 100 then
-        error("❌ HttpGet devolvió contenido vacío o inválido. Verifica que el archivo existe en GitHub.")
-    end
-    if src:sub(1,15):lower():find("<!doctype") or src:sub(1,6):lower() == "<html>" then
-        error("❌ HttpGet devolvió una página HTML (404). Verifica la URL del repositorio.")
-    end
-
-    local fn, compileErr = loadstring(src)
-    if not fn then
-        error("❌ loadstring falló al compilar BLADEX_LIBRALY: " .. tostring(compileErr))
-    end
-
-    local ok, result = pcall(fn)
-    if not ok then
-        error("❌ Error al ejecutar BLADEX_LIBRALY: " .. tostring(result))
-    end
-
-    -- La librería puede retornar el objeto o asignarse sola a getgenv()
-    if type(result) == "table" and result.new then
-        getgenv().Compkiller = result
-    end
-
-    if not getgenv().Compkiller then
-        error("❌ Compkiller no se registró. Agrega 'getgenv().Compkiller = Compkiller' al final de BLADEX_LIBRALY.")
-    end
-
-    print("[BLADEX] Compkiller cargada correctamente ✓")
-end
-
 local Compkiller = getgenv().Compkiller
 
 -- ==================== SERVICIOS ====================
@@ -60,17 +22,12 @@ local skins = {
 
 local codes = { "release" }
 
--- ==================== MULTI-BASE ====================
-local selectedLBBases = {}
-for i = 1, 14 do selectedLBBases[i] = false end
+-- ==================== BASE SELECCIONADA ====================
+local selectedBase = "base14"
 local lbBaseIndex = 1
 
 local function getSelectedLBBases()
-    local result = {}
-    for i, sel in ipairs(selectedLBBases) do
-        if sel then table.insert(result, "base" .. i) end
-    end
-    return result
+    return { selectedBase }
 end
 
 -- ==================== KNIT ====================
@@ -559,17 +516,21 @@ local mainTab = Window:DrawTab({
 local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=false })
 
 lbSection:AddToggle({ Name="Auto Ciber Farm", Flag="lb_farm", Default=false,
-    Callback=function(v)
-        if v and not _G.AutoZeus and #getSelectedLBBases() == 0 then
-            notify("Selecciona al menos una base en la pestaña 'Bases LB'.", 5)
-            return
-        end
-        toggle("AutoLBFarm", v)
-    end
+    Callback=function(v) toggle("AutoLBFarm", v) end
 })
 
 lbSection:AddToggle({ Name="Auto Zeus Farm", Flag="auto_zeus", Default=false,
     Callback=function(v) _G.AutoZeus = v end
+})
+
+local baseValues = {}
+for i = 1, 14 do table.insert(baseValues, "Base " .. i) end
+
+lbSection:AddDropdown({ Name="Base a Farmear", Default="Base 14", Values=baseValues,
+    Callback=function(v)
+        local num = v:match("%d+")
+        if num then selectedBase = "base" .. num end
+    end
 })
 
 local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=false })
@@ -816,43 +777,6 @@ rewardSection:AddButton({ Name="Claim Playtime Rewards", Callback=function()
     for reward = 1, 12 do pcall(function() claimGift:InvokeServer(reward) end) task.wait(0.25) end
     notify("Playtime rewards reclamados.", 4)
 end })
-
--- ==================== TAB: BASES LB ====================
-local basesTab = Window:DrawTab({
-    Name           = "Bases LB",
-    Icon           = "map-pin",
-    Type           = "Double",
-    EnableScrolling= true,
-})
-
-local basesLeft  = basesTab:DrawSection({ Name="Base 1 — 7",  Position="left",  Minimized=false })
-local basesRight = basesTab:DrawSection({ Name="Base 8 — 14", Position="right", Minimized=false })
-
-for i = 1, 7 do
-    basesLeft:AddToggle({
-        Name     = "Base " .. i,
-        Flag     = "lb_base_" .. i,
-        Default  = false,
-        Callback = function(v)
-            selectedLBBases[i] = v
-            lbBaseIndex = 1
-            notify("Base " .. i .. (v and " activada" or " desactivada"), 2)
-        end,
-    })
-end
-
-for i = 8, 14 do
-    basesRight:AddToggle({
-        Name     = "Base " .. i,
-        Flag     = "lb_base_" .. i,
-        Default  = false,
-        Callback = function(v)
-            selectedLBBases[i] = v
-            lbBaseIndex = 1
-            notify("Base " .. i .. (v and " activada" or " desactivada"), 2)
-        end,
-    })
-end
 
 -- ==================== TAB: AJUSTES ====================
 local settingsTab = Window:DrawTab({ Name="Ajustes", Icon="settings", Type="Single" })
