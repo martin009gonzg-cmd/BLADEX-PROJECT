@@ -1,25 +1,18 @@
--- ==================== VERIFICACIÓN DE LIBRERÍA ====================
-if not getgenv().Compkiller then
-    error("❌ Compkiller no está cargada. Precárgala antes de ejecutar este script.")
-end
-
 local Compkiller = getgenv().Compkiller
 
 -- ==================== SERVICIOS ====================
-local Players = game:GetService("Players")
+local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LP = Players.LocalPlayer
+local LP                = Players.LocalPlayer
 
 -- ==================== VARIABLES ====================
-local runningFarm = false
-local runningABL = false
-local runningACEPR = false
-local runningACPR = false
+local runningFarm  = false
 local runningSpeed = false
-local sliderValue = 1000
+local sliderValue  = 1000
 local originalSpeed = nil
-local currentModel = nil
-local storedParts = {}
+local currentModel  = nil
+local storedParts   = {}
+local selectedBase  = "base14"
 
 local skins = {
     "prestige_mogging_luckyblock", "mogging_luckyblock", "colossus _luckyblock",
@@ -29,6 +22,49 @@ local skins = {
 }
 
 local codes = { "release" }
+
+-- ==================== MULTI-BASE FARM ====================
+local ALL_BASES = {}
+for i = 1, 14 do
+    ALL_BASES[i] = {
+        name     = "base" .. i,
+        teleport = Vector3.new(715, 39, -2122),
+        move     = Vector3.new(710, 39, -2122),
+        respawn  = Vector3.new(737, 39, -2118),
+    }
+end
+
+local selectedBases = {}
+for i = 1, 14 do selectedBases[i] = false end
+
+local farmRunCount  = 0
+local farmBaseIndex = 1
+local lbBaseIndex   = 1
+
+local function getSelectedLBBases()
+    local result = {}
+    for i, sel in ipairs(selectedBases) do
+        if sel then table.insert(result, "base" .. i) end
+    end
+    return result
+end
+
+local function getActiveBases()
+    local result = {}
+    for i, sel in ipairs(selectedBases) do
+        if sel then table.insert(result, ALL_BASES[i]) end
+    end
+    return result
+end
+
+local function setModelCFrame(model, cf)
+    if model.PrimaryPart then
+        model:SetPrimaryPartCFrame(cf)
+    else
+        local part = model:FindFirstChildWhichIsA("BasePart")
+        if part then part.CFrame = cf end
+    end
+end
 
 -- ==================== KNIT ====================
 local function findKnit()
@@ -47,9 +83,7 @@ local function findKnit()
 end
 
 local knitServices = findKnit()
-if not knitServices then
-    error("❌ No se encontró Knit en ReplicatedStorage.")
-end
+if not knitServices then error("❌ No se encontró Knit en ReplicatedStorage.") end
 
 local function findRemote(serviceName, rfName)
     local service = knitServices:FindFirstChild(serviceName)
@@ -68,23 +102,23 @@ local function findEvent(serviceName, reName)
 end
 
 local lbRF = {
-    StartRun      = findRemote("RunningService", "StartRun"),
-    StartMove     = findRemote("RunningService", "StartMove"),
-    OpenLuckyBlock= findRemote("RunningService", "OpenLuckyBlock"),
-    UpdateCFrame  = findRemote("RunningService", "UpdateCFrame"),
-    EndMove       = findRemote("RunningService", "EndMove"),
+    StartRun       = findRemote("RunningService", "StartRun"),
+    StartMove      = findRemote("RunningService", "StartMove"),
+    OpenLuckyBlock = findRemote("RunningService", "OpenLuckyBlock"),
+    UpdateCFrame   = findRemote("RunningService", "UpdateCFrame"),
+    EndMove        = findRemote("RunningService", "EndMove"),
 }
 
 local rf = {
-    Brainrot          = findRemote("ContainerService", "UpgradeBrainrot"),
-    WorkUpdate        = findEvent("ContainerService", "WorkUpdate"),
-    Container         = findRemote("ContainerService", "BuyContainer"),
-    PlaceBest         = findRemote("ContainerService", "PlaceBest"),
-    CollectCash       = findRemote("ContainerService", "CollectCash"),
-    CollectOfflineCash= findRemote("ContainerService", "CollectOfflineCash"),
-    Rebirth           = findRemote("RebirthService", "Rebirth"),
-    Speed             = findRemote("UpgradesService", "Upgrade"),
-    BuySkin           = findRemote("SkinService", "BuySkin"),
+    Brainrot           = findRemote("ContainerService", "UpgradeBrainrot"),
+    WorkUpdate         = findEvent("ContainerService", "WorkUpdate"),
+    Container          = findRemote("ContainerService", "BuyContainer"),
+    PlaceBest          = findRemote("ContainerService", "PlaceBest"),
+    CollectCash        = findRemote("ContainerService", "CollectCash"),
+    CollectOfflineCash = findRemote("ContainerService", "CollectOfflineCash"),
+    Rebirth            = findRemote("RebirthService", "Rebirth"),
+    Speed              = findRemote("UpgradesService", "Upgrade"),
+    BuySkin            = findRemote("SkinService", "BuySkin"),
 }
 
 local GetRewardRemote = nil
@@ -98,40 +132,48 @@ end
 rf.GetReward = GetRewardRemote
 
 -- ==================== _G ====================
-_G.AutoUpgrades  = _G.AutoUpgrades  or false
-_G.AutoContainer = _G.AutoContainer or false
-_G.AutoLBFarm    = _G.AutoLBFarm    or false
-_G.AutoZeus      = _G.AutoZeus      or false
-_G.AutoRebirth   = _G.AutoRebirth   or false
-_G.AutoSpeed     = _G.AutoSpeed     or false
-_G.AutoPlaceBest = _G.AutoPlaceBest or false
-_G.SelectedBase  = _G.SelectedBase  or "base14"
-_G.AutoCash      = _G.AutoCash      or false
+_G.AutoUpgrades         = _G.AutoUpgrades         or false
+_G.AutoContainer        = _G.AutoContainer        or false
+_G.AutoLBFarm           = _G.AutoLBFarm           or false
+_G.AutoZeus             = _G.AutoZeus             or false
+_G.AutoRebirth          = _G.AutoRebirth          or false
+_G.AutoSpeed            = _G.AutoSpeed            or false
+_G.AutoPlaceBest        = _G.AutoPlaceBest        or false
+_G.AutoCash             = _G.AutoCash             or false
+_G.AutoBuyLuckyblock    = _G.AutoBuyLuckyblock    or false
+_G.AutoClaimEventPass   = _G.AutoClaimEventPass   or false
+_G.AutoPlaytimeRewards  = _G.AutoPlaytimeRewards  or false
 
 -- ==================== COORDENADAS ====================
 local BASE_COORDS = {
+    ZEUS   = { block = CFrame.new(721,  38, -2173), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base1  = { block = CFrame.new(640,  46, -2035), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base2  = { block = CFrame.new(559,  46, -2208), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base3  = { block = CFrame.new(481,  46, -2035), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base4  = { block = CFrame.new(400,  46, -2211), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base5  = { block = CFrame.new(291,  46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base6  = { block = CFrame.new(210,  46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base7  = { block = CFrame.new(131,  46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base8  = { block = CFrame.new(51,   46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base9  = { block = CFrame.new(-61,  46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base10 = { block = CFrame.new(-140, 46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base11 = { block = CFrame.new(-218, 46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base12 = { block = CFrame.new(-299, 46, -2212), runner = CFrame.new(588.96, 38.18, -2127.26) },
+    base13 = { block = CFrame.new(-379, 46, -2036), runner = CFrame.new(588.96, 38.18, -2127.26) },
     base14 = { block = CFrame.new(-495, 46, -2123), runner = CFrame.new(588.96, 38.18, -2127.26) },
-    ZEUS   = { block = CFrame.new(721,  38, -2173),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base1  = { block = CFrame.new(640,  46, -2035),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base2  = { block = CFrame.new(559,  46, -2208),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base3  = { block = CFrame.new(481,  46, -2035),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base4  = { block = CFrame.new(400,  46, -2211),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base5  = { block = CFrame.new(291,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base6  = { block = CFrame.new(210,  46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base7  = { block = CFrame.new(131,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base8  = { block = CFrame.new(51,   46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base9  = { block = CFrame.new(-61,  46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base10 = { block = CFrame.new(-140, 46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base11 = { block = CFrame.new(-218, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base12 = { block = CFrame.new(-299, 46, -2212),  runner = CFrame.new(588.96, 38.18, -2127.26) },
-    base13 = { block = CFrame.new(-379, 46, -2036),  runner = CFrame.new(588.96, 38.18, -2127.26) },
 }
 
 local LB_CFG = {
-    MAX_RETRIES     = 3,
-    BLOCK_COOLDOWN  = 2.5,
-    ANTI_BUG_TIMEOUT= 8,
-    DELAYS = { AFTER_TELEPORT=0.3, AFTER_OPEN=1.2, AFTER_RUN=0.5, CYCLE_END=1.5, RESPAWN_WAIT=3.0 },
+    MAX_RETRIES      = 3,
+    BLOCK_COOLDOWN   = 2.5,
+    ANTI_BUG_TIMEOUT = 8,
+    DELAYS = {
+        AFTER_TELEPORT = 0.3,
+        AFTER_OPEN     = 1.2,
+        AFTER_RUN      = 0.5,
+        CYCLE_END      = 1.5,
+        RESPAWN_WAIT   = 3.0,
+    },
 }
 
 -- ==================== HELPERS ====================
@@ -143,24 +185,12 @@ local function safeInvoke(remote, ...)
 end
 
 local function invokeWithRetry(remote, maxRetries, ...)
-    maxRetries = maxRetries or LB_CFG.MAX_RETRIES
-    for i = 1, maxRetries do
+    for i = 1, (maxRetries or 3) do
         local ok, res = safeInvoke(remote, ...)
         if ok then return true, res end
         task.wait(0.5)
     end
     return false, nil
-end
-
-local function waitForCharacter()
-    local char = LP.Character or LP.CharacterAdded:Wait()
-    local hum = char:WaitForChild("Humanoid", 10)
-    if hum and hum.Health <= 0 then
-        char = LP.CharacterAdded:Wait()
-        task.wait(LB_CFG.DELAYS.RESPAWN_WAIT)
-        char = LP.Character
-    end
-    return char, char and char:FindFirstChild("HumanoidRootPart")
 end
 
 local function teleportToWithConfirm(cf, maxWait)
@@ -230,11 +260,12 @@ end)
 -- ==================== LUCKY BLOCK FARM ====================
 local lastBlockOpen = 0
 
-local function lbFarmCycle()
+local function lbFarmCycle(baseName)
     local cycleCompleted = false
-    local char, hrp = waitForCharacter()
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local hrp  = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return false, "Sin HRP" end
-    local baseName = _G.AutoZeus and "ZEUS" or (_G.SelectedBase or "base14")
+
     local coords = BASE_COORDS[baseName] or BASE_COORDS["base14"]
 
     local antiBugTask = task.spawn(function()
@@ -251,11 +282,11 @@ local function lbFarmCycle()
         if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
         task.wait(0.2)
         if not isNear(coords.block, 8) then teleportToWithConfirm(coords.block, 3) end
-        local now = tick()
-        local waitTime = LB_CFG.BLOCK_COOLDOWN - (now - lastBlockOpen)
+        local waitTime = LB_CFG.BLOCK_COOLDOWN - (tick() - lastBlockOpen)
         if waitTime > 0 then task.wait(waitTime) end
-        local blockParam = (baseName == "ZEUS") and "ZEUS" or baseName
-        if not invokeWithRetry(lbRF.OpenLuckyBlock, LB_CFG.MAX_RETRIES, blockParam) then error("Falló OpenLuckyBlock") end
+        if not invokeWithRetry(lbRF.OpenLuckyBlock, LB_CFG.MAX_RETRIES, baseName) then
+            error("Falló OpenLuckyBlock en " .. baseName)
+        end
         lastBlockOpen = tick()
         task.wait(LB_CFG.DELAYS.AFTER_OPEN)
         if not isNear(coords.runner, 8) then teleportToWithConfirm(coords.runner, 3) end
@@ -264,7 +295,9 @@ local function lbFarmCycle()
         if lbRF.StartRun  then invokeWithRetry(lbRF.StartRun,  LB_CFG.MAX_RETRIES) end
         task.wait(LB_CFG.DELAYS.AFTER_RUN)
         local currentHrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-        if lbRF.UpdateCFrame and currentHrp then invokeWithRetry(lbRF.UpdateCFrame, LB_CFG.MAX_RETRIES, currentHrp.CFrame) end
+        if lbRF.UpdateCFrame and currentHrp then
+            invokeWithRetry(lbRF.UpdateCFrame, LB_CFG.MAX_RETRIES, currentHrp.CFrame)
+        end
         task.wait(0.8)
         if lbRF.EndMove then safeInvoke(lbRF.EndMove) end
         task.wait(0.2)
@@ -272,15 +305,30 @@ local function lbFarmCycle()
 
     cycleCompleted = true
     pcall(task.cancel, antiBugTask)
-    if not ok then warn("[LBFarm] Error: " .. tostring(err)) return false, err end
+    if not ok then warn("[LBFarm] Error en " .. baseName .. ": " .. tostring(err)) return false, err end
     task.wait(LB_CFG.DELAYS.CYCLE_END)
     return true
 end
 
 local function loopAutoLBFarm()
+    lbBaseIndex = 1
     while _G.AutoLBFarm do
-        local ok, err = pcall(lbFarmCycle)
-        if not ok then warn("[LBFarm] Error: " .. tostring(err)) task.wait(2) end
+        local bases = getSelectedLBBases()
+        if #bases == 0 and not _G.AutoZeus then
+            warn("[BLADEX] No hay bases seleccionadas.")
+            task.wait(2)
+        else
+            local baseName = _G.AutoZeus and "ZEUS" or bases[lbBaseIndex]
+            local ok, err = pcall(lbFarmCycle, baseName)
+            if not ok then
+                warn("[LBFarm] Error: " .. tostring(err))
+                task.wait(2)
+            else
+                if not _G.AutoZeus then
+                    lbBaseIndex = (lbBaseIndex % #bases) + 1
+                end
+            end
+        end
     end
     if lbRF.EndMove then pcall(lbRF.EndMove.InvokeServer, lbRF.EndMove) end
 end
@@ -304,7 +352,7 @@ local function startUpgradeLoop()
     end)
 end
 
--- ==================== AUTO SPEED (Knit) ====================
+-- ==================== AUTO SPEED ====================
 local speedRunning = false
 local function startSpeedLoop()
     if speedRunning then return end
@@ -333,6 +381,90 @@ local function loopAutoPlaceBest()
     while _G.AutoPlaceBest do if rf.PlaceBest then safeInvoke(rf.PlaceBest) end task.wait(3) end
 end
 
+local function loopAutoBuyLuckyblock()
+    local buy = findRemote("SkinService", "BuySkin")
+    while _G.AutoBuyLuckyblock do
+        if buy then
+            local gui = LP.PlayerGui:FindFirstChild("Windows")
+            local scrollingFrame = gui and gui:FindFirstChild("PickaxeShop") and
+                gui.PickaxeShop:FindFirstChild("ShopContainer") and
+                gui.PickaxeShop.ShopContainer:FindFirstChild("ScrollingFrame")
+            if scrollingFrame then
+                local cash = LP.leaderstats.Cash.Value
+                local bestSkin, bestPrice = nil, 0
+                for _, name in ipairs(skins) do
+                    local item = scrollingFrame:FindFirstChild(name)
+                    if item then
+                        local buyButton = item:FindFirstChild("Main") and
+                            item.Main:FindFirstChild("Buy") and
+                            item.Main.Buy:FindFirstChild("BuyButton")
+                        if buyButton and buyButton.Visible then
+                            local cashLabel = buyButton:FindFirstChild("Cash")
+                            if cashLabel then
+                                local price = parseCash(cashLabel.Text)
+                                if cash >= price and price > bestPrice then
+                                    bestSkin = name bestPrice = price
+                                end
+                            end
+                        end
+                    end
+                end
+                if bestSkin then
+                    pcall(function() buy:InvokeServer(bestSkin) end)
+                    notify("Auto comprado: " .. bestSkin, 3)
+                end
+            end
+        end
+        task.wait(5)
+    end
+end
+
+local function loopAutoClaimEventPass()
+    local claim = findRemote("SeasonPassService", "ClaimPassReward")
+    while _G.AutoClaimEventPass do
+        if claim then
+            local ok, gui = pcall(function()
+                return LP:WaitForChild("PlayerGui"):WaitForChild("Windows")
+                    :WaitForChild("Event"):WaitForChild("Frame"):WaitForChild("Frame")
+                    :WaitForChild("Windows"):WaitForChild("Pass"):WaitForChild("Main")
+                    :WaitForChild("ScrollingFrame")
+            end)
+            if ok and gui then
+                local claimed = 0
+                for i = 1, 10 do
+                    local item = gui:FindFirstChild(tostring(i))
+                    if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
+                        local free = item.Frame.Free
+                        local locked    = free:FindFirstChild("Locked")
+                        local claimedEl = free:FindFirstChild("Claimed")
+                        if locked and not locked.Visible and not (claimedEl and claimedEl.Visible) then
+                            pcall(function() claim:InvokeServer("Free", i) end)
+                            claimed = claimed + 1
+                            task.wait(0.1)
+                        end
+                    end
+                end
+                if claimed > 0 then notify("Event Pass reclamadas: " .. claimed, 3) end
+            end
+        end
+        task.wait(30)
+    end
+end
+
+local function loopAutoPlaytimeRewards()
+    local claimGift = findRemote("PlaytimeRewardService", "ClaimGift")
+    while _G.AutoPlaytimeRewards do
+        if claimGift then
+            for reward = 1, 12 do
+                pcall(function() claimGift:InvokeServer(reward) end)
+                task.wait(0.25)
+            end
+            notify("Playtime rewards reclamados.", 3)
+        end
+        task.wait(60)
+    end
+end
+
 local cashRunning = false
 local function startCashLoop()
     if cashRunning then return end
@@ -358,10 +490,13 @@ end
 
 -- ==================== TOGGLE HELPER ====================
 local LOOP_MAP = {
-    AutoContainer = loopAutoContainer,
-    AutoLBFarm    = loopAutoLBFarm,
-    AutoRebirth   = loopAutoRebirth,
-    AutoPlaceBest = loopAutoPlaceBest,
+    AutoContainer      = loopAutoContainer,
+    AutoLBFarm         = loopAutoLBFarm,
+    AutoRebirth        = loopAutoRebirth,
+    AutoPlaceBest      = loopAutoPlaceBest,
+    AutoBuyLuckyblock  = loopAutoBuyLuckyblock,
+    AutoClaimEventPass = loopAutoClaimEventPass,
+    AutoPlaytimeRewards= loopAutoPlaytimeRewards,
 }
 
 local function toggle(name, val)
@@ -381,21 +516,6 @@ local function toggle(name, val)
     end
 end
 
-task.spawn(function()
-    local lastState = {}
-    while true do
-        for name, fn in pairs(LOOP_MAP) do
-            local current = _G[name]
-            if current ~= lastState[name] then
-                if current then startLoop(name, fn) else stopLoop(name) end
-                lastState[name] = current
-            end
-        end
-        task.wait(0.5)
-    end
-end)
-
-
 -- ==================== UI ====================
 local Notifier = Compkiller.newNotify()
 Compkiller:ChangeHighlightColor(Color3.fromRGB(195, 192, 215))
@@ -408,7 +528,7 @@ local ConfigManager = Compkiller:ConfigManager({
 Compkiller:Loader(Compkiller.Logo, 2.5).yield()
 
 local Window = Compkiller.new({
-    Name     = "BLADEX HUB v3.0",
+    Name     = "BLADEX HUD",
     Keybind  = "LeftAlt",
     Logo     = Compkiller.Logo,
     Scale    = UDim2.new(0, 480, 0, 340),
@@ -417,10 +537,10 @@ local Window = Compkiller.new({
 Window.Minimized = true
 
 local function notify(content, duration)
-    Notifier.new({ Title="BLADEX HUB", Content=content, Duration=duration or 4, Icon=Compkiller.Logo })
+    Notifier.new({ Title="BLADEX HUD", Content=content, Duration=duration or 4, Icon=Compkiller.Logo })
 end
 
--- ==================== ÚNICA TAB: BE A BRAINROT ====================
+-- ==================== TAB: BE A BRAINROT ====================
 local mainTab = Window:DrawTab({
     Name           = "BE A BRAINROT",
     Icon           = "crown",
@@ -429,90 +549,54 @@ local mainTab = Window:DrawTab({
 })
 
 -- ───────────── IZQUIERDA ─────────────
+local basesSection = mainTab:DrawSection({ Name="Farm Brainrots", Position="left", Minimized=true })
 
--- Lucky Block Farm
-local lbSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
-
-lbSection:AddToggle({ Name="Auto Ciber Farm", Flag="lb_farm", Default=false,
-    Callback=function(v) toggle("AutoLBFarm", v) end })
-
-lbSection:AddToggle({ Name="Auto Zeus Farm", Flag="auto_zeus", Default=false,
-    Callback=function(v) _G.AutoZeus = v end })
-
-lbSection:AddDropdown({
-    Name="Base a Farmear", Flag="selected_base", Default="Base 14",
-    Values={"Base 1","Base 2","Base 3","Base 4","Base 5","Base 6","Base 7",
-            "Base 8","Base 9","Base 10","Base 11","Base 12","Base 13","Base 14"},
-    Callback=function(v)
-        local num = v:match("Base (%d+)")
-        if num then _G.SelectedBase = "base"..num notify("Base: "..v, 3) end
-    end,
-})
-
--- Auto Farm (Knit)
-local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
-
-afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
-    Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
-
-afSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
-    Callback=function(v) toggle("AutoPlaceBest", v) end })
-
-afSection:AddToggle({ Name="Auto Rebirth", Flag="auto_rebirth", Default=false,
-    Callback=function(v) toggle("AutoRebirth", v) end })
-
-afSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
-    Callback=function(v) toggle("AutoUpgrades", v) end })
-
-afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=false,
-    Callback=function(v) toggle("AutoSpeed", v) end })
-
-afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
-    Callback=function(v) toggle("AutoContainer", v) end })
-
--- Movement (del script 2)
-local movSection = mainTab:DrawSection({ Name="Movement", Position="left", Minimized=true })
-
-local speedToggle = movSection:AddToggle({
-    Name="Custom Lucky Block Speed", Default=false,
-    Callback=function(state)
-        runningSpeed = state
-        if not state then
-            local model = getMyModel()
-            if model and originalSpeed ~= nil then model:SetAttribute("MovementSpeed", originalSpeed) end
-            originalSpeed = nil currentModel = nil
-        end
-    end
-})
-
-movSection:AddSlider({
-    Name="Lucky Block Speed", Default=1000, Min=50, Max=3000, Round=0,
-    Callback=function(value) sliderValue = value end
-})
-
--- ───────────── DERECHA ─────────────
-
--- Brainrots (del script 2)
-local brainSection = mainTab:DrawSection({ Name="Brainrots", Position="right", Minimized=true })
-
-local autoFarmToggle2 = brainSection:AddToggle({
+local autoFarmToggle2 = basesSection:AddToggle({
     Name="Auto Farm Best Brainrots", Default=false,
     Callback=function(state)
         runningFarm = state
         if state then
+            local bases = getActiveBases()
+            if #bases == 0 then
+                notify("Selecciona al menos una base en la sección Bases.", 4)
+                autoFarmToggle2:SetValue(false)
+                return
+            end
+
+            farmRunCount  = 0
+            farmBaseIndex = 1
+
             task.spawn(function()
                 while runningFarm do
-                    local character = LP.Character or LP.CharacterAdded:Wait()
-                    local root = character:WaitForChild("HumanoidRootPart")
-                    local humanoid = character:WaitForChild("Humanoid")
-                    local userId = LP.UserId
+                    bases = getActiveBases()
+                    if #bases == 0 then
+                        warn("[BLADEX] No hay bases seleccionadas.")
+                        break
+                    end
+                    if farmBaseIndex > #bases then farmBaseIndex = 1 end
+
+                    local currentBase  = bases[farmBaseIndex]
+                    local character    = LP.Character or LP.CharacterAdded:Wait()
+                    local root         = character:WaitForChild("HumanoidRootPart")
+                    local humanoid     = character:WaitForChild("Humanoid")
+                    local userId       = LP.UserId
                     local modelsFolder = workspace:WaitForChild("RunningModels")
-                    local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
+                    local collectZones = workspace:WaitForChild("CollectZones")
+                    local target       = collectZones:FindFirstChild(currentBase.name)
 
-                    root.CFrame = CFrame.new(715, 39, -2122)
+                    if not target then
+                        warn("[BLADEX] Base no encontrada: " .. currentBase.name .. " — saltando.")
+                        farmBaseIndex = (farmBaseIndex % #bases) + 1
+                        task.wait(0.5)
+                        continue
+                    end
+
+                    -- 1. Teleport
+                    root.CFrame = CFrame.new(currentBase.teleport)
                     task.wait(0.3)
-                    humanoid:MoveTo(Vector3.new(710, 39, -2122))
+                    humanoid:MoveTo(currentBase.move)
 
+                    -- 2. Esperar brainrot propio
                     local ownedModel = nil
                     repeat
                         task.wait(0.3)
@@ -524,53 +608,99 @@ local autoFarmToggle2 = brainSection:AddToggle({
                     until ownedModel ~= nil or not runningFarm
                     if not runningFarm then break end
 
-                    if ownedModel.PrimaryPart then
-                        ownedModel:SetPrimaryPartCFrame(target.CFrame)
-                    else
-                        local part = ownedModel:FindFirstChildWhichIsA("BasePart")
-                        if part then part.CFrame = target.CFrame end
-                    end
+                    -- 3. Mover al final
+                    setModelCFrame(ownedModel, target.CFrame)
                     task.wait(0.7)
 
+                    -- 4. Hundir
                     if ownedModel and ownedModel.Parent == modelsFolder then
-                        if ownedModel.PrimaryPart then
-                            ownedModel:SetPrimaryPartCFrame(target.CFrame * CFrame.new(0,-5,0))
-                        else
-                            local part = ownedModel:FindFirstChildWhichIsA("BasePart")
-                            if part then part.CFrame = target.CFrame * CFrame.new(0,-5,0) end
-                        end
+                        setModelCFrame(ownedModel, target.CFrame * CFrame.new(0, -5, 0))
                     end
 
+                    -- 5. Esperar que desaparezca
                     repeat task.wait(0.3) until not runningFarm or (ownedModel==nil or ownedModel.Parent~=modelsFolder)
                     if not runningFarm then break end
 
-                    local oldCharacter = LP.Character
-                    repeat task.wait(0.2) until not runningFarm or (LP.Character~=oldCharacter and LP.Character~=nil)
+                    -- 6. Esperar respawn
+                    local oldChar = LP.Character
+                    repeat task.wait(0.2) until not runningFarm or (LP.Character~=oldChar and LP.Character~=nil)
                     if not runningFarm then break end
 
                     task.wait(0.4)
-                    local newRoot = LP.Character:WaitForChild("HumanoidRootPart")
-                    newRoot.CFrame = CFrame.new(737, 39, -2118)
+                    LP.Character:WaitForChild("HumanoidRootPart").CFrame = CFrame.new(currentBase.respawn)
                     task.wait(2.1)
+
+                    -- 7. Siguiente base
+                    farmRunCount  = farmRunCount + 1
+                    farmBaseIndex = (farmBaseIndex % #bases) + 1
+                    print("[BLADEX] Run #" .. farmRunCount .. " completado en " .. currentBase.name)
                 end
             end)
         end
     end
 })
 
-brainSection:AddButton({ Name="Teleport to End", Callback=function()
-    local modelsFolder = workspace:WaitForChild("RunningModels")
-    local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
-    for _, obj in ipairs(modelsFolder:GetChildren()) do
-        if obj:IsA("Model") then
-            if obj.PrimaryPart then obj:SetPrimaryPartCFrame(target.CFrame)
-            else local part = obj:FindFirstChildWhichIsA("BasePart") if part then part.CFrame = target.CFrame end end
-        elseif obj:IsA("BasePart") then obj.CFrame = target.CFrame end
+local baseDropValues = {}
+for i = 1, 14 do table.insert(baseDropValues, "Base " .. i) end
+
+basesSection:AddDropdown({
+    Name    = "Base a Farmear",
+    Default = "Base 14",
+    Values  = baseDropValues,
+    Callback = function(v)
+        local num = tonumber(v:match("%d+"))
+        if num and num >= 1 and num <= 14 then
+            for j = 1, 14 do selectedBases[j] = (j == num) end
+            selectedBase = "base" .. num
+            notify("Base " .. num .. " seleccionada.", 3)
+        end
     end
+})
+
+basesSection:AddButton({ Name="Teleport to End", Callback=function()
+    local ok, err = pcall(function()
+        local modelsFolder = workspace:WaitForChild("RunningModels", 5)
+        if not modelsFolder then notify("⚠ RunningModels no encontrado.", 4) return end
+
+        local targetName = selectedBase or "base14"
+        local collectZones = workspace:WaitForChild("CollectZones", 5)
+        local target = collectZones and collectZones:FindFirstChild(targetName)
+        if not target then notify("⚠ CollectZone '" .. targetName .. "' no encontrada.", 4) return end
+
+        local targetCF = target.CFrame
+        local moved = 0
+
+        for _, obj in ipairs(modelsFolder:GetChildren()) do
+            if obj:GetAttribute("OwnerId") == LP.UserId then
+                if obj:IsA("Model") then
+                    if obj.PrimaryPart then
+                        obj:SetPrimaryPartCFrame(targetCF)
+                    else
+                        local part = obj:FindFirstChildWhichIsA("BasePart")
+                        if part then part.CFrame = targetCF end
+                    end
+                elseif obj:IsA("BasePart") then
+                    obj.CFrame = targetCF
+                end
+                moved = moved + 1
+            end
+        end
+
+        local char = LP.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.CFrame = targetCF * CFrame.new(0, 3, 0) end
+
+        if moved > 0 then
+            notify("✓ Teleportado a " .. targetName .. ".", 3)
+        else
+            notify("⚠ No se encontró tu modelo en la carrera.", 4)
+        end
+    end)
+    if not ok then notify("⚠ Error en Teleport to End: " .. tostring(err), 5) end
 end })
 
 local folder2 = workspace:WaitForChild("BossTouchDetectors")
-local rbtToggle = brainSection:AddToggle({
+local rbtToggle = basesSection:AddToggle({
     Name="Remove Bad Boss Touch Detectors", Default=false,
     Callback=function(state)
         if state then
@@ -585,7 +715,7 @@ local rbtToggle = brainSection:AddToggle({
     end
 })
 
-brainSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
+basesSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     local username = LP.Name
     local plotsFolder = workspace:WaitForChild("Plots")
     local myPlot = nil
@@ -617,148 +747,157 @@ brainSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     notify("Picked up all Brainrots!", 5)
 end })
 
--- Recompensas Especiales
+basesSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
+    Callback=function(v) toggle("AutoPlaceBest", v) end })
+
+basesSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
+    Callback=function(v) toggle("AutoUpgrades", v) end })
+
+local afSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
+
+afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
+    Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
+
+afSection:AddToggle({ Name="Auto Rebirth", Flag="auto_rebirth", Default=false,
+    Callback=function(v) toggle("AutoRebirth", v) end })
+
+afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=false,
+    Callback=function(v) toggle("AutoSpeed", v) end })
+
+afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
+    Callback=function(v) toggle("AutoContainer", v) end })
+
+local movSection = mainTab:DrawSection({ Name="Movement", Position="right", Minimized=true })
+
+local speedToggle = movSection:AddToggle({
+    Name="Custom Lucky Block Speed", Default=false,
+    Callback=function(state)
+        runningSpeed = state
+        if not state then
+            local model = getMyModel()
+            if model and originalSpeed ~= nil then model:SetAttribute("MovementSpeed", originalSpeed) end
+            originalSpeed = nil currentModel = nil
+        end
+    end
+})
+
+movSection:AddSlider({
+    Name="Lucky Block Speed", Default=1000, Min=50, Max=3000, Round=0,
+    Callback=function(value) sliderValue = value end
+})
+
+-- ───────────── DERECHA ─────────────
 local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
 
 rewardSection:AddButton({ Name="Reclamar Bloque Espiritual", Callback=function()
     if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
     local ok, result = safeInvoke(rf.GetReward)
-    notify(ok and "¡Reclamo enviado!" or "Error: "..tostring(result), 5)
+    notify(ok and "¡Reclamo enviado!" or "Error: " .. tostring(result), 5)
 end })
 
 rewardSection:AddButton({ Name="Redeem All Codes", Callback=function()
     local redeem = findRemote("CodesService", "RedeemCode")
     if not redeem then notify("⚠ Remoto RedeemCode no encontrado.", 5) return end
     for _, code in ipairs(codes) do pcall(function() redeem:InvokeServer(code) end) task.wait(1) end
+    pcall(function() redeem:InvokeServer("DEVIL") end)
     notify("Códigos canjeados.", 4)
 end })
 
-local ablToggle = rewardSection:AddToggle({
-    Name="Auto Buy Best Luckyblock", Default=false,
-    Callback=function(state)
-        runningABL = state
-        if state then
-            task.spawn(function()
-                local buy = findRemote("SkinService", "BuySkin")
-                while runningABL do
-                    local gui = LP.PlayerGui:FindFirstChild("Windows")
-                    if gui then
-                        local pickaxeShop = gui:FindFirstChild("PickaxeShop")
-                        if pickaxeShop then
-                            local shopContainer = pickaxeShop:FindFirstChild("ShopContainer")
-                            local scrollingFrame = shopContainer and shopContainer:FindFirstChild("ScrollingFrame")
-                            if scrollingFrame then
-                                local cash = LP.leaderstats.Cash.Value
-                                local bestSkin, bestPrice = nil, 0
-                                for _, name in ipairs(skins) do
-                                    local item = scrollingFrame:FindFirstChild(name)
-                                    if item then
-                                        local buyButton = item:FindFirstChild("Main") and
-                                            item.Main:FindFirstChild("Buy") and
-                                            item.Main.Buy:FindFirstChild("BuyButton")
-                                        if buyButton and buyButton.Visible then
-                                            local cashLabel = buyButton:FindFirstChild("Cash")
-                                            if cashLabel then
-                                                local price = parseCash(cashLabel.Text)
-                                                if cash >= price and price > bestPrice then
-                                                    bestSkin = name bestPrice = price
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-                                if bestSkin and buy then pcall(function() buy:InvokeServer(bestSkin) end) end
-                            end
-                        end
-                    end
-                    task.wait(0.5)
+rewardSection:AddButton({ Name="Buy Best Luckyblock", Callback=function()
+    local buy = findRemote("SkinService", "BuySkin")
+    if not buy then notify("⚠ Remoto BuySkin no encontrado.", 5) return end
+    local gui = LP.PlayerGui:FindFirstChild("Windows")
+    local scrollingFrame = gui and gui:FindFirstChild("PickaxeShop") and
+        gui.PickaxeShop:FindFirstChild("ShopContainer") and
+        gui.PickaxeShop.ShopContainer:FindFirstChild("ScrollingFrame")
+    if not scrollingFrame then notify("⚠ ScrollingFrame no encontrado.", 5) return end
+    local cash = LP.leaderstats.Cash.Value
+    local bestSkin, bestPrice = nil, 0
+    for _, name in ipairs(skins) do
+        local item = scrollingFrame:FindFirstChild(name)
+        if item then
+            local buyButton = item:FindFirstChild("Main") and item.Main:FindFirstChild("Buy") and item.Main.Buy:FindFirstChild("BuyButton")
+            if buyButton and buyButton.Visible then
+                local cashLabel = buyButton:FindFirstChild("Cash")
+                if cashLabel then
+                    local price = parseCash(cashLabel.Text)
+                    if cash >= price and price > bestPrice then bestSkin = name bestPrice = price end
                 end
-            end)
+            end
         end
     end
-})
+    if bestSkin then pcall(function() buy:InvokeServer(bestSkin) end) notify("Comprado: " .. bestSkin, 4)
+    else notify("No hay skin disponible.", 4) end
+end })
 
-local aceprToggle = rewardSection:AddToggle({
-    Name="Auto Claim Event Pass Rewards", Default=false,
-    Callback=function(state)
-        runningACEPR = state
-        if state then
-            task.spawn(function()
-                local claim = findRemote("SeasonPassService", "ClaimPassReward")
-                while runningACEPR do
-                    local ok, gui = pcall(function()
-                        return LP:WaitForChild("PlayerGui"):WaitForChild("Windows")
-                            :WaitForChild("Event"):WaitForChild("Frame"):WaitForChild("Frame")
-                            :WaitForChild("Windows"):WaitForChild("Pass"):WaitForChild("Main")
-                            :WaitForChild("ScrollingFrame")
-                    end)
-                    if ok and gui then
-                        for i = 1, 10 do
-                            if not runningACEPR then break end
-                            local item = gui:FindFirstChild(tostring(i))
-                            if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
-                                local free = item.Frame.Free
-                                local locked  = free:FindFirstChild("Locked")
-                                local claimed = free:FindFirstChild("Claimed")
-                                while runningACEPR and locked and locked.Visible do task.wait(0.2) end
-                                if runningACEPR and not (claimed and claimed.Visible) and locked and not locked.Visible then
-                                    pcall(function() claim:InvokeServer("Free", i) end)
-                                end
-                            end
-                        end
-                    end
-                    task.wait(0.5)
-                end
-            end)
+rewardSection:AddButton({ Name="Claim Event Pass Rewards", Callback=function()
+    local claim = findRemote("SeasonPassService", "ClaimPassReward")
+    if not claim then notify("⚠ Remoto ClaimPassReward no encontrado.", 5) return end
+    local ok, gui = pcall(function()
+        return LP:WaitForChild("PlayerGui"):WaitForChild("Windows")
+            :WaitForChild("Event"):WaitForChild("Frame"):WaitForChild("Frame")
+            :WaitForChild("Windows"):WaitForChild("Pass"):WaitForChild("Main"):WaitForChild("ScrollingFrame")
+    end)
+    if not ok or not gui then notify("⚠ GUI de evento no encontrada.", 5) return end
+    local claimed = 0
+    for i = 1, 10 do
+        local item = gui:FindFirstChild(tostring(i))
+        if item and item:FindFirstChild("Frame") and item.Frame:FindFirstChild("Free") then
+            local free = item.Frame.Free
+            local locked = free:FindFirstChild("Locked")
+            local claimedEl = free:FindFirstChild("Claimed")
+            if locked and not locked.Visible and not (claimedEl and claimedEl.Visible) then
+                pcall(function() claim:InvokeServer("Free", i) end)
+                claimed = claimed + 1
+                task.wait(0.1)
+            end
         end
     end
-})
+    notify("Recompensas reclamadas: " .. claimed, 4)
+end })
 
-local acprToggle = rewardSection:AddToggle({
-    Name="Auto Claim Playtime Rewards", Default=false,
-    Callback=function(state)
-        runningACPR = state
-        if state then
-            task.spawn(function()
-                local claimGift = findRemote("PlaytimeRewardService", "ClaimGift")
-                while runningACPR do
-                    for reward = 1, 12 do
-                        if not runningACPR then break end
-                        pcall(function() claimGift:InvokeServer(reward) end)
-                        task.wait(0.25)
-                    end
-                    task.wait(1)
-                end
-            end)
-        end
-    end
-})
+rewardSection:AddButton({ Name="Claim Playtime Rewards", Callback=function()
+    local claimGift = findRemote("PlaytimeRewardService", "ClaimGift")
+    if not claimGift then notify("⚠ Remoto ClaimGift no encontrado.", 5) return end
+    for reward = 1, 12 do pcall(function() claimGift:InvokeServer(reward) end) task.wait(0.25) end
+    notify("Playtime rewards reclamados.", 4)
+end })
 
--- ==================== AJUSTES (pestaña aparte) ====================
+-- ==================== TAB: AJUSTES ====================
 local settingsTab = Window:DrawTab({ Name="Ajustes", Icon="settings", Type="Single" })
 local settingsSection = settingsTab:DrawSection({ Name="Configuración", Position="full" })
 
 settingsSection:AddToggle({ Name="Always Show Frame", Default=false,
-    Callback=function(v) Window.AlwayShowTab = v end })
+    Callback=function(v) pcall(function() Window.AlwaysShowTab = v end) end })
 
 settingsSection:AddColorPicker({ Name="Color Highlight", Default=Compkiller.Colors.Highlight,
-    Callback=function(v) Compkiller.Colors.Highlight=v Compkiller:RefreshCurrentColor() end })
+    Callback=function(v) Compkiller:ChangeHighlightColor(v) end })
 
+local themes = {
+    Default      = Color3.fromRGB(90, 110, 160),
+    ["Dark Green"]   = Color3.fromRGB(60, 150, 90),
+    ["Dark Blue"]    = Color3.fromRGB(50, 90, 200),
+    ["Purple Rose"]  = Color3.fromRGB(160, 80, 160),
+    Skeet        = Color3.fromRGB(200, 60, 60),
+}
 settingsSection:AddDropdown({ Name="Tema", Default="Default",
     Values={"Default","Dark Green","Dark Blue","Purple Rose","Skeet"},
-    Callback=function(v) Compkiller:SetTheme(v) end })
+    Callback=function(v)
+        local color = themes[v] or themes.Default
+        Compkiller:ChangeHighlightColor(color)
+    end })
 
-settingsSection:AddLabel("BLADEX HUB v3.0 | Be a Lucky Block")
+settingsSection:AddLabel("BLADEX HUD | Be a Lucky Block")
 
 -- ==================== CONFIG + INICIO ====================
-Window:DrawConfig({ Name="Config", Icon="folder", Config=ConfigManager }):Init()
+-- Config tab (compatible con Compkiller 2.6)
+pcall(function()
+    Window:DrawConfig({ Name="Config", Icon="folder", Config=ConfigManager }):Init()
+end)
 
 speedToggle:SetValue(false)
 autoFarmToggle2:SetValue(false)
 rbtToggle:SetValue(false)
-ablToggle:SetValue(false)
-aceprToggle:SetValue(false)
-acprToggle:SetValue(false)
 
-notify("¡BLADEX HUB v3.0 cargado! Knit: "..(knitServices and "✓" or "✗"), 6)
-print("[BLADEX HUB v3.0] Cargado. LeftAlt para mostrar/ocultar.")
+notify("¡BLADEX HUD cargado! Knit: " .. (knitServices and "✓" or "✗"), 6)
+print("[BLADEX HUD] Cargado. LeftAlt para mostrar/ocultar.")
