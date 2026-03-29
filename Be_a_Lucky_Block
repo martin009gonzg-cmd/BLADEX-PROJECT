@@ -715,38 +715,6 @@ local rbtToggle = basesSection:AddToggle({
     end
 })
 
-basesSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
-    local username = LP.Name
-    local plotsFolder = workspace:WaitForChild("Plots")
-    local myPlot = nil
-    for i = 1, 5 do
-        local plot = plotsFolder:FindFirstChild(tostring(i))
-        if plot and plot:FindFirstChild(tostring(i)) then
-            local inner = plot[tostring(i)]
-            for _, v in pairs(inner:GetDescendants()) do
-                if v:IsA("BillboardGui") and string.find(v.Name, username) then myPlot = inner break end
-            end
-        end
-        if myPlot then break end
-    end
-    if not myPlot then return end
-    local containers = myPlot:FindFirstChild("Containers")
-    if not containers then return end
-    for i = 1, 30 do
-        local cf = containers:FindFirstChild(tostring(i))
-        if cf and cf:FindFirstChild(tostring(i)) then
-            local container = cf[tostring(i)]
-            local innerModel = container:FindFirstChild("InnerModel")
-            if innerModel and #innerModel:GetChildren() > 0 then
-                local remote = findRemote("ContainerService", "PickupBrainrot")
-                if remote then remote:InvokeServer(tostring(i)) end
-                task.wait(0.1)
-            end
-        end
-    end
-    notify("Picked up all Brainrots!", 5)
-end })
-
 local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
 
 afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
@@ -788,6 +756,38 @@ movSection:AddSlider({
 
 -- ───────────── DERECHA ─────────────
 local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
+
+rewardSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
+    local username = LP.Name
+    local plotsFolder = workspace:WaitForChild("Plots")
+    local myPlot = nil
+    for i = 1, 5 do
+        local plot = plotsFolder:FindFirstChild(tostring(i))
+        if plot and plot:FindFirstChild(tostring(i)) then
+            local inner = plot[tostring(i)]
+            for _, v in pairs(inner:GetDescendants()) do
+                if v:IsA("BillboardGui") and string.find(v.Name, username) then myPlot = inner break end
+            end
+        end
+        if myPlot then break end
+    end
+    if not myPlot then return end
+    local containers = myPlot:FindFirstChild("Containers")
+    if not containers then return end
+    for i = 1, 30 do
+        local cf = containers:FindFirstChild(tostring(i))
+        if cf and cf:FindFirstChild(tostring(i)) then
+            local container = cf[tostring(i)]
+            local innerModel = container:FindFirstChild("InnerModel")
+            if innerModel and #innerModel:GetChildren() > 0 then
+                local remote = findRemote("ContainerService", "PickupBrainrot")
+                if remote then remote:InvokeServer(tostring(i)) end
+                task.wait(0.1)
+            end
+        end
+    end
+    notify("Picked up all Brainrots!", 5)
+end })
 
 rewardSection:AddButton({ Name="Reclamar Bloque Espiritual", Callback=function()
     if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
