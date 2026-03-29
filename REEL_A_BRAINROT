@@ -1055,10 +1055,21 @@ local function stopUpgBrainrotLoop()
     if upgBrainrotLoop then task.cancel(upgBrainrotLoop); upgBrainrotLoop = nil end
 end
 
--- LIBRERÍA — cargada externamente por el loader
+-- LIBRERÍA — cargador integrado
+if not getgenv().Compkiller then
+    local ok, err = pcall(function()
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/martin009gonzg-cmd/BLADEX-PROJECT/refs/heads/main/BLADEX_LIBRALY"
+        ))()
+    end)
+    if not ok then
+        warn("[BLADEX] Error cargando librería: " .. tostring(err))
+        return
+    end
+end
 local Compkiller = getgenv().Compkiller
 if not Compkiller then
-    warn("[BLADEX] Compkiller no encontrado. Ejecuta el loader primero.")
+    warn("[BLADEX] Compkiller no disponible después de cargar.")
     return
 end
 
@@ -1369,6 +1380,244 @@ for _, r in ipairs(SUBMIT_RARS) do
     })
 end
 
+
+-- KRAKEN EVENT
+local krakenAutoOn      = false
+local krakenLoop        = nil
+local krakenSummonOn    = false
+local krakenSummonLoop  = nil
+local krakenClaimOn     = false
+local krakenClaimLoop   = nil
+local krakenProgress    = 0
+local krakenTotal       = 500
+
+-- Buscar remote del Kraken dinámicamente
+local function getKrakenRemote(name)
+    local rh = ReplicatedStorage:FindFirstChild("RemoteHandler")
+    if not rh then return nil end
+    -- Intentar nombres comunes del evento Kraken
+    local candidates = {
+        name,
+        "Kraken" .. name,
+        "KrakenEvent" .. name,
+        "Event" .. name,
+    }
+    for _, c in ipairs(candidates) do
+        local r = rh:FindFirstChild(c)
+        if r then return r end
+    end
+    -- Buscar en sub-carpetas
+    for _, child in pairs(rh:GetChildren()) do
+        if child:IsA("Folder") and child.Name:lower():find("kraken") then
+            local r = child:FindFirstChild(name)
+            if r then return r end
+        end
+    end
+    return nil
+end
+
+-- Leer progreso del summons desde workspace/GUI
+local function getKrakenProgress()
+    -- Intentar desde atributos en workspace
+    local eventFolder = Workspace:FindFirstChild("KrakenEvent")
+        or Workspace:FindFirstChild("Kraken")
+        or Workspace:FindFirstChild("Event")
+    if eventFolder then
+        local prog = eventFolder:GetAttribute("Progress")
+            or eventFolder:GetAttribute("SummonsProgress")
+            or eventFolder:GetAttribute("progress")
+        if prog then return tonumber(prog) or 0 end
+    end
+    -- Intentar desde GUI
+    local pg = LP:FindFirstChild("PlayerGui")
+    if pg then
+        for _, gui in ipairs(pg:GetChildren()) do
+            if not gui:IsA("ScreenGui") then continue end
+            for _, d in ipairs(gui:GetDescendants()) do
+                if d:IsA("TextLabel") and d.Visible then
+                    local txt = d.Text or ""
+                    -- Buscar patrón "218/500" o similar
+                    local cur, max = txt:match("(%d+)/(%d+)")
+                    if cur and max then
+                        krakenTotal = tonumber(max) or 500
+                        return tonumber(cur) or 0
+                    end
+                end
+            end
+        end
+    end
+    return 0
+end
+
+-- Auto Attack/Summon Kraken (dispara el remote de daño/invocación)
+local function _cicloKrakenAttack()
+    while krakenAutoOn and krakenLoop do
+        -- Intentar múltiples remotes de ataque/daño
+        local attacked = false
+        local names = { "Attack", "Damage", "Hit", "Summon", "Contribute", "AddProgress" }
+        for _, n in ipairs(names) do
+            local r = getKrakenRemote(n)
+            if r then
+                if r:IsA("RemoteEvent") then
+                    pcall(function() r:FireServer() end)
+                    attacked = true
+                elseif r:IsA("RemoteFunction") then
+                    pcall(function() r:InvokeServer() end)
+                    attacked = true
+                end
+            end
+        end
+        -- Fallback: buscar cualquier RemoteEvent con "kraken" en el nombre
+        if not attacked then
+            local rh = ReplicatedStorage:FindFirstChild("RemoteHandler")
+            if rh then
+                for _, r in pairs(rh:GetDescendants()) do
+                    if r:IsA("RemoteEvent") and r.Name:lower():find("kraken") then
+                        pcall(function() r:FireServer() end)
+                    end
+                end
+            end
+        end
+        task.wait(0.15)
+    end
+    krakenLoop = nil
+end
+
+local function startKrakenAttack()
+    if krakenLoop then return end
+    krakenLoop = task.spawn(_cicloKrakenAttack)
+end
+
+local function stopKrakenAttack()
+    krakenAutoOn = false
+    if krakenLoop then task.cancel(krakenLoop); krakenLoop = nil end
+end
+
+-- Auto Summon (invoca el Kraken cuando el progreso llega al máximo)
+local function _cicloKrakenSummon()
+    while krakenSummonOn do
+        local prog = getKrakenProgress()
+        krakenProgress = prog
+        if prog >= krakenTotal then
+            print("[Kraken] Progreso completo (" .. prog .. "/" .. krakenTotal .. "), invocando...")
+            local names = { "Summon", "Invoke", "Start", "Begin", "SpawnBoss", "SpawnKraken" }
+            for _, n in ipairs(names) do
+                local r = getKrakenRemote(n)
+                if r then
+                    if r:IsA("RemoteEvent") then pcall(function() r:FireServer() end)
+                    elseif r:IsA("RemoteFunction") then pcall(function() r:InvokeServer() end) end
+                end
+            end
+            task.wait(5)
+        end
+        task.wait(2)
+    end
+    krakenSummonLoop = nil
+end
+
+local function startKrakenSummon()
+    if krakenSummonLoop then return end
+    krakenSummonLoop = task.spawn(_cicloKrakenSummon)
+end
+
+local function stopKrakenSummon()
+    krakenSummonOn = false
+    if krakenSummonLoop then task.cancel(krakenSummonLoop); krakenSummonLoop = nil end
+end
+
+-- Auto Claim recompensas del Kraken
+local function _cicloKrakenClaim()
+    while krakenClaimOn do
+        local names = { "Claim", "ClaimReward", "ClaimKraken", "CollectReward", "KrakenClaim" }
+        for _, n in ipairs(names) do
+            local r = getKrakenRemote(n)
+            if r then
+                if r:IsA("RemoteEvent") then pcall(function() r:FireServer() end)
+                elseif r:IsA("RemoteFunction") then pcall(function() r:InvokeServer() end) end
+            end
+        end
+        -- Buscar botón "Claim" en GUI
+        local pg = LP:FindFirstChild("PlayerGui")
+        if pg then
+            for _, gui in ipairs(pg:GetDescendants()) do
+                if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible then
+                    local t = (gui.Text or ""):lower()
+                    if t == "claim" or t == "reclamar" or t == "collect" then
+                        pcall(function() gui:activate() end)
+                    end
+                end
+            end
+        end
+        task.wait(3)
+    end
+    krakenClaimLoop = nil
+end
+
+local function startKrakenClaim()
+    if krakenClaimLoop then return end
+    krakenClaimLoop = task.spawn(_cicloKrakenClaim)
+end
+
+local function stopKrakenClaim()
+    krakenClaimOn = false
+    if krakenClaimLoop then task.cancel(krakenClaimLoop); krakenClaimLoop = nil end
+end
+
+-- TAB KRAKEN EVENT
+local KrakenTab = Window:DrawTab({
+    Name           = "Kraken Event",
+    Icon           = "zap",
+    EnableScrolling = true,
+})
+
+local KrakenLeftSection = KrakenTab:DrawSection({ Name = "Auto Kraken", Position = "left", Minimized = true })
+
+KrakenLeftSection:AddToggle({
+    Name    = "Auto Attack",
+    Flag    = "kraken_attack",
+    Default = false,
+    Callback = function(v)
+        krakenAutoOn = v
+        if v then startKrakenAttack() else stopKrakenAttack() end
+    end,
+})
+
+KrakenLeftSection:AddToggle({
+    Name    = "Auto Summon",
+    Flag    = "kraken_summon",
+    Default = false,
+    Callback = function(v)
+        krakenSummonOn = v
+        if v then startKrakenSummon() else stopKrakenSummon() end
+    end,
+})
+
+KrakenLeftSection:AddToggle({
+    Name    = "Auto Claim",
+    Flag    = "kraken_claim",
+    Default = false,
+    Callback = function(v)
+        krakenClaimOn = v
+        if v then startKrakenClaim() else stopKrakenClaim() end
+    end,
+})
+
+local KrakenRightSection = KrakenTab:DrawSection({ Name = "Info", Position = "right", Minimized = true })
+
+KrakenRightSection:AddButton({
+    Name = "Ver Progreso Kraken",
+    Callback = function()
+        local prog = getKrakenProgress()
+        krakenProgress = prog
+        print("[Kraken] Progreso actual: " .. prog .. " / " .. krakenTotal)
+        Notifier.new({
+            Title   = "Kraken Event",
+            Content = "Progreso: " .. prog .. " / " .. krakenTotal,
+            Duration = 4,
+            Icon    = Compkiller.Logo
+        })
+    end,
+})
 
 -- Dupe
 local _Remote = game:GetService("ReplicatedStorage").RemoteHandler.Plot
