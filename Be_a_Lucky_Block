@@ -136,7 +136,6 @@ _G.AutoUpgrades         = _G.AutoUpgrades         or false
 _G.AutoContainer        = _G.AutoContainer        or false
 _G.AutoLBFarm           = _G.AutoLBFarm           or false
 _G.AutoZeus             = _G.AutoZeus             or false
-_G.AutoDevil            = _G.AutoDevil            or false
 _G.AutoRebirth          = _G.AutoRebirth          or false
 _G.AutoSpeed            = _G.AutoSpeed            or false
 _G.AutoPlaceBest        = _G.AutoPlaceBest        or false
@@ -148,7 +147,6 @@ _G.AutoPlaytimeRewards  = _G.AutoPlaytimeRewards  or false
 -- ==================== COORDENADAS ====================
 local BASE_COORDS = {
     ZEUS   = { block = CFrame.new(721,  38, -2173), runner = CFrame.new(588.96, 38.18, -2127.26) },
-    DEVIL  = { block = CFrame.new(850,  38, -2173), runner = CFrame.new(588.96, 38.18, -2127.26) },
     base1  = { block = CFrame.new(640,  46, -2035), runner = CFrame.new(588.96, 38.18, -2127.26) },
     base2  = { block = CFrame.new(559,  46, -2208), runner = CFrame.new(588.96, 38.18, -2127.26) },
     base3  = { block = CFrame.new(481,  46, -2035), runner = CFrame.new(588.96, 38.18, -2127.26) },
@@ -315,25 +313,20 @@ end
 local function loopAutoLBFarm()
     lbBaseIndex = 1
     while _G.AutoLBFarm do
-        -- Construir lista de bases activas (especiales + regulares)
-        local activeFarm = {}
-        if _G.AutoZeus  then table.insert(activeFarm, "ZEUS")  end
-        if _G.AutoDevil then table.insert(activeFarm, "DEVIL") end
-        local regularBases = getSelectedLBBases()
-        for _, b in ipairs(regularBases) do table.insert(activeFarm, b) end
-
-        if #activeFarm == 0 then
+        local bases = getSelectedLBBases()
+        if #bases == 0 and not _G.AutoZeus then
             warn("[BLADEX] No hay bases seleccionadas.")
             task.wait(2)
         else
-            if lbBaseIndex > #activeFarm then lbBaseIndex = 1 end
-            local baseName = activeFarm[lbBaseIndex]
+            local baseName = _G.AutoZeus and "ZEUS" or bases[lbBaseIndex]
             local ok, err = pcall(lbFarmCycle, baseName)
             if not ok then
                 warn("[LBFarm] Error: " .. tostring(err))
                 task.wait(2)
             else
-                lbBaseIndex = (lbBaseIndex % #activeFarm) + 1
+                if not _G.AutoZeus then
+                    lbBaseIndex = (lbBaseIndex % #bases) + 1
+                end
             end
         end
     end
@@ -722,64 +715,7 @@ local rbtToggle = basesSection:AddToggle({
     end
 })
 
-local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
-
-afSection:AddToggle({ Name="Auto LB Farm", Flag="auto_lbfarm", Default=false,
-    Callback=function(v) toggle("AutoLBFarm", v) end })
-
-afSection:AddToggle({ Name="Farm Base ZEUS", Flag="auto_zeus", Default=false,
-    Callback=function(v)
-        _G.AutoZeus = v
-        notify(v and "Farm ZEUS activado." or "Farm ZEUS desactivado.", 3)
-    end })
-
-afSection:AddToggle({ Name="Farm Base DEVIL", Flag="auto_devil", Default=false,
-    Callback=function(v)
-        _G.AutoDevil = v
-        notify(v and "Farm DEVIL activado." or "Farm DEVIL desactivado.", 3)
-    end })
-
-afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
-    Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
-
-afSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
-    Callback=function(v) toggle("AutoPlaceBest", v) end })
-
-afSection:AddToggle({ Name="Auto Rebirth", Flag="auto_rebirth", Default=false,
-    Callback=function(v) toggle("AutoRebirth", v) end })
-
-afSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
-    Callback=function(v) toggle("AutoUpgrades", v) end })
-
-afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=false,
-    Callback=function(v) toggle("AutoSpeed", v) end })
-
-afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
-    Callback=function(v) toggle("AutoContainer", v) end })
-
-local movSection = mainTab:DrawSection({ Name="Movement", Position="right", Minimized=true })
-
-local speedToggle = movSection:AddToggle({
-    Name="Custom Lucky Block Speed", Default=false,
-    Callback=function(state)
-        runningSpeed = state
-        if not state then
-            local model = getMyModel()
-            if model and originalSpeed ~= nil then model:SetAttribute("MovementSpeed", originalSpeed) end
-            originalSpeed = nil currentModel = nil
-        end
-    end
-})
-
-movSection:AddSlider({
-    Name="Lucky Block Speed", Default=1000, Min=50, Max=3000, Round=0,
-    Callback=function(value) sliderValue = value end
-})
-
--- ───────────── DERECHA ─────────────
-local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
-
-rewardSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
+basesSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     local username = LP.Name
     local plotsFolder = workspace:WaitForChild("Plots")
     local myPlot = nil
@@ -810,6 +746,48 @@ rewardSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     end
     notify("Picked up all Brainrots!", 5)
 end })
+
+basesSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
+    Callback=function(v) toggle("AutoPlaceBest", v) end })
+
+basesSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
+    Callback=function(v) toggle("AutoUpgrades", v) end })
+
+local afSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
+
+afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
+    Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
+
+afSection:AddToggle({ Name="Auto Rebirth", Flag="auto_rebirth", Default=false,
+    Callback=function(v) toggle("AutoRebirth", v) end })
+
+afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=false,
+    Callback=function(v) toggle("AutoSpeed", v) end })
+
+afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
+    Callback=function(v) toggle("AutoContainer", v) end })
+
+local movSection = mainTab:DrawSection({ Name="Movement", Position="right", Minimized=true })
+
+local speedToggle = movSection:AddToggle({
+    Name="Custom Lucky Block Speed", Default=false,
+    Callback=function(state)
+        runningSpeed = state
+        if not state then
+            local model = getMyModel()
+            if model and originalSpeed ~= nil then model:SetAttribute("MovementSpeed", originalSpeed) end
+            originalSpeed = nil currentModel = nil
+        end
+    end
+})
+
+movSection:AddSlider({
+    Name="Lucky Block Speed", Default=1000, Min=50, Max=3000, Round=0,
+    Callback=function(value) sliderValue = value end
+})
+
+-- ───────────── DERECHA ─────────────
+local rewardSection = mainTab:DrawSection({ Name="Recompensas Especiales", Position="right", Minimized=true })
 
 rewardSection:AddButton({ Name="Reclamar Bloque Espiritual", Callback=function()
     if not rf.GetReward then notify("⚠ Remoto GetReward no encontrado.", 5) return end
