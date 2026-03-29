@@ -747,13 +747,7 @@ basesSection:AddButton({ Name="Pickup All Your Brainrots", Callback=function()
     notify("Picked up all Brainrots!", 5)
 end })
 
-basesSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
-    Callback=function(v) toggle("AutoPlaceBest", v) end })
-
-basesSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
-    Callback=function(v) toggle("AutoUpgrades", v) end })
-
-local afSection = mainTab:DrawSection({ Name="Lucky Block Farm", Position="left", Minimized=true })
+local afSection = mainTab:DrawSection({ Name="Auto Farm", Position="left", Minimized=true })
 
 afSection:AddToggle({ Name="Auto Cash", Flag="auto_cash", Default=false,
     Callback=function(v) _G.AutoCash=v if v then startCashLoop() else cashRunning=false end end })
@@ -766,6 +760,12 @@ afSection:AddToggle({ Name="Auto Comprar Velocidad", Flag="auto_speed", Default=
 
 afSection:AddToggle({ Name="Auto Mejorar Base", Flag="auto_container", Default=false,
     Callback=function(v) toggle("AutoContainer", v) end })
+
+afSection:AddToggle({ Name="Auto Colocar Brainrots", Flag="auto_placebest", Default=false,
+    Callback=function(v) toggle("AutoPlaceBest", v) end })
+
+afSection:AddToggle({ Name="Upgrade Brainrots", Flag="auto_upgrades", Default=false,
+    Callback=function(v) toggle("AutoUpgrades", v) end })
 
 local movSection = mainTab:DrawSection({ Name="Movement", Position="right", Minimized=true })
 
